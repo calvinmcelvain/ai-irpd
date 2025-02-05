@@ -2,7 +2,6 @@ import re
 import logging
 from pathlib import Path
 from itertools import product
-from stage_outputs import StageOutputs
 from utils import get_env_var
 from models import LLMModel
 from test_config import TestConfig
@@ -61,7 +60,6 @@ class IRPD:
         self.path_out = self.path / "output"
         self.print_response = print_response
         self.new_test = new_test
-        self.stage_outputs = StageOutputs()
         self.product_rlt = product(self.ras, self.treatments, self.llms)
         self.test_configs = []
 
@@ -183,11 +181,6 @@ class IRPD:
                 stage_class = globals().get(f"Stage{stage}")
                 if stage_class:
                     stage_instance = stage_class(test_config, outpath)
-                    log.info(f"Storing output: Stage {stage}")
-                    self.stage_outputs.store(f"stage_{stage}_rep_{n}", stage_instance.run())
-                    log.info(
-                        f"Stage {stage} stored: {self.stage_outputs.has(f"stage_{stage}_rep_{n}")}"
-                    )
                 else:
                     log.warning(f"Stage {stage} not found.")
 
