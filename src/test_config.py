@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import uuid4
 
 @dataclass
 class TestConfig:
@@ -14,3 +15,7 @@ class TestConfig:
     stages: list[str]
     print_response: bool
     max_instances: int | None
+    id: str = None
+    
+    def __post_init__(self):
+        self.id = uuid4().hex
