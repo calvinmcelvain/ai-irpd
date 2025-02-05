@@ -1,6 +1,5 @@
 # Structure strongly follows
 # https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
-from pydantic import BaseModel
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
