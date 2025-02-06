@@ -17,17 +17,17 @@ class ModelClassContainer:
     @cached_property
     def impl(self):
         model_class = lazy_import(self.module, self.model_class)
-        model_configs = lazy_import(self.module, self.model_configs)
+        model_configs = lazy_import(self.module, self.model_config)
         return model_class, model_configs
 
 
 class ModelClass(ModelClassContainer, Enum):
-    GPT = ("irpd.models.gpt", "GPT", "GPTConfigs")
-    Claude = ("irpd.models.claude", "Claude", "ClaudeConfigs")
-    Gemini = ("irpd.models.gemini", "Gemini", "GeminiConfigs")
-    Nova = ("irpd.models.nova", "Nova", "NovaConfigs")
-    Mistral = ("irpd.models.mistral", "Mistral", "MistralConfigs")
-    Grok = ("irpd.models.grok", "Grok", "GrokConfigs")
+    GPT = ("models.gpt", "GPT", "GPTConfigs")
+    Claude = ("models.claude", "Claude", "ClaudeConfigs")
+    Gemini = ("models.gemini", "Gemini", "GeminiConfigs")
+    Nova = ("models.nova", "Nova", "NovaConfigs")
+    Mistral = ("models.mistral", "Mistral", "MistralConfigs")
+    Grok = ("models.grok", "Grok", "GrokConfigs")
 
 
 @dataclass(frozen=True)
@@ -117,7 +117,7 @@ class LLMModel(LLMModelContainer, Enum):
         print_response: bool = False
     ):
         model_class, model_configs = self.model_class.impl
-        config_path = Path(__file__).parent / "default_configs.json"
+        config_path = Path(__file__).parent / "model_configs.json"
         config_json = validate_json(
             load_json(config_path)[config][self.key],
             model_configs

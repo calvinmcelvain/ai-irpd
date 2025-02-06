@@ -9,8 +9,7 @@ log = logging.getLogger(__name__)
 class BaseStage(ABC):
     def __init__(
         self,
-        test_config: TestConfig,
-        outpath: Path
+        test_config: TestConfig
     ):
         self.case = self._get_cases(test_config.case)
         self.stage = None
@@ -18,12 +17,12 @@ class BaseStage(ABC):
         self.treatment = test_config.treatment
         self.test_type = test_config.test_type
         self.test_path = test_config.test_path
-        self.project_path = test_config.project_path
+        self.project_path = self.test_path.parents[1]
         self.prompt_path = self.project_path / "prompts"
-        self.test_data_path = self.project_path / "data" / "test"
-        self.raw_data_path = self.project_path / "data" / "raw"
-        self.out_path = outpath
-        self.llm = test_config.llm_instance
+        self.data_path = self.project_path / "data"
+        self.out_path = test_config.sub_path
+        self.context = test_config.context
+        self.llm = test_config.llm
         self.max_instances = test_config.max_instances
         self.print_response = test_config.print_response
         self.instance_types = self._get_instance_types()
