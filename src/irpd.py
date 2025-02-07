@@ -148,9 +148,9 @@ class IRPD:
     def _generate_sub_path(test_config: TestConfig, n: int):
         if test_config.test_type in {"test", "subtest"}:
             return test_config.test_path / "raw"
-        elif test_config.test_path in {"replication"}:
+        if test_config.test_path in {"replication"}:
             return test_config.test_path / f"replication_{n}"
-        elif test_config.test_type in {"cross_model_validation"}:
+        if test_config.test_type in {"cross_model_validation"}:
             return test_config.test_path / test_config.llm / f"replicaiton_{n}"
         
     def _generate_test_configs(self):

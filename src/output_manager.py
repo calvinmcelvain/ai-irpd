@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 from collections import defaultdict
 from models.base_model import RequestOut
-from test_config import TestConfig
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import logging
-from pathlib import Path
 from test_config import TestConfig
+from output_manager import StageRun
 from abc import ABC, abstractmethod
 
 log = logging.getLogger(__name__)
@@ -26,13 +26,12 @@ class BaseStage(ABC):
         self.max_instances = test_config.max_instances
         self.print_response = test_config.print_response
         self.instance_types = self._get_instance_types()
+        self.output = StageRun()
     
     def _get_instance_types(self):
         if self.case in ['uni', 'uniresp']:
-            instance_types = ['ucoop', 'udef']
-        elif self.case in ['switch', 'first']:
-            instance_types = ['coop', 'def']
-        return instance_types
+            return ['ucoop', 'udef']
+        return ['coop', 'def']
     
     @staticmethod
     def _get_cases(case):
