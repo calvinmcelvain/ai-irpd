@@ -7,11 +7,8 @@ from utils import get_env_var
 from models import LLMModel
 from test_config import TestConfig
 from output_manager import OutputManager
-from logger import setup_logger
 
-setup_logger(clear_logs=True)
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log = logging.getLogger("app")
     
 
 class IRPD:
