@@ -10,13 +10,20 @@ log = logging.getLogger(__name__)
 @dataclass
 class StageRun:
     stage: str
-    stage_outputs: Dict[str, List[RequestOut]] = field(default_factory=lambda: defaultdict(list))
+    stage_outputs: Dict[str, Dict[str, List[RequestOut]]] = field(default_factory=lambda: defaultdict(list))
     
-    def get(self, instance_type: str):
-        return self.stage_outputs[instance_type]
+    def get(self, case: str = None, instance_type: str = None):
+        if case in self.stage_outputs:
+            if instance_type in self.stage_outputs[case]:
+                return self.stage_outputs[case][instance_type]
+            return self.stage_outputs[case]
+        return self.stage_outputs
     
-    def store(self, instance_type: str, output: RequestOut):
-        self.stage_outputs[instance_type] += [output]
+    def store(self, case: str, instance_type: str, output: RequestOut):
+        if case not in self.stage_outputs:
+            self.stage_outputs[case] = {}
+        
+        self.stage_outputs[case][instance_type] += [output]
         log.info(f"STORED: Stored stage {self.stage}, instance {instance_type}.")
 
 
@@ -25,12 +32,13 @@ class TestRun:
     stage_runs: Dict[str, StageRun]
     n: int
     
-    def get(self, stage: str, instance_type: str | None = None):
+    def get(self, stage: str, case: str = None, instance_type: str = None):
         if stage in self.stage_runs:
-            if instance_type:
-                return self.stage_runs[stage].get(instance_type)
-            return self.stage_runs[stage].stage_outputs
-        return None
+            if case in self.stage_runs[stage].stage_outputs:
+                if instance_type in self.stage_runs[stage].stage_outputs[case]:
+                    return self.stage_runs[stage].get(case, instance_type)
+            return self.stage_runs[stage].get(case)
+        return self.stage_runs
 
     def store(self, stage_run: StageRun):
         self.stage_runs[stage_run.stage] = stage_run
@@ -40,12 +48,22 @@ class TestRun:
 class OutputManager:
     test_runs: Dict[str, Dict[int, TestRun]] = field(default_factory=dict)
     
-    def get(self, test_id: str, n: int, stage: str = None, instance_type: str = None):
+    def get(
+        self,
+        test_id: str,
+        n: int,
+        stage: str = None,
+        case: str = None,
+        instance_type: str = None
+    ):
         if test_id in self.test_runs:
             test_run = self.test_runs[test_id][n]
-            if stage:
-                if instance_type:
-                    return test_run.get(stage, instance_type)
+            if stage in test_run.stage_runs:
+                if case in test_run.stage_runs[stage].stage_outputs:
+                    stage_outputs = test_run.stage_runs[stage].stage_outputs
+                    if instance_type in stage_outputs[case]:
+                        return test_run.get(stage, case, instance_type)
+                    return stage_outputs.get(stage, case)
                 return test_run.get(stage)
             return test_run
         log.warning(f"`None` found for replicate {n} of test {test_id}.")
