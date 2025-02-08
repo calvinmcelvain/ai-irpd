@@ -21,7 +21,7 @@ class IRPD:
     _VALID_LLMS = LLMModel._member_names_
     _VALID_LLM_CONFIGS = ["base", "res1", "res2", "res3"]
     
-    test_configs: List[TestConfig] = []
+    outputs: OutputManager = OutputManager()
 
     def __init__(
         self, 
@@ -67,8 +67,8 @@ class IRPD:
         self.print_response = print_response
         self.new_test = new_test
         self.product_rtcl = list(product(self.ras, self.treatments, self.llm_configs, self.llms))
+        self.test_configs = []
         self._generate_test_configs()
-        self.outputs = OutputManager()
 
     def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
         if not isinstance(arg, list) or not all(isinstance(item, str) for item in arg):
