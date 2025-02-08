@@ -12,6 +12,9 @@ def setup_logger():
     app_log_file = logs_path / "app.log"
     api_log_file = logs_path / "api.log"
 
+    open(app_log_file, 'w').close()
+    open(api_log_file, 'w').close()
+
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,
