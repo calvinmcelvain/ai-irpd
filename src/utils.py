@@ -88,6 +88,16 @@ def check_directories(paths: list[str]) -> bool:
     return all(Path(path).is_dir() for path in paths)
 
 
+def find_named_parent(path: Path, target: str) -> Path | None:
+    """
+    Finds the nearest parent directory with the given name.
+    """
+    for parent in path.parents:
+        if parent.name == target:
+            return parent
+    return None
+
+
 def get_nested_attr(obj: object, attr_path: str) -> object:
     """
     Gets nested attribute.
