@@ -70,7 +70,13 @@ class AnthropicClient(Base):
                 input_tokens = response.usage.input_tokens
                 tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
                 content = next(i.input if "tool_use" in i.type else i.text for i in response.content)
-                request_out = self._process_output(id=id, tokens=tokens, content=content)
+                request_out = self._process_output(
+                    id=id,
+                    tokens=tokens,
+                    content=content,
+                    system=system,
+                    user=user
+                )
             else:
                 log.info(
                     f"Response was not a Message instance. Got - {response}"

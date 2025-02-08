@@ -9,7 +9,7 @@ from test_config import TestConfig
 from output_manager import OutputManager
 from stages import *
 
-log = logging.getLogger("app")
+log = logging.getLogger(__name__)
     
 
 class IRPD:
@@ -145,11 +145,11 @@ class IRPD:
     @staticmethod
     def _generate_sub_path(test_config: TestConfig, n: int):
         if test_config.test_type in {"test", "subtest"}:
-            return test_config.test_path / "raw"
+            return test_config.test_path
         if test_config.test_path in {"replication"}:
             return test_config.test_path / f"replication_{n}"
         if test_config.test_type in {"cross_model_validation"}:
-            return test_config.test_path / test_config.llm / f"replicaiton_{n}"
+            return test_config.test_path / test_config.llm.model / f"replicaiton_{n}"
         
     def _generate_test_configs(self):
         for ra, treatment, llm_config, llm in self.product_rtcl:
@@ -162,7 +162,6 @@ class IRPD:
                     stages=self.stages,
                     test_type=self.test_type,
                     test_path=self._generate_test_path(),
-                    print_response=self.print_response,
                     max_instances=self.max_instances
                 )
             )
@@ -171,18 +170,31 @@ class IRPD:
         for test_config in self.test_configs:
             log.info(f"START TEST: {test_config.test_id}")
             
-            short_path = test_config.test_path.relative_to(self.project_path)
-            log.info(f"Making test directory: {short_path}...")
-            #test_config.test_path.mkdir(exist_ok=True)
-            log.info(f"Created: {test_config.test_path.exists()}")
+            path = test_config.test_path
+            if not path.exists():
+                short_path = path.relative_to(self.project_path)
+                log.info(f"Making test directory: {short_path}...")
+                #test_config.test_path.mkdir(exist_ok=True)
+                log.info(f"Created: {path.exists()}")
             
             for n in range(1, self.N + 1):
-                test_config.sub_path = self._generate_sub_path(test_config, n)
+                sub_path = self._generate_sub_path(test_config, n)
                 
+                log.info(f"START REPLICATE: {n}")
                 for stage_name in self.stages:
-                    stage_instance = globals().get(f"Stage{stage_name}")(test_config)
+                    log.info(f"START STAGE: {stage_name}")
+                    
+                    context = self.outputs.get(test_config.test_id, n)
+                    stage_instance = globals().get(f"Stage{stage_name}")(
+                        test_config, sub_path, context
+                    )
+                    
                     output = stage_instance.run()
                     self.outputs.store(test_config.test_id, n, output)
+                    
+                    log.info(f"END STAGE: {stage_name}")
+                log.info(f"END REPLICATE: {n}")
+            log.info(f"END TEST: {test_config.test_id}")
                 
     #def _llm_request(self, stage: str, user_input, system_input):
     #    self.llm.configs.max_completion_tokens = (

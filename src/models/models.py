@@ -1,11 +1,10 @@
 # Structure strongly follows
 # https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
-from pydantic import BaseModel
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from utils import lazy_import, load_json, validate_json, get_env_var
+from utils import lazy_import, load_json, validate_json, get_env_var, find_named_parent
 
 
 @dataclass(frozen=True)
@@ -117,7 +116,7 @@ class LLMModel(LLMModelContainer, Enum):
         print_response: bool = False
     ):
         model_class, model_configs = self.model_class.impl
-        config_path = Path(__file__).parent / "model_configs.json"
+        config_path = find_named_parent(Path(__file__), "src") / "models" / "model_configs.json"
         config_json = validate_json(
             load_json(config_path)[config][self.key],
             model_configs
@@ -125,7 +124,7 @@ class LLMModel(LLMModelContainer, Enum):
         return model_class(
             api_key=get_env_var(self.api_key),
             model=self.model_name,
-            model_config=config_json,
+            configs=config_json,
             print_response=print_response,
             json_tool=self.other_args.json_tool,
             region=self.other_args.region

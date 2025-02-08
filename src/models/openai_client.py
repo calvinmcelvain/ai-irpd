@@ -91,10 +91,12 @@ class OpenAIClient(Base):
             if isinstance(response, ChatCompletion):
                 request_out = RequestOut(
                     response=response.choices[0].message.content,
-                    meta=response
+                    meta=response,
+                    system=system,
+                    user=user
                 )
             else:
-                log.info(
+                log.warning(
                     f"Response was not a Message instance. Got - {response}"
                 )
 

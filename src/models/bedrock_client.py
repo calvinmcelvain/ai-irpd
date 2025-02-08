@@ -107,7 +107,13 @@ class BedrockClient(Base):
             input_tokens = int(meta_data['HTTPHeaders']['x-amzn-bedrock-input-token-count'])
             tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
             content = self._dump_response(response)
-            request_out = self._process_output(id=id, tokens=tokens, content=content)
+            request_out = self._process_output(
+                id=id,
+                tokens=tokens,
+                content=content,
+                system=system,
+                user=user
+            )
 
         if self.print_response:
             log.info(

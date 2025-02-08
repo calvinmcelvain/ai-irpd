@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv 
 from json import JSONDecodeError
+from markdown_pdf import MarkdownPdf, Section
 from pydantic import BaseModel, ValidationError
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ def load_json(file_path: str | Path) -> object:
     return json_data
 
 
-def validate_json(json_data: object, schema: BaseModel) -> object:
+def validate_json(json_data: object, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.
     """
@@ -67,6 +68,18 @@ def validate_json(json_data: object, schema: BaseModel) -> object:
         return None
 
 
+def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | str:
+    """
+    Returns the object from json schema validation.
+    """
+    try:
+        schema_obj = schema.model_validate_json(json_str)
+        return schema_obj
+    except Exception as e:
+        log.error(f"Error in model validation': {e}\n")
+        return json_str
+
+
 def file_to_string(file_path: str | Path) -> str:
     """
     Return file contents as a string.
@@ -79,6 +92,13 @@ def write_file(file_path: str | Path, file_write: str) -> None:
     Write a string to a file at the given path.
     """
     Path(file_path).write_text(file_write)
+
+
+def write_json(file_path: str | Path, data: object, indent: int = 4) -> None:
+    """
+    Write JSON data to a file at the given path.
+    """
+    Path(file_path).write_text(json.dumps(data, indent=indent))
 
 
 def check_directories(paths: list[str]) -> bool:
@@ -113,3 +133,12 @@ def regex_group(string: str, pattern: str, group: int = 1) -> str:
     """
     match = re.search(pattern, string)
     return match.group(group)
+
+
+def txt_to_pdf(text: str, file_path: Path) -> None:
+    """
+    Saves text as pdf to file path.
+    """
+    pdf = MarkdownPdf()
+    pdf.add_section(Section(text))
+    pdf.save(file_path)

@@ -11,7 +11,6 @@ class TestConfig:
     test_type: str
     test_path: Path
     stages: list[str]
-    print_response: bool
     max_instances: int | None
     test_id: str = None
     

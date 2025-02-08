@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 
 class RequestOut(BaseModel):
     response: str | object
+    system: str
+    user: str
     meta: ChatCompletion
 
 
@@ -29,7 +31,14 @@ class Base(ABC):
         self.print_response = print_response
         self.json_tool = json_tool
     
-    def _process_output(self, id: int, tokens: dict, content: str) -> RequestOut:
+    def _process_output(
+        self,
+        id: int,
+        tokens: dict,
+        content: str,
+        system: str,
+        user: str
+    ) -> RequestOut:
         usage = CompletionUsage(
             completion_tokens=tokens["output_tokens"],
             prompt_tokens=tokens["input_tokens"],
@@ -40,7 +49,9 @@ class Base(ABC):
             id=id, created=created, model=self.model, object='chat.completion',
             choices=[], usage=usage
         )
-        return RequestOut(response=content, meta=meta_data)
+        return RequestOut(
+            response=content, meta=meta_data, system=system, user=user
+        )
     
     @staticmethod
     def _prep_system_message(system: str):

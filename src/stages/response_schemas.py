@@ -22,7 +22,7 @@ class Stage1Schema(BaseModel):
 
 
 class Stage1rSchema(BaseModel):
-    refined_categories: list[Category]
+    categories: list[Category]
 
 
 class Stage2Schema(BaseModel):

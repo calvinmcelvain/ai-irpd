@@ -22,6 +22,8 @@ class StageRun:
     def store(self, case: str, instance_type: str, output: RequestOut):
         if case not in self.stage_outputs:
             self.stage_outputs[case] = {}
+        if instance_type not in self.stage_outputs[case]:
+            self.stage_outputs[case][instance_type] = []
         
         self.stage_outputs[case][instance_type] += [output]
         log.info(f"STORED: Stored stage {self.stage}, instance {instance_type}.")
@@ -66,7 +68,6 @@ class OutputManager:
                     return stage_outputs.get(stage, case)
                 return test_run.get(stage)
             return test_run
-        log.warning(f"`None` found for replicate {n} of test {test_id}.")
         return None
     
     def store(self, test_id: str, n: int, stage_run: StageRun):
