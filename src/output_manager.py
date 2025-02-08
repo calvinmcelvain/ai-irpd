@@ -1,7 +1,10 @@
+import logging
 from dataclasses import dataclass, field
 from typing import Dict, List
 from collections import defaultdict
 from models.base_model import RequestOut
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -14,6 +17,7 @@ class StageRun:
     
     def store(self, instance_type: str, output: RequestOut):
         self.stage_outputs[instance_type] += [output]
+        log.info(f"STORED: Stored stage {self.stage}, instance {instance_type}.")
 
 
 @dataclass
@@ -36,12 +40,15 @@ class TestRun:
 class OutputManager:
     test_runs: Dict[str, Dict[int, TestRun]] = field(default_factory=dict)
     
-    def get(self, test_id: str, stage: str, instance_type: str = None):
+    def get(self, test_id: str, n: int, stage: str = None, instance_type: str = None):
         if test_id in self.test_runs:
-            for test_run in self.test_runs[test_id]:
-                result = test_run.get(stage, instance_type)
-                if result:
-                    return result
+            test_run = self.test_runs[test_id][n]
+            if stage:
+                if instance_type:
+                    return test_run.get(stage, instance_type)
+                return test_run.get(stage)
+            return test_run
+        log.warning(f"`None` found for replicate {n} of test {test_id}.")
         return None
     
     def store(self, test_id: str, n: int, stage_run: StageRun):
@@ -56,3 +63,5 @@ class OutputManager:
             self.test_runs[test_id][n] = new_test_run
         else:
             self.test_runs[test_id][n].store()
+        
+        log.info(f"STORED: Stored stage {stage_run.stage} in replicate {n} of test {test_id}")
