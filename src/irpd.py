@@ -110,22 +110,7 @@ class IRPD:
         )
 
     def _generate_test_path(self):
-        initializing_stage = any(stage in {"0", "1"} for stage in self.stages)
-        if self.test_type == "cross_model_validation":
-            self.new_test = (len(self.test_configs) % len(self.llms)) == 0
-        else:
-            if not self.new_test:
-                if len(self.product_rtcl) > 1:
-                    self.new_test = True
-                    log.warning(
-                        f"`new_test` must be True if multiple tests are specified."
-                        " `new_test` defaulted to True."
-                    )
-            else:
-                if self.test_type in {"test", "subtest"} and not initializing_stage:
-                    log.error(f"Stages must contain '0' or '1' for {self.test_type}.")
-                    raise ValueError("Invalid stage for test type")
-
+        t = self.test_type
         test_dirs = {
             "test": (self.output_path / self.case, "test_"),
             "subtest": (self.output_path / "_subtests", ""),
@@ -133,14 +118,31 @@ class IRPD:
             "cross_model_validation": (self.output_path / "cross_model_validation", "test_"),
         }
 
-        base_dir, prefix = test_dirs[self.test_type]
+        base_dir, prefix = test_dirs[t]
         base_dir.mkdir(parents=True, exist_ok=True)
-
-        cur_paths = len(set(i.test_path for i in self.test_configs)) + 1
-        new_num = cur_paths if self.new_test else (cur_paths - 1)
-        test_num = self._get_max_test_number(base_dir, prefix) + new_num
-
-        return base_dir / (f"{prefix}{test_num}" if prefix else str(test_num))
+        
+        test_num = self._get_max_test_number(base_dir, prefix)
+        
+        if t in {"cross_model_validation"}:
+            n = 0
+            if self.new_test:
+                new_test = (len(self.test_configs) % len(self.llms)) == 0
+                n = len(set(i.test_path for i in self.test_configs)) + (1 if new_test else 0)
+            return base_dir / f"test_{test_num + n}"
+        
+        if t in {"test", "subtest", "replication"}:
+            k = any(stage in {"0", "1"} for stage in self.stages)
+            if not self.new_test and len(self.product_rtcl) > 1:
+                self.new_test = True
+                log.warning(
+                    f"`new_test` must be True if multiple tests are specified."
+                    " `new_test` defaulted to True."
+                )
+            if self.new_test and not k and t not in {"replication"}:
+                log.error(f"Stages must contain '0' or '1' for {self.test_type}.")
+                raise ValueError("Invalid stage for test type")
+            n = len(set(i.test_path for i in self.test_configs)) + (1 if self.new_test else 0)
+            return base_dir / f"{prefix}{test_num + n}"
     
     @staticmethod
     def _generate_sub_path(test_config: TestConfig, n: int):
