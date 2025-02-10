@@ -10,10 +10,8 @@ logs_path.mkdir(exist_ok=True, parents=True)
 
 def setup_logger():
     app_log_file = logs_path / "app.log"
-    api_log_file = logs_path / "api.log"
 
     open(app_log_file, 'w').close()
-    open(api_log_file, 'w').close()
 
     logging.config.dictConfig({
         "version": 1,
@@ -38,23 +36,9 @@ def setup_logger():
                 "encoding": "utf-8",
                 "maxBytes": 5 * 1024 * 1024,
                 "backupCount": 5
-            },
-            "api_file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "filename": str(api_log_file),
-                "level": "INFO",
-                "formatter": "detailed",
-                "encoding": "utf-8",
-                "maxBytes": 5 * 1024 * 1024,
-                "backupCount": 5
             }
         },
         "loggers": {
-            "uvicorn": {
-                "level": "DEBUG",
-                "handlers": ["api_file"],
-                "propagate": False
-            },
             "app": {
                 "level": "INFO",
                 "handlers": ["app_file"],
@@ -68,7 +52,4 @@ def setup_logger():
     })
 
     logger = logging.getLogger("app")
-    api_logger = logging.getLogger("uvicorn")
-
     logger.info("Application logger initialized.")
-    api_logger.info("API logger initialized.")

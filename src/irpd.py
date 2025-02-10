@@ -3,11 +3,23 @@ import logging
 from typing import List
 from pathlib import Path
 from itertools import product
+from importlib import reload
+import utils, models, test_config, output_manager, logger, stages
 from utils import get_env_var
 from models import LLMModel
 from test_config import TestConfig
 from output_manager import OutputManager
+from logger import setup_logger
 from stages import *
+
+if __name__ == "__main__":
+    reload(utils)
+    reload(models)
+    reload(test_config)
+    reload(output_manager)
+    reload(logger)
+    reload(stages)
+    setup_logger()
 
 log = logging.getLogger(__name__)
     
@@ -67,7 +79,7 @@ class IRPD:
         self.print_response = print_response
         self.new_test = new_test
         self.product_rtcl = list(product(self.ras, self.treatments, self.llm_configs, self.llms))
-        self.test_configs = []
+        self.test_configs = {}
         self._generate_test_configs()
 
     def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
@@ -139,7 +151,7 @@ class IRPD:
                     " `new_test` defaulted to True."
                 )
             if self.new_test and not k and t not in {"replication"}:
-                log.error(f"Stages must contain '0' or '1' for {self.test_type}.")
+                log.error(f"Stages must contain '0' or '1' for new {self.test_type}.")
                 raise ValueError("Invalid stage for test type")
             n = len(set(i.test_path for i in self.test_configs)) + (1 if self.new_test else 0)
             return base_dir / f"{prefix}{test_num + n}"
@@ -155,28 +167,27 @@ class IRPD:
         
     def _generate_test_configs(self):
         for ra, treatment, llm_config, llm in self.product_rtcl:
-            self.test_configs.append(
-                TestConfig(
-                    case=self.case,
-                    ra=ra,
-                    treatment=treatment,
-                    llm=self._generate_model_instance(llm, llm_config),
-                    stages=self.stages,
-                    test_type=self.test_type,
-                    test_path=self._generate_test_path(),
-                    max_instances=self.max_instances
-                )
+            config = TestConfig(
+                case=self.case,
+                ra=ra,
+                treatment=treatment,
+                llm=self._generate_model_instance(llm, llm_config),
+                stages=self.stages,
+                test_type=self.test_type,
+                test_path=self._generate_test_path(),
+                max_instances=self.max_instances
             )
+            self.test_configs[config.test_id] = config
     
     def run(self):
-        for test_config in self.test_configs:
+        for test_config in self.test_configs.values():
             log.info(f"START: Test {test_config.test_id}")
             
             path = test_config.test_path
             if not path.exists():
                 short_path = path.relative_to(self.project_path)
                 log.info(f"DIRECTORY: Making test directory: {short_path}...")
-                #test_config.test_path.mkdir(exist_ok=True)
+                test_config.test_path.mkdir(exist_ok=True)
                 log.info(f"DIRECTORY: Created: {path.exists()}")
             
             for n in range(1, self.N + 1):

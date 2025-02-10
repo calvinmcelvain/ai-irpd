@@ -29,13 +29,13 @@ class StageRun:
             self.stage_outputs[case][instance_type] = []
         
         self.stage_outputs[case][instance_type] += [output]
-        log.info(f"STORED: Stored stage {self.stage}, instance {instance_type}.")
+        log.info(f"OUTPUTS: Stored stage {self.stage}, instance {instance_type}.")
 
 
 @dataclass
 class TestRun:
-    stage_runs: Dict[str, StageRun]
     n: int
+    stage_runs: Dict[str, StageRun] = field(default_factory=dict)
     
     def get(self, stage: str, case: str = None, instance_type: str = None):
         if stage in self.stage_runs:
@@ -44,7 +44,10 @@ class TestRun:
                     return self.stage_runs[stage].get(case, instance_type)
             return self.stage_runs[stage].get(case)
         return self.stage_runs
-
+    
+    def has(self, stage: str, case: str, instance_type: str):
+        return stage in self.stage_runs and self.stage_runs[stage].has(case, instance_type)
+    
     def store(self, stage_run: StageRun):
         self.stage_runs[stage_run.stage] = stage_run
     
@@ -71,9 +74,10 @@ class OutputManager:
                     return stage_outputs.get(stage, case)
                 return test_run.get(stage)
             return test_run
-        return None
+        else:
+            return TestRun(n)
     
-    def store(self, test_id: str, n: int, stage_run: StageRun):
+    def store(self, test_id: str, n: int, stage_run: StageRun = None):
         if test_id not in self.test_runs:
             self.test_runs[test_id] = {}
         
@@ -84,6 +88,6 @@ class OutputManager:
             )
             self.test_runs[test_id][n] = new_test_run
         else:
-            self.test_runs[test_id][n].store()
+            self.test_runs[test_id][n].store(stage_run)
         
-        log.info(f"STORED: Stored stage {stage_run.stage} in replicate {n} of test {test_id}")
+        log.info(f"OUTPUTS: Stored stage {stage_run.stage} in replicate {n} of test {test_id}")

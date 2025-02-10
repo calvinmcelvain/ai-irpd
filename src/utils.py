@@ -41,16 +41,16 @@ def lazy_import(module_name, class_name):
     return importer()
 
 
-def load_json(file_path: str | Path) -> object:
+def load_json(file_path: str | Path, dumps: bool = False) -> object | str:
     """
-    Returns the JSON object from a JSON file.
+    Returns the JSON object (or string) from a JSON file.
     """
     try:
         json_data = json.loads(Path(file_path).read_text())
     except (JSONDecodeError, FileNotFoundError) as e:
         log.error(f"Error loading JSON from {file_path}: {e}")
         return None
-    return json_data
+    return json.dumps(json_data) if dumps else json_data
 
 
 def validate_json(json_data: object, schema: BaseModel) -> BaseModel | None:

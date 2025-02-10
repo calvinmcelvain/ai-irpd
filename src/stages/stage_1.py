@@ -1,7 +1,6 @@
 import logging
 import pandas as pd
 from stages.base_stage import BaseStage
-from stages.response_schemas import Stage1Schema
 from utils import file_to_string, write_file
 from output_manager import StageRun
 
@@ -11,8 +10,8 @@ log = logging.getLogger(__name__)
 class Stage1(BaseStage):
     def __init__(self, test_config, sub_path, context):
         super().__init__(test_config, sub_path, context)
-        self.schema = Stage1Schema
         self.stage = "1"
+        self.schema = self.schemas[self.stage]
         self.output = StageRun(self.stage)
     
     def _get_system_prompt(self):
@@ -54,7 +53,7 @@ class Stage1(BaseStage):
     def run(self):
         try:
             for case, instance_type in self.product_ci:
-                if not self.check_completed_requests(instance_type, case):
+                if not self._check_completed_requests(instance_type, case):
                     system_prompt = self._get_system_prompt()
                     user_prompt = self._get_user_prompt()
                     
