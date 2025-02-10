@@ -2,11 +2,11 @@ import logging
 import pandas as pd
 from stages.base_stage import BaseStage
 from stages.response_schemas import Stage1Schema
-from utils import file_to_string, write_file, load_json
+from utils import file_to_string, write_file
 from output_manager import StageRun
-from models.base_model import RequestOut
 
 log = logging.getLogger(__name__)
+
 
 class Stage1(BaseStage):
     def __init__(self, test_config, sub_path, context):
@@ -14,20 +14,6 @@ class Stage1(BaseStage):
         self.schema = Stage1Schema
         self.stage = "1"
         self.output = StageRun(self.stage)
-    
-    def check_completed_requests(self, instance_type, case):
-        log.info(
-            f"CHECK: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
-        )
-        name = f"stg_{self.stage}_{instance_type}_response.txt"
-        path = self.sub_path / f"stage_{self.stage}" / case / instance_type / name
-        if path.exists():
-            log.info("CHECK: Outputs found.")
-            response = load_json(path)
-            self.output.store(case, instance_type, RequestOut(response=response))
-            return True
-        log.info("CHECK: Outputs not found.")
-        return None
     
     def _get_system_prompt(self):
         system_prompts = {case: {} for case in self.case}

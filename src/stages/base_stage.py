@@ -6,7 +6,8 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from test_config import TestConfig
 from output_manager import TestRun
-from utils import find_named_parent, validate_json_string, txt_to_pdf, write_json
+from models.base_model import RequestOut
+from utils import find_named_parent, validate_json_string, txt_to_pdf, write_json, load_json
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,20 @@ class BaseStage(ABC):
         self.context = context
         self.instance_types = self._get_instance_types()
         self.product_ci = list(product(self.case, self.instance_types))
+        
+    def check_completed_requests(self, instance_type, case):
+        log.info(
+            f"CHECK: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
+        )
+        name = f"stg_{self.stage}_{instance_type}_response.txt"
+        path = self.sub_path / f"stage_{self.stage}" / case / instance_type / name
+        if path.exists():
+            log.info("CHECK: Outputs found.")
+            response = load_json(path)
+            self.output.store(case, instance_type, RequestOut(response=response))
+            return True
+        log.info("CHECK: Outputs not found.")
+        return None
     
     def _get_instance_types(self):
         if any(c in {'uni', 'uniresp'} for c in self.case):
