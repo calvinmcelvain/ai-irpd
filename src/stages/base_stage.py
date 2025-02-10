@@ -34,19 +34,22 @@ class BaseStage(ABC):
         self.instance_types = self._get_instance_types()
         self.product_ci = list(product(self.case, self.instance_types))
         
-    def check_completed_requests(self, instance_type, case):
-        log.info(
-            f"CHECK: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
-        )
-        name = f"stg_{self.stage}_{instance_type}_response.txt"
-        path = self.sub_path / f"stage_{self.stage}" / case / instance_type / name
-        if path.exists():
-            log.info("CHECK: Outputs found.")
-            response = load_json(path)
-            self.output.store(case, instance_type, RequestOut(response=response))
-            return True
-        log.info("CHECK: Outputs not found.")
-        return None
+    def check_completed_requests(self, instance_type, case, stage = None):
+        s = stage if stage else self.stage
+        if not self.context.stage_runs[s].has(case, instance_type):
+            log.info(
+                f"CHECK: Checking for Stage {s}, {case}, {instance_type} outputs."
+            )
+            name = f"stg_{s}_{instance_type}_response.txt"
+            path = self.sub_path / f"stage_{s}" / case / instance_type / name
+            if path.exists():
+                log.info("CHECK: Outputs found.")
+                response = load_json(path)
+                self.output.store(case, instance_type, RequestOut(response=response))
+                return True
+            log.info("CHECK: Outputs not found.")
+            return None
+        return self.context.stage_runs[s].get(case, instance_type)
     
     def _get_instance_types(self):
         if any(c in {'uni', 'uniresp'} for c in self.case):

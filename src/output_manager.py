@@ -19,6 +19,9 @@ class StageRun:
             return self.stage_outputs[case]
         return self.stage_outputs
     
+    def has(self, case: str, instance_type: str):
+        return case in self.stage_outputs and instance_type in self.stage_outputs[case]
+    
     def store(self, case: str, instance_type: str, output: RequestOut):
         if case not in self.stage_outputs:
             self.stage_outputs[case] = {}
