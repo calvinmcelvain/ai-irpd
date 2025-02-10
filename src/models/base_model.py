@@ -8,9 +8,9 @@ from abc import ABC, abstractmethod
 
 class RequestOut(BaseModel):
     response: str | object
-    system: str
-    user: str
-    meta: ChatCompletion
+    system: str = None
+    user: str = None
+    meta: ChatCompletion = None
 
 
 class Base(ABC):

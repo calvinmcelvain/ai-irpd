@@ -170,21 +170,21 @@ class IRPD:
     
     def run(self):
         for test_config in self.test_configs:
-            log.info(f"START TEST: {test_config.test_id}")
+            log.info(f"START: Test {test_config.test_id}")
             
             path = test_config.test_path
             if not path.exists():
                 short_path = path.relative_to(self.project_path)
-                log.info(f"Making test directory: {short_path}...")
+                log.info(f"DIRECTORY: Making test directory: {short_path}...")
                 #test_config.test_path.mkdir(exist_ok=True)
-                log.info(f"Created: {path.exists()}")
+                log.info(f"DIRECTORY: Created: {path.exists()}")
             
             for n in range(1, self.N + 1):
                 sub_path = self._generate_sub_path(test_config, n)
                 
-                log.info(f"START REPLICATE: {n}")
+                log.info(f"START: Replicate {n}")
                 for stage_name in self.stages:
-                    log.info(f"START STAGE: {stage_name}")
+                    log.info(f"START: Stage {stage_name}")
                     
                     context = self.outputs.get(test_config.test_id, n)
                     stage_instance = globals().get(f"Stage{stage_name}")(
@@ -194,9 +194,9 @@ class IRPD:
                     output = stage_instance.run()
                     self.outputs.store(test_config.test_id, n, output)
                     
-                    log.info(f"END STAGE: {stage_name}")
-                log.info(f"END REPLICATE: {n}")
-            log.info(f"END TEST: {test_config.test_id}")
+                    log.info(f"END: Stage {stage_name}")
+                log.info(f"END: Replicate {n}")
+            log.info(f"END: Test {test_config.test_id}")
                 
     #def _llm_request(self, stage: str, user_input, system_input):
     #    self.llm.configs.max_completion_tokens = (

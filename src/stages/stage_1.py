@@ -2,8 +2,9 @@ import logging
 import pandas as pd
 from stages.base_stage import BaseStage
 from stages.response_schemas import Stage1Schema
-from utils import file_to_string, write_file
+from utils import file_to_string, write_file, load_json
 from output_manager import StageRun
+from models.base_model import RequestOut
 
 log = logging.getLogger(__name__)
 
@@ -13,6 +14,20 @@ class Stage1(BaseStage):
         self.schema = Stage1Schema
         self.stage = "1"
         self.output = StageRun(self.stage)
+    
+    def check_completed_requests(self, instance_type, case):
+        log.info(
+            f"CHECK: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
+        )
+        name = f"stg_{self.stage}_{instance_type}_response.txt"
+        path = self.sub_path / f"stage_{self.stage}" / case / instance_type / name
+        if path.exists():
+            log.info("CHECK: Outputs found.")
+            response = load_json(path)
+            self.output.store(case, instance_type, RequestOut(response=response))
+            return True
+        log.info("CHECK: Outputs not found.")
+        return None
     
     def _get_system_prompt(self):
         system_prompts = {case: {} for case in self.case}
@@ -45,20 +60,24 @@ class Stage1(BaseStage):
             write_file(user_path, output.user)
             write_file(response_path, output.response)
         self._output_to_pdf()
-        self._write_meta()
+        
+        meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
+        if not meta_path.exists():
+            self._write_meta()
         
     def run(self):
         try:
             for case, instance_type in self.product_ci:
-                system_prompt = self._get_system_prompt()
-                user_prompt = self._get_user_prompt()
-                
-                output = self.llm.request(
-                    user=str(user_prompt[case][instance_type]),
-                    system=str(system_prompt[case][instance_type]),
-                    schema=self.schema
-                )
-                self.output.store(case, instance_type, output)
+                if not self.check_completed_requests(instance_type, case):
+                    system_prompt = self._get_system_prompt()
+                    user_prompt = self._get_user_prompt()
+                    
+                    output = self.llm.request(
+                        user=str(user_prompt[case][instance_type]),
+                        system=str(system_prompt[case][instance_type]),
+                        schema=self.schema
+                    )
+                    self.output.store(case, instance_type, output)
             
             self._process_output()
             return self.output

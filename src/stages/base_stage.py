@@ -97,7 +97,10 @@ class BaseStage(ABC):
         model = self.llm.model
         parameters = self.llm.configs
         created = str(datetime.now())
-        tokens = self._compute_tokens()
+        try:
+            tokens = self._compute_tokens()
+        except AttributeError:
+            tokens = None
         
         meta_path = self.sub_path / "_test_info"
         meta_path.mkdir(exist_ok=True)
@@ -108,12 +111,23 @@ class BaseStage(ABC):
                 "model": model,
                 "parameters": parameters.model_dump()
             },
+            "test_info": {
+                "case_types": self.case,
+                "ra": self.ra,
+                "treatment": self.treatment,
+                "test_type": self.test_type,
+                "test_path": self.test_path.as_posix()
+            },
             "tokens": tokens
         }
         
         write_json(meta_path / f"stg_{self.stage}_test_info.json", json_data)
         
         return None
+    
+    @abstractmethod
+    def check_completed_requests(self):
+        pass
     
     @abstractmethod
     def _get_system_prompt(self):
