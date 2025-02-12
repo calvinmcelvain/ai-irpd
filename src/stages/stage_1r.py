@@ -34,18 +34,19 @@ class Stage1r(BaseStage):
     
     def _process_output(self):
         for case, instance_type in self.product_ci:
-            output = self.output.get(case, instance_type)[0]
-            
-            write_path = self.sub_path / f"stage_{self.stage}" / case / instance_type
-            write_path.mkdir(exist_ok=True, parents=True)
-            prefix = f"stg_{self.stage}_{instance_type}_"
-            system_path = write_path / (prefix + "sys_prmpt.txt")
-            user_path = write_path / (prefix + "user_prmpt.txt")
-            response_path = write_path / (prefix + "response.txt")
-            
-            write_file(system_path, output.system)
-            write_file(user_path, output.user)
-            write_file(response_path, output.response)
+            if not self._check_completed_requests(instance_type, case):
+                output = self.output.get(case, instance_type)[0]
+                
+                write_path = self.sub_path / f"stage_{self.stage}" / case / instance_type
+                write_path.mkdir(exist_ok=True, parents=True)
+                prefix = f"stg_{self.stage}_{instance_type}_"
+                system_path = write_path / (prefix + "sys_prmpt.txt")
+                user_path = write_path / (prefix + "user_prmpt.txt")
+                response_path = write_path / (prefix + "response.txt")
+                
+                write_file(system_path, output.system)
+                write_file(user_path, output.user)
+                write_file(response_path, output.response)
         self._output_to_pdf()
         
         meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
