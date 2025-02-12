@@ -130,15 +130,12 @@ class BaseStage(ABC):
             txt_to_pdf(text, path)
         return None
     
-    def _output_to_txt(self, output, output_schema, instance_type):
+    def _output_to_txt(self, output, output_schema):
         txt = ""
         json_output = validate_json_string(output.response, output_schema)
         if json_output:
             categories = self._get_category_att(json_output)
-            txt += self._format_categories(
-                categories,
-                f"## {instance_type.capitalize()} Categories\n\n"
-            )
+            txt += self._format_categories(categories)
         return txt
     
     def _compute_tokens(self):

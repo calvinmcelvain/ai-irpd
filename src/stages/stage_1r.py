@@ -28,11 +28,15 @@ class Stage1r(BaseStage):
                 self._update_context(case, "1")
             output = self.context.get("1", case, instance_type)
             user_prompts[case][instance_type] = self._output_to_txt(
-                output[0], self.schemas["1"], instance_type
+                output[0], self.schemas["1"]
             )
         return user_prompts
     
     def _process_output(self):
+        meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
+        if not meta_path.exists():
+            self._write_meta()
+        
         for case, instance_type in self.product_ci:
             if not self._check_completed_requests(instance_type, case):
                 output = self.output.get(case, instance_type)[0]
@@ -44,14 +48,11 @@ class Stage1r(BaseStage):
                 user_path = write_path / (prefix + "user_prmpt.txt")
                 response_path = write_path / (prefix + "response.txt")
                 
-                write_file(system_path, output.system)
-                write_file(user_path, output.user)
-                write_file(response_path, output.response)
+                if not any(path.exists() for path in [system_path, user_path, response_path]):
+                    write_file(system_path, output.system)
+                    write_file(user_path, output.user)
+                    write_file(response_path, output.response)
         self._output_to_pdf()
-        
-        meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
-        if not meta_path.exists():
-            self._write_meta()
         
     def run(self):
         try:
