@@ -15,7 +15,7 @@ class Stage1(BaseStage):
         self.output = StageRun(self.stage)
     
     def _get_system_prompt(self):
-        system_prompts = {case: {} for case in self.case}
+        system_prompts = {case: {} for case in self.cases}
         for case, instance_type in self.product_ci:
             prompt_name = f"stg_1_{self.treatment}_{instance_type}.md"
             prompt_path = self.prompt_path / case / self.ra / prompt_name
@@ -23,7 +23,7 @@ class Stage1(BaseStage):
         return system_prompts
     
     def _get_user_prompt(self):
-        user_prompts = {case: {} for case in self.case}
+        user_prompts = {case: {} for case in self.cases}
         for case, instance_type in self.product_ci:
             df_name = f"{case}_{self.treatment}_{self.ra}_{instance_type}.csv"
             df_path = self.data_path / "test" / df_name

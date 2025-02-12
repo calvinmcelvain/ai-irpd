@@ -14,7 +14,7 @@ class Stage1r(BaseStage):
         self.output = StageRun(self.stage)
     
     def _get_system_prompt(self):
-        system_prompts = {case: {} for case in self.case}
+        system_prompts = {case: {} for case in self.cases}
         for case, instance_type in self.product_ci:
             prompt_name = f"stg_1r_{self.treatment}.md"
             prompt_path = self.prompt_path / case / self.ra / prompt_name
@@ -22,7 +22,7 @@ class Stage1r(BaseStage):
         return system_prompts
     
     def _get_user_prompt(self):
-        user_prompts = {case: {} for case in self.case}
+        user_prompts = {case: {} for case in self.cases}
         for case, instance_type in self.product_ci:
             if not self.context.has("1", case, instance_type):
                 self._update_context(case, "1")

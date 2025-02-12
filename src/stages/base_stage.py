@@ -32,7 +32,8 @@ class BaseStage(ABC):
         sub_path: Path,
         context: TestRun
     ):
-        self.case = self._get_cases(test_config.case)
+        self.case = test_config.case
+        self.cases = self._get_cases(self.case)
         self.ra = test_config.ra
         self.treatment = test_config.treatment
         self.llm = test_config.llm
@@ -45,7 +46,7 @@ class BaseStage(ABC):
         self.sub_path = sub_path
         self.context = context
         self.instance_types = self._get_instance_types()
-        self.product_ci = list(product(self.case, self.instance_types))
+        self.product_ci = list(product(self.cases, self.instance_types))
         
     def _check_completed_requests(self, instance_type, case):
         if not self.context.has(self.stage, case, instance_type):
@@ -78,7 +79,7 @@ class BaseStage(ABC):
         return None
     
     def _get_instance_types(self):
-        if any(c in {'uni', 'uniresp'} for c in self.case):
+        if any(c in {'uni', 'uniresp'} for c in self.cases):
             return ['ucoop', 'udef']
         return ['coop', 'def']
     
@@ -112,7 +113,7 @@ class BaseStage(ABC):
             return output.refined_categories
     
     def _output_to_pdf(self):
-        for c in self.case:
+        for c in self.cases:
             text = f"# {c.upper()} Stage {self.stage} Categories\n\n"
             
             for i in self.instance_types:
@@ -141,7 +142,7 @@ class BaseStage(ABC):
         return txt
     
     def _compute_tokens(self):
-        tokens = {case: {} for case in self.case}
+        tokens = {case: {} for case in self.cases}
         for case, instance_type in self.product_ci:
             outputs = self.output.get(case, instance_type)
             tokens[case][instance_type] = {
@@ -175,7 +176,7 @@ class BaseStage(ABC):
                 "parameters": parameters.model_dump()
             },
             "test_info": {
-                "case_types": self.case,
+                "case": self.case,
                 "ra": self.ra,
                 "treatment": self.treatment,
                 "test_type": self.test_type,
