@@ -30,7 +30,9 @@ class BaseStage(ABC):
         self,
         test_config: TestConfig,
         sub_path: Path,
-        context: TestRun
+        context: TestRun,
+        max_instances: int | None,
+        threshold: float
     ):
         self.case = test_config.case
         self.cases = self._get_cases(self.case)
@@ -39,12 +41,13 @@ class BaseStage(ABC):
         self.llm = test_config.llm
         self.test_type = test_config.test_type
         self.test_path = test_config.test_path
-        self.max_instances = test_config.max_instances
+        self.max_instances = max_instances
         self.project_path = find_named_parent(self.test_path, "output").parent
         self.prompt_path = self.project_path / "prompts"
         self.data_path = self.project_path / "data"
         self.sub_path = sub_path
         self.context = context
+        self.threshold = threshold
         self.instance_types = self._get_instance_types()
         self.product_ci = list(product(self.cases, self.instance_types))
         
@@ -64,7 +67,14 @@ class BaseStage(ABC):
             return None
         return None
     
-    def _update_context(self, case, stage):
+    def _update_context(self, stage, case):
+        instance_types = self._get_instance_types()
+        for i in instance_types:
+            if not self.context.has(self.stage, case, i):
+                log.info(
+                    f"OUTPUTS: Outputs for Stage {stage}, {case}, {i} not found in context."
+                    " Checking test path."
+                )
         log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
         instance_types = self._get_instance_types()
         stage_run = StageRun(stage)
