@@ -9,7 +9,7 @@ from json import JSONDecodeError
 from markdown_pdf import MarkdownPdf, Section
 from pydantic import BaseModel, ValidationError
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.utils")
 
 
 def get_env_var(key: str) -> str:

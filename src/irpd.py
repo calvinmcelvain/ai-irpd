@@ -21,7 +21,7 @@ if __name__ == "__main__":
     reload(stages)
     setup_logger()
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.irpd")
     
 
 class IRPD:

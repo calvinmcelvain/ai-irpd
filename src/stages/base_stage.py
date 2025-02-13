@@ -14,7 +14,7 @@ from utils import (
     find_named_parent, validate_json_string, txt_to_pdf, write_json, load_json
 )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.base_stage")
 
 
 class BaseStage(ABC):

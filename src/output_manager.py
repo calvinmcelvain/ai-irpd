@@ -4,7 +4,7 @@ from typing import Dict, List
 from collections import defaultdict
 from models.base_model import RequestOut
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.output_manager")
 
 
 @dataclass

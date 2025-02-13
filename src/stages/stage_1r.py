@@ -3,7 +3,7 @@ from stages.base_stage import BaseStage
 from utils import file_to_string, write_file
 from output_manager import StageRun
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.stage_1r")
 
 
 class Stage1r(BaseStage):
