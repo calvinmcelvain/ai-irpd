@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 from itertools import product
 from importlib import reload
@@ -33,7 +33,8 @@ class IRPD:
     _VALID_LLMS = LLMModel._member_names_
     _VALID_LLM_CONFIGS = ["base", "res1", "res2", "res3"]
     
-    outputs: OutputManager = OutputManager()
+    OUTPUTS: OutputManager = OutputManager()
+    TEST_CONFIGS: Dict[str, TestConfig]
 
     def __init__(
         self, 
@@ -44,10 +45,7 @@ class IRPD:
         test_type: str = "test",
         llms: List[str] = ["GPT_4O_1120"],
         llm_configs: List[str] = ["base"],
-        N: int = 1,
-        max_instances: int = None,
         project_path: str = None,
-        print_response: bool = False,
         new_test: bool = True
     ):
         self.case = self._validate_arg(
@@ -64,22 +62,12 @@ class IRPD:
             llms, self._VALID_LLMS, "llms")
         self.llm_configs = self._validate_arg(
             llm_configs, self._VALID_LLM_CONFIGS, "llm_configs")
-        if N > 1 and test_type in {"test", "subtest"}:
-            log.warning(
-                "`N` must be less than 1 if `test_type` is 'test' or 'subtest'"
-                " Defaulted to 1."
-            )
-            N = 1
-        self.N = N
-        self.max_instances = max_instances
         self.project_path = Path(
             project_path if project_path else get_env_var("PROJECT_DIRECTORY")
         )
         self.output_path = self.project_path / "output"
-        self.print_response = print_response
         self.new_test = new_test
         self.product_rtcl = list(product(self.ras, self.treatments, self.llm_configs, self.llms))
-        self.test_configs = {}
         self._generate_test_configs()
 
     def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
@@ -175,11 +163,15 @@ class IRPD:
                 stages=self.stages,
                 test_type=self.test_type,
                 test_path=self._generate_test_path(),
-                max_instances=self.max_instances
             )
-            self.test_configs[config.test_id] = config
+            self.TEST_CONFIGS[config.test_id] = config
     
-    def run(self):
+    def run(
+        self,
+        max_instances: int = None,
+        N: int = 1,
+        threshold: float = 0.5
+    ):
         for test_config in self.test_configs.values():
             log.info(f"START: Test {test_config.test_id}")
             
@@ -190,7 +182,7 @@ class IRPD:
                 test_config.test_path.mkdir(exist_ok=True)
                 log.info(f"DIRECTORY: Created: {path.exists()}")
             
-            for n in range(1, self.N + 1):
+            for n in range(1, N + 1):
                 sub_path = self._generate_sub_path(test_config, n)
                 
                 log.info(f"START: Replicate {n}")
@@ -199,11 +191,11 @@ class IRPD:
                     
                     context = self.outputs.get(test_config.test_id, n)
                     stage_instance = globals().get(f"Stage{stage_name}")(
-                        test_config, sub_path, context
+                        test_config, sub_path, context, max_instances, threshold
                     )
                     
                     output = stage_instance.run()
-                    self.outputs.store(test_config.test_id, n, output)
+                    self.OUTPUTS.store(test_config.test_id, n, output)
                     
                     log.info(f"END: Stage {stage_name}")
                 log.info(f"END: Replicate {n}")
