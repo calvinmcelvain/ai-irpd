@@ -1,57 +1,41 @@
-import time
 import logging
+import time
 import random as r
-from openai import OpenAI
-from openai import APIConnectionError, APITimeoutError, RateLimitError
-from openai.types.chat import ChatCompletion
+import mistralai
+from mistralai import ChatCompletionResponse
+from pydantic import BaseModel, Field
 from pydantic import BaseModel
-from models.base_model import Base, RequestOut
-from abc import abstractmethod
+from llms.base_model import Base
 
 log = logging.getLogger(__name__)
 
+class MistralConfigs(BaseModel):
+    max_completion_tokens: int = Field(None, ge=1, le=4096)
+    temperature: float = Field(None, ge=0, le=1)
+    top_p: float = Field(None, ge=0, le=1)
+    random_seed: int = Field(None, ge=1)
+    frequency_penalty: float = Field(None, ge=0, le=1)
+    presence_penalty: float = Field(None, ge=0, le=1)
 
-class OpenAIToolCall(BaseModel):
+
+class MistralToolCall(BaseModel):
     name: str = "json_response"
     parameters: object | None
 
 
-class OpenAIClient(Base):
-    def __init__(
-        self,
-        api_key = None,
-        model = None,
-        configs = None,
-        print_response = False,
-        json_tool = False,
-        base_url: str = None,
-        **kwargs
-    ):
-        super().__init__(
-            api_key,
-            model,
-            configs,
-            print_response,
-            json_tool,
-            **kwargs
-        )
-        self.base_url = base_url
+class Mistral(Base):
     
     def create_client(self):
-        return OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        return mistralai.Mistral(api_key=self.api_key)
     
-    @abstractmethod
     def default_configs(self):
-        pass
+        return MistralConfigs()
     
     def _prep_messages(self, user: str, system: str):
         return {"messages": [self._prep_system_message(system), self._prep_user_message(user)]}
     
     def _json_tool_call(self, schema: BaseModel):
-        tool_load = OpenAIToolCall(parameters=schema.model_json_schema())
+        tool_load = MistralToolCall(parameters=schema.model_json_schema())
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
@@ -62,41 +46,40 @@ class OpenAIClient(Base):
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
-        request_load.update({"response_format": schema}) if schema else {}
+        request_load.update({"response_format": schema}) if schema and not self.json_tool else ()
         
         max_attempts = kwargs.get("max_attempts", 5)
-        rate_limit_time = kwargs.get("rate_limit_time", 30)
         
         response = None
         attempt_n = 0
         while response is None and attempt_n < max_attempts:
             try:
                 if schema and not self.json_tool:
-                    response = client.beta.chat.completions.parse(**request_load)
+                    response = client.chat.parse(**request_load)
                 else:
-                    response = client.chat.completions.create(**request_load)
-            except (APIConnectionError, APITimeoutError) as e:
+                    response = client.chat.complete(**request_load)
+            except Exception as e:
                 attempt_n += 1
                 log.info(
                     f"Attempt {attempt_n}: Got error - {e}"
                 )
                 time.sleep(r.uniform(0.5, 2.0))
-            except RateLimitError as e:
-                attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got RateLimit error - {e}"
-                )
-                time.sleep(rate_limit_time)
         
-            if isinstance(response, ChatCompletion):
-                request_out = RequestOut(
-                    response=response.choices[0].message.content,
-                    meta=response,
+            if isinstance(response, ChatCompletionResponse):
+                id = response.id
+                output_tokens = response.usage.completion_tokens
+                input_tokens = response.usage.prompt_tokens
+                tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
+                content = response.choices[0].message.content
+                request_out = self._process_output(
+                    id=id,
+                    tokens=tokens, 
+                    content=content,
                     system=system,
                     user=user
                 )
             else:
-                log.warning(
+                log.info(
                     f"Response was not a Message instance. Got - {response}"
                 )
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from test_config import TestConfig
 from output_manager import TestRun, StageRun
-from models.base_model import RequestOut
+from llms.base_model import RequestOut
 from stages.response_schemas import (
     Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
 )

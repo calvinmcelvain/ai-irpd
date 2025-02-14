@@ -8,6 +8,7 @@ class TestConfig:
     ra: str
     treatment: str
     llm: object
+    llm_config: str
     test_type: str
     test_path: Path
     stages: list[str]

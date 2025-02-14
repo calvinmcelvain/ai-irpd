@@ -1,5 +1,5 @@
 import logging
-from models.base_model import Base
+from llms.base_model import Base
 
 log = logging.getLogger(__name__)
 

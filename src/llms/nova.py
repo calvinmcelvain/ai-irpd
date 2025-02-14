@@ -1,4 +1,4 @@
-from models.bedrock_client import BedrockClient
+from llms.bedrock_client import BedrockClient
 from pydantic import BaseModel, Field
 
 
