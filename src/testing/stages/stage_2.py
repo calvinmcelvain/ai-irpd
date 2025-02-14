@@ -2,7 +2,7 @@ import logging
 from stages.base_stage import BaseStage
 from utils import file_to_string, write_file, load_json
 from output_manager import StageRun
-from models.base_model import RequestOut
+from llms.base_model import RequestOut
 
 log = logging.getLogger("app.stage_2")
 

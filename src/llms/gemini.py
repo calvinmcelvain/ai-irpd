@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from models.vertexai_client import VertexAIClient
+from llms.vertexai_client import VertexAIClient
 
 
 class GeminiConfigs(BaseModel):

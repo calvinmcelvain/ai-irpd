@@ -5,7 +5,7 @@ from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message import Message
 from pydantic import BaseModel
-from models.base_model import Base
+from llms.base_model import Base
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)

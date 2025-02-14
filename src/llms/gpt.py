@@ -1,4 +1,4 @@
-from models.openai_client import OpenAIClient
+from llms.openai_client import OpenAIClient
 from pydantic import BaseModel, Field
 
 

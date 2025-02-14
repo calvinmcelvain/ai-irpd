@@ -4,7 +4,7 @@ import random as r
 import json
 import boto3
 from pydantic import BaseModel
-from models.base_model import Base
+from llms.base_model import Base
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)

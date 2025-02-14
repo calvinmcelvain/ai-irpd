@@ -2,34 +2,20 @@ import re
 import logging
 from typing import List, Dict
 from pathlib import Path
-from itertools import product
-from importlib import reload
-import utils, models, test_config, output_manager, logger, stages
+from abc import ABC, abstractmethod
 from utils import get_env_var
-from models import LLMModel
+from llms import *
 from test_config import TestConfig
 from output_manager import OutputManager
-from logger import setup_logger
-from stages import *
 
-if __name__ == "__main__":
-    reload(utils)
-    reload(models)
-    reload(test_config)
-    reload(output_manager)
-    reload(logger)
-    reload(stages)
-    setup_logger()
+log = logging.getLogger("app.testing.irpd")
 
-log = logging.getLogger("app.irpd")
-    
 
-class IRPD:
+class IRPD(ABC):
     _VALID_STAGES = ['0', '1', '1r', '1c', '2', '3']
-    _VALID_CASES = ['uni', 'uniresp', 'switch', 'first', 'uni_switch']
-    _VALID_RAS = ['thi', 'eli', 'both', 'exp']
-    _VALID_TEST_TYPES = ["test", "subtest", "replication", "cross_model_validation"]
-    _VALID_TREATMENTS = ['noise', 'no_noise', 'merged']
+    _VALID_CASES = ["uni", "uniresp", "switch", "first", "uni_switch"]
+    _VALID_RAS = ["ra1", "ra2", "both", "exp"]
+    _VALID_TREATMENTS = ["imperfect", "perfect", "merged"]
     _VALID_LLMS = LLMModel._member_names_
     _VALID_LLM_CONFIGS = ["base", "res1", "res2", "res3"]
     
@@ -42,7 +28,6 @@ class IRPD:
         ras: List[str],
         treatments: List[str],
         stages: List[str],
-        test_type: str = "test",
         llms: List[str] = ["GPT_4O_1120"],
         llm_configs: List[str] = ["base"],
         project_path: str = None,
@@ -56,8 +41,6 @@ class IRPD:
             treatments, self._VALID_TREATMENTS, "treatments")
         self.stages = self._validate_arg(
             stages, self._VALID_STAGES, "stages")
-        self.test_type = self._validate_arg(
-            [test_type], self._VALID_TEST_TYPES, "test_type")[0]
         self.llms = self._validate_arg(
             llms, self._VALID_LLMS, "llms")
         self.llm_configs = self._validate_arg(
@@ -67,12 +50,11 @@ class IRPD:
         )
         self.output_path = self.project_path / "output"
         self.new_test = new_test
-        self.product_rtcl = list(product(self.ras, self.treatments, self.llm_configs, self.llms))
-        self._generate_test_configs()
 
     def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
         if not isinstance(arg, list) or not all(isinstance(item, str) for item in arg):
-            raise ValueError(f"{name} must be a list of strings.")
+            arg = [arg]
+            setattr(self, name, [arg])
 
         valid_set = set(valid_values)
         index_map = {value: i for i, value in enumerate(valid_values)} 
@@ -82,11 +64,10 @@ class IRPD:
             (valid_items if item in valid_set else invalid_items).append(item)
 
         if not valid_items:
-            log.error(
+            raise ValueError(
                 f"All provided `{name}` values are invalid. No valid items remain. "
-                f"Allowed values: {valid_values}"
+                f"Allowed values: {valid_values}", 
             )
-            raise ValueError
         
         if invalid_items:
             log.warning(
@@ -102,14 +83,16 @@ class IRPD:
         )
     
     @staticmethod
-    def _get_max_test_number(directory: Path, prefix: str):
+    def _get_max_test_number(directory: Path, prefix: str = "test_"):
         pattern = re.compile(rf"{re.escape(prefix)}(\d+)")
         return max(
             map(int, (match.group(1) for p in directory.iterdir() if (match := pattern.match(p.name)))),
             default=0
         )
 
+    @abstractmethod
     def _generate_test_path(self):
+        return None
         t = self.test_type
         test_dirs = {
             "test": (self.output_path / self.case, "test_"),
@@ -144,16 +127,18 @@ class IRPD:
             n = len(set(i.test_path for i in self.test_configs)) + (1 if self.new_test else 0)
             return base_dir / f"{prefix}{test_num + n}"
     
-    @staticmethod
     def _generate_sub_path(test_config: TestConfig, n: int):
+        return None
         if test_config.test_type in {"test", "subtest"}:
             return test_config.test_path
         if test_config.test_path in {"replication"}:
             return test_config.test_path / f"replication_{n}"
         if test_config.test_type in {"cross_model_validation"}:
             return test_config.test_path / test_config.llm.model / f"replicaiton_{n}"
-        
+    
+    @abstractmethod
     def _generate_test_configs(self):
+        return None
         for ra, treatment, llm_config, llm in self.product_rtcl:
             config = TestConfig(
                 case=self.case,
@@ -166,12 +151,14 @@ class IRPD:
             )
             self.TEST_CONFIGS[config.test_id] = config
     
+    @abstractmethod
     def run(
         self,
         max_instances: int = None,
         N: int = 1,
         threshold: float = 0.5
     ):
+        return None
         for test_config in self.test_configs.values():
             log.info(f"START: Test {test_config.test_id}")
             

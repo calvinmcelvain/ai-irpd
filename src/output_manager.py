@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Dict, List
 from collections import defaultdict
-from models.base_model import RequestOut
+from llms.base_model import RequestOut
 
 log = logging.getLogger("app.output_manager")
 

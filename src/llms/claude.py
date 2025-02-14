@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from models.anthropic_client import AnthropicClient
+from llms.anthropic_client import AnthropicClient
 
 
 class ClaudeConfigs(BaseModel):
