@@ -1,6 +1,6 @@
 import logging
 from itertools import product
-from src.testing.irpd import IRPD
+from testing.irpd import IRPD
 from test_config import TestConfig
 
 log = logging.getLogger("app.testing.intra_model")

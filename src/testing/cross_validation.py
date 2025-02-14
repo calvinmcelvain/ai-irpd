@@ -1,5 +1,5 @@
 import logging
-from src.testing.irpd import IRPD
+from testing.irpd import IRPD
 
 log = logging.getLogger("app.testing.cross_validation")
 
