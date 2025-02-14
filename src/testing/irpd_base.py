@@ -8,10 +8,10 @@ from llms import *
 from test_config import TestConfig
 from output_manager import OutputManager
 
-log = logging.getLogger("app.testing.irpd")
+log = logging.getLogger("app.testing.irpd_base")
 
 
-class IRPD(ABC):
+class IRPDBase(ABC):
     _VALID_STAGES = ['0', '1', '1r', '1c', '2', '3']
     _VALID_CASES = ["uni", "uniresp", "switch", "first", "uni_switch"]
     _VALID_RAS = ["ra1", "ra2", "both", "exp"]

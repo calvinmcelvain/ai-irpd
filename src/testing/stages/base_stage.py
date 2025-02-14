@@ -4,6 +4,8 @@ from itertools import product
 from typing import List
 from datetime import datetime
 from abc import ABC, abstractmethod
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from test_config import TestConfig
 from output_manager import TestRun, StageRun
 from llms.base_model import RequestOut
@@ -48,8 +50,6 @@ class BaseStage(ABC):
         self.sub_path = sub_path
         self.context = context
         self.threshold = threshold
-        self.instance_types = self._get_instance_types()
-        self.product_ci = list(product(self.cases, self.instance_types))
         
     def _check_completed_requests(self, instance_type, case):
         if not self.context.has(self.stage, case, instance_type):
@@ -68,7 +68,7 @@ class BaseStage(ABC):
         return None
     
     def _update_context(self, stage, case):
-        instance_types = self._get_instance_types()
+        instance_types = self._get_instance_types(case)
         for i in instance_types:
             if not self.context.has(self.stage, case, i):
                 log.info(
@@ -76,7 +76,6 @@ class BaseStage(ABC):
                     " Checking test path."
                 )
         log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
-        instance_types = self._get_instance_types()
         stage_run = StageRun(stage)
         for i in instance_types:
             path = self.sub_path / f"stage_{stage}" / case / i / f"stg_{stage}_{i}_response.txt"
@@ -88,8 +87,9 @@ class BaseStage(ABC):
         log.info(f"OUTPUTS: Stage {stage}, case {case} outputs stored in context.")
         return None
     
-    def _get_instance_types(self):
-        if any(c in {'uni', 'uniresp'} for c in self.cases):
+    @staticmethod
+    def _get_instance_types(case):
+        if case in {'uni', 'uniresp'}:
             return ['ucoop', 'udef']
         return ['coop', 'def']
     
@@ -100,7 +100,7 @@ class BaseStage(ABC):
         return [case]
     
     @staticmethod
-    def _format_categories(categories: List, initial_text: str = "") :
+    def _format_categories(categories: List, initial_text: str = ""):
         category_texts = []
         for category in categories:
             examples_text = "\n".join(
@@ -115,6 +115,38 @@ class BaseStage(ABC):
             category_texts.append(category_text)
         return initial_text + "".join(category_texts)
     
+    def threshold_similarity(self, categories: List, unified_categories: List):
+        all_cat_names = [
+            cat.category_name.replace("_", " ")
+            for cat in categories + unified_categories
+        ]
+        all_cat_defs = [
+            cat.definition for cat in categories + unified_categories
+        ]
+        cat_names_w_ids = list(enumerate(all_cat_names[:len(categories)]))
+        
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix_names = vectorizer.fit_transform(all_cat_names)
+        tfidf_matrix_defs = vectorizer.fit_transform(all_cat_defs)
+        
+        num_categories = len(cat_names_w_ids)
+        
+        sim_matrix_names = cosine_similarity(
+            tfidf_matrix_names[:num_categories], 
+            tfidf_matrix_names[num_categories:]
+        )
+        sim_matrix_defs = cosine_similarity(
+            tfidf_matrix_defs[:num_categories], 
+            tfidf_matrix_defs[num_categories:]
+        )
+        sim_matrix = sim_matrix_names + sim_matrix_defs
+        
+        results = []
+        for cat_idx, sim_array in enumerate(sim_matrix):
+            if all(sim_array < self.threshold):
+                results.append(categories[cat_idx])
+        return results
+    
     @staticmethod
     def _get_category_att(output):
         if hasattr(output, "categories"):
@@ -126,7 +158,7 @@ class BaseStage(ABC):
         for c in self.cases:
             text = f"# {c.upper()} Stage {self.stage} Categories\n\n"
             
-            for i in self.instance_types:
+            for i in self._get_instance_types(c):
                 output = self.output.get(c, i)[0]
                 json_output = validate_json_string(output.response, self.schema)
                 
@@ -150,17 +182,19 @@ class BaseStage(ABC):
     
     def _compute_tokens(self):
         tokens = {case: {} for case in self.cases}
-        for case, instance_type in self.product_ci:
-            outputs = self.output.get(case, instance_type)
-            tokens[case][instance_type] = {
-                "input_tokens": sum(output.meta.usage.prompt_tokens for output in outputs),
-                "output_tokens": sum(output.meta.usage.completion_tokens for output in outputs),
-                "total_tokens": sum(output.meta.usage.total_tokens for output in outputs)
-            }
+        for c in self.cases:
+            for i in self._get_instance_types(c):
+                outputs = self.output.get(c, i)
+                tokens[c][i] = {
+                    "input_tokens": sum(output.meta.usage.prompt_tokens for output in outputs),
+                    "output_tokens": sum(output.meta.usage.completion_tokens for output in outputs),
+                    "total_tokens": sum(output.meta.usage.total_tokens for output in outputs)
+                }
         tokens["total"] = {
-            "input_tokens": sum(tokens[c][i]["input_tokens"] for c, i in self.product_ci),
-            "output_tokens": sum(tokens[c][i]["output_tokens"] for c, i in self.product_ci),
-            "total_tokens": sum(tokens[c][i]["total_tokens"] for c, i in self.product_ci)
+            "input_tokens": sum(
+                tokens[c][i]["input_tokens"] for c in self.cases for i in self._get_instance_types(c)),
+            "output_tokens": sum(tokens[c][i]["output_tokens"] for c in self.cases for i in self._get_instance_types(c)),
+            "total_tokens": sum(tokens[c][i]["total_tokens"]  for c in self.cases for i in self._get_instance_types(c))
         }
         return tokens
     

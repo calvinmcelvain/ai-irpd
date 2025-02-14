@@ -1,10 +1,10 @@
 import logging
-from testing.irpd import IRPD
+from testing.irpd_base import IRPDBase
 
 log = logging.getLogger("app.testing.cross_validation")
 
 
-class CrossValidation(IRPD):
+class CrossValidation(IRPDBase):
     def __init__(
         self,
         case,

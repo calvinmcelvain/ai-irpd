@@ -12,7 +12,7 @@ class Stage1c(BaseStage):
         super().__init__(test_config, sub_path, context)
         self.stage = "1c"
         self.output = StageRun(self.stage)
-        self.instance_types = ["part_1", "part_2"]
+        self.parts = ["part_1", "part_2"]
         self.schema_map = {"part_1": "1", "part_2": "1r"}
     
     def _get_system_prompt(self):
@@ -32,14 +32,20 @@ class Stage1c(BaseStage):
         return pd.read_csv(df_path).to_dict("records")
     
     def _output_to_pdf(self):
+        for i in self.parts:
+            output = self.output.get(self.case, i)[0]
+            json_output = validate_json_string(
+                output.response, self.schemas[self.schema_map[i]]
+            )
         for c in self.cases:
             text = f"# {c.upper()} Stage {self.stage} Categories\n\n"
             
-            for i in self.instance_types:
+            for i in self.parts:
                 output = self.output.get(c, i)[0]
                 json_output = validate_json_string(
                     output.response, self.schemas[self.schema_map[i]]
                 )
+                other_output = self.context.get("1r", c, )
                 
                 if json_output:
                     categories = self._get_category_att(json_output)
@@ -56,7 +62,7 @@ class Stage1c(BaseStage):
         if not meta_path.exists():
             self._write_meta()
         
-        for part in self.instance_types:
+        for part in self.parts:
             output = self.output.get(self.case, part)[0]
             
             write_path = self.sub_path / f"stage_{self.stage}" / self.case / part
@@ -74,7 +80,7 @@ class Stage1c(BaseStage):
         
     def run(self):
         try:
-            for part in self.instance_types:
+            for part in self.parts:
                 if not self._check_completed_requests(part, self.case):
                     system_prompt = self._get_system_prompt()
                     user_prompt = self._get_user_prompt()

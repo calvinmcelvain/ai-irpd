@@ -1,12 +1,12 @@
 import logging
 from itertools import product
-from testing.irpd import IRPD
+from testing.irpd_base import IRPDBase
 from test_config import TestConfig
 
-log = logging.getLogger("app.testing.base")
+log = logging.getLogger("app.testing.tests")
 
 
-class Base(IRPD):
+class Tests(IRPDBase):
     def __init__(
         self,
         case,
