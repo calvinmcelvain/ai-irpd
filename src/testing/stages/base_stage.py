@@ -1,4 +1,5 @@
 import logging
+import pandas as pd
 from pathlib import Path
 from typing import List
 from datetime import datetime
@@ -152,6 +153,10 @@ class BaseStage(ABC):
             return output.categories
         if hasattr(output, "refined_categories"):
             return output.refined_categories
+        if hasattr(output, "assigned_categories"):
+            return output.assigned_categories
+        if hasattr(output, "category_ranking"):
+            return output.category_ranking
     
     def _txt_to_pdf(self, txt: str, path: Path):
         txt_to_pdf(txt, path)
@@ -216,6 +221,36 @@ class BaseStage(ABC):
         write_json(meta_path / f"stg_{self.stage}_test_info.json", json_data)
         
         return None
+    
+    def _build_data_output(self, case: str):
+        raw_df_path = self.data_path / "raw" / f"{case}_{self.treatment}_{self.ra}.csv"
+        raw_df = pd.read_csv(raw_df_path)
+        df_list = []
+        for i in self._get_instance_types(case):
+            response_list = []
+            df_path = self.data_path / "test" / f"{case}_{self.treatment}_{self.ra}_{i}.csv"
+            df = pd.read_csv(df_path)
+            if self.max_instances:
+                df = df[:self.max_instances]
+            outputs = self.output.get(case, i)
+            for j in outputs:
+                response = {}
+                output = validate_json_string(j.response, self.schema)
+                response["reasoning"] = output.reasoning
+                response["window_number"] = output.window_number
+                for l in self._get_category_att(output):
+                    name = f"{i}_{l.category_name}"
+                    response[name] = 1
+                    if hasattr(l, "rank"):
+                        response[name] = l.rank
+                response_list.append(response)
+            response_df = pd.DataFrame.from_records(response_list)
+            print(response_df)
+            print(df)
+            response_df = pd.merge(df, response_df, on="window_number", how="outer")
+            df_list.append(pd.DataFrame.from_records(response_list))
+        final_df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
+        return pd.merge(raw_df, final_df, on='window_number')
     
     @abstractmethod
     def _get_system_prompt(self):

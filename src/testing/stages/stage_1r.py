@@ -76,8 +76,6 @@ class Stage1r(BaseStage):
                         )
                         self.output.store(c, i, output)
             self._process_output()
-            return self.output
         except Exception as e:
             log.error(f"Error in running stage {self.stage}: {e}")
-            return self.output
             

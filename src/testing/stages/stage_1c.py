@@ -1,6 +1,5 @@
 import pandas as pd
 import logging
-import json
 from testing.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, validate_json_string
 from output_manager import StageRun
@@ -113,8 +112,6 @@ class Stage1c(BaseStage):
                     self.output.store(self.case, part, output)
             
             self._process_output()
-            return self.output
         except Exception as e:
             log.error(f"Error in running stage {self.stage}: {e}")
-            return self.output
             
