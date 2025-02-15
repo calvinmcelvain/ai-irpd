@@ -115,7 +115,7 @@ class BaseStage(ABC):
             category_texts.append(category_text)
         return initial_text + "".join(category_texts)
     
-    def threshold_similarity(self, categories: List, unified_categories: List):
+    def _threshold_similarity(self, categories: List, unified_categories: List):
         all_cat_names = [
             cat.category_name.replace("_", " ")
             for cat in categories + unified_categories

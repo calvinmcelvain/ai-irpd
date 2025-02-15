@@ -27,7 +27,7 @@ class Stage1r(BaseStage):
         for c in self.cases:
             for i in self._get_instance_types(c):
                 if not self.context.has("1", c, i):
-                    self._update_context(c, "1")
+                    self._update_context("1", c)
                 output = self.context.get("1", c, i)
                 user_prompts[c][i] = self._output_to_txt(
                     output[0], self.schemas["1"]

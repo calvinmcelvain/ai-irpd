@@ -1,7 +1,8 @@
 import pandas as pd
 import logging
+import json
 from testing.stages.base_stage import BaseStage
-from utils import file_to_string, write_file, validate_json_string, txt_to_pdf
+from utils import file_to_string, write_file, validate_json_string
 from output_manager import StageRun
 
 log = logging.getLogger("app.stage_1c")
@@ -30,32 +31,22 @@ class Stage1c(BaseStage):
         df_name = f"{self.case}_{self.treatment}_{self.ra}.csv"
         df_path = self.data_path / "test" / df_name
         return pd.read_csv(df_path).to_dict("records")
-    
-    def _output_to_pdf(self):
+
+    def _compute_tokens(self):
+        tokens = {self.case: {}}
         for i in self.parts:
-            output = self.output.get(self.case, i)[0]
-            json_output = validate_json_string(
-                output.response, self.schemas[self.schema_map[i]]
-            )
-        for c in self.cases:
-            text = f"# {c.upper()} Stage {self.stage} Categories\n\n"
-            
-            for i in self.parts:
-                output = self.output.get(c, i)[0]
-                json_output = validate_json_string(
-                    output.response, self.schemas[self.schema_map[i]]
-                )
-                other_output = self.context.get("1r", c, )
-                
-                if json_output:
-                    categories = self._get_category_att(json_output)
-                    text += self._format_categories(
-                        categories,
-                        f"## {i.capitalize()} Categories\n\n"
-                    )
-            path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
-            txt_to_pdf(text, path)
-        return None
+            outputs = self.output.get(self.case, i)
+            tokens[self.case][i] = {
+                "input_tokens": sum(output.meta.usage.prompt_tokens for output in outputs),
+                "output_tokens": sum(output.meta.usage.completion_tokens for output in outputs),
+                "total_tokens": sum(output.meta.usage.total_tokens for output in outputs)
+            }
+        tokens["total"] = {
+            "input_tokens": sum(tokens[self.case][i]["input_tokens"] for i in self.parts),
+            "output_tokens": sum(tokens[self.case][i]["output_tokens"] for i in self.parts),
+            "total_tokens": sum(tokens[self.case][i]["total_tokens"] for i in self.parts)
+        }
+        return tokens
     
     def _process_output(self):
         meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
@@ -64,8 +55,8 @@ class Stage1c(BaseStage):
         
         for part in self.parts:
             output = self.output.get(self.case, part)[0]
-            
-            write_path = self.sub_path / f"stage_{self.stage}" / self.case / part
+              
+            write_path = self.sub_path / self.case / f"stage_{self.stage}" / part
             write_path.mkdir(exist_ok=True, parents=True)
             prefix = f"stg_{self.stage}_{part}_"
             system_path = write_path / (prefix + "sys_prmpt.txt")
@@ -76,7 +67,36 @@ class Stage1c(BaseStage):
                 write_file(system_path, output.system)
                 write_file(user_path, output.user)
                 write_file(response_path, output.response)
-        self._output_to_pdf()
+        
+        text = f"# Stage {self.stage} Output Categories\n\n"
+        pt2_output = self.output.get(self.case, "part_2")[0]
+        text += self._output_to_txt(
+            pt2_output, self.schemas[self.schema_map["part_2"]], f"## Unified Categories\n\n"
+        )
+        for c in self.cases:
+            for i in self._get_instance_types(c):
+                if not self.context.has("1r", c, i):
+                    self._update_context("1r", c)
+                output = self.context.get("1r", c, i)[0]
+                categories = validate_json_string(
+                    output.response, self.schemas["1r"]
+                )
+                ucategories = validate_json_string(
+                    pt2_output.response, self.schemas["1r"]
+                )
+                
+                categories.refined_categories = self._threshold_similarity(
+                    categories.refined_categories, ucategories.refined_categories
+                )
+                output.response = categories.model_dump_json()
+                text += self._output_to_txt(
+                    output,
+                    self.schemas["1r"],
+                    f"## {i.upper()} Categories\n\n"
+                )
+        
+        pdf_path = self.sub_path / f"stg_{self.stage}_categories.pdf"
+        self._txt_to_pdf(text, pdf_path)
         
     def run(self):
         try:
