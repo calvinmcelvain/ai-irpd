@@ -21,12 +21,12 @@ class ModelClassContainer:
 
 
 class ModelClass(ModelClassContainer, Enum):
-    GPT = ("models.gpt", "GPT", "GPTConfigs")
-    Claude = ("models.claude", "Claude", "ClaudeConfigs")
-    Gemini = ("models.gemini", "Gemini", "GeminiConfigs")
-    Nova = ("models.nova", "Nova", "NovaConfigs")
-    Mistral = ("models.mistral", "Mistral", "MistralConfigs")
-    Grok = ("models.grok", "Grok", "GrokConfigs")
+    GPT = ("llms.gpt", "GPT", "GPTConfigs")
+    Claude = ("llms.claude", "Claude", "ClaudeConfigs")
+    Gemini = ("llms.gemini", "Gemini", "GeminiConfigs")
+    Nova = ("llms.nova", "Nova", "NovaConfigs")
+    Mistral = ("llms.mistral", "Mistral", "MistralConfigs")
+    Grok = ("llms.grok", "Grok", "GrokConfigs")
 
 
 @dataclass(frozen=True)
@@ -116,7 +116,7 @@ class LLMModel(LLMModelContainer, Enum):
         print_response: bool = False
     ):
         model_class, model_configs = self.model_class.impl
-        config_path = find_named_parent(Path(__file__), "src") / "models" / "model_configs.json"
+        config_path = find_named_parent(Path(__file__), "src") / "testing" / "test_configs.json"
         config_json = validate_json(
             load_json(config_path)[config][self.key],
             model_configs

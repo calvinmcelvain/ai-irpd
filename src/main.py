@@ -4,8 +4,6 @@ from enum import Enum
 from functools import cached_property
 from logger import setup_logger
 from utils import lazy_import
-from testing import *
-from get import Get
 
 log = logging.getLogger("app")
 
@@ -21,8 +19,9 @@ class TestClassContainer:
     
 
 class TestClass(TestClassContainer, Enum):
-    test = ("testing.base", "Base")
-    subtest = ("testing.base", "Base")
+    get = ("get", "Get")
+    test = ("testing.tests", "Tests")
+    subtest = ("testing.tests", "Tests")
     inter_model = ("testing.inter_model", "InterModel")
     intra_model = ("testing.intra_model", "IntraModel")
     cross_validation = ("testing.cross_validation", "CrossValidation")
@@ -30,4 +29,3 @@ class TestClass(TestClassContainer, Enum):
 
 if __name__ == "__main__":
     setup_logger()
-    

@@ -1,5 +1,6 @@
 import logging
 from testing.irpd_base import IRPDBase
+from stages import *
 
 log = logging.getLogger("app.testing.cross_validation")
 
@@ -14,7 +15,8 @@ class CrossValidation(IRPDBase):
         llms = ["GPT_4O_1120"],
         llm_configs = ["base"],
         project_path = None,
-        new_test = True
+        new_test = True,
+        test_paths = None
     ):
         super().__init__(
             case,
@@ -24,14 +26,16 @@ class CrossValidation(IRPDBase):
             llms,
             llm_configs,
             project_path,
-            new_test
+            new_test,
+            test_paths
         )
+        self._test_type = {"cross_validation"}
     
-    def _generate_test_path(self):
+    def _generate_test_paths(self):
         pass
     
     def _generate_test_configs(self):
         pass
     
-    def run(self, max_instances = None, threshold = 0.5):
-        pass
+    def run(self, max_instances = None, threshold = 0.5, config_ids = None):
+        super().run(max_instances, threshold, config_ids)

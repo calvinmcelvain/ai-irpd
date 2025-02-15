@@ -2,6 +2,7 @@ import logging
 from itertools import product
 from testing.irpd_base import IRPDBase
 from test_config import TestConfig
+from testing.stages import *
 
 log = logging.getLogger("app.testing.inter_model")
 
@@ -17,7 +18,8 @@ class InterModel(IRPDBase):
         llms = ["GPT_4O_1120"],
         llm_configs = ["base"],
         project_path = None,
-        new_test = True
+        new_test = True,
+        test_paths = None
     ):
         super().__init__(
             case,
@@ -27,8 +29,10 @@ class InterModel(IRPDBase):
             llms,
             llm_configs,
             project_path,
-            new_test
+            new_test,
+            test_paths
         )
+        self._test_type = {"inter_model"}
         if N > 1:
             self.N = N
         else:
@@ -44,8 +48,15 @@ class InterModel(IRPDBase):
                 " Defaulted 'new_test' to True."
             )
             self.new_test = True
+        
+        if self.test_paths and not len(self.test_paths) == len(self._prod_crt):
+            log.error(
+                "test_paths must be the same length as the number of test configs."
+            )
+            raise ValueError
+        self._generate_configs()
     
-    def _generate_test_path(self):
+    def _generate_test_paths(self):
         test_dir = self.output_path / "cross_model_validation"
         current_test = self._get_max_test_number(test_dir)
         
@@ -57,8 +68,11 @@ class InterModel(IRPDBase):
             for test, _ in enumerate(self._prod_crt, start=1)
         ]
     
-    def _generate_test_configs(self):
-        for idx, llm_config, ra, treatment in enumerate(self.prod_crt):
+    def _generate_configs(self):
+        if not self.test_paths:
+            self.test_paths = self._generate_test_paths()
+        for idx, prod in enumerate(self._prod_crt):
+            llm_config, ra, treatment = prod
             config = TestConfig(
                 case=self.case,
                 ra=ra,
@@ -69,11 +83,12 @@ class InterModel(IRPDBase):
                 test_type="replication",
                 test_path=self.test_paths[idx]
             )
-            self.TEST_CONFIGS[config.test_id] = config
+            self.configs[config.test_id] = config
     
-    def run(self, max_instances = None, threshold = 0.5):
-        for config in self.TEST_CONFIGS.values():
-            log.info(f"TEST: Start Cross-Model Validation Test | {config.test_id}")
+    def run(self, max_instances = None, threshold = 0.5, config_ids = None):
+        super().run(max_instances, threshold, config_ids)
+        for config in self._test_configs.values():
+            log.info(f"TEST: Start Cross-Model Validation Test = {config.test_id}")
             
             path = config.test_path
             if not path.exists():
@@ -94,13 +109,13 @@ class InterModel(IRPDBase):
                     
                     log.info(f"START: {l} replicate {n}")
                     for stage_name in self.stages:
-                        context = self.outputs.get(config.test_id, n)
+                        context = self.OUTPUTS.get(config.test_id, n)
                         stage_instance = globals().get(f"Stage{stage_name}")(
                             llm_config, sub_path, context, max_instances, threshold
                         )
                         
-                        output = stage_instance.run()
-                        self.OUTPUTS.store(config.test_id, n, output)
+                        stage_instance.run()
+                        self.OUTPUTS.store(config.test_id, n, stage_instance.output)
                     log.info(f"TEST: End {l} replicate {n}")
                 log.info(f"TEST: End of {l} replications")
-            log.info(f"Test: End of Replication Test | {config.test_id}")
+            log.info(f"Test: End of Replication Test = {config.test_id}")

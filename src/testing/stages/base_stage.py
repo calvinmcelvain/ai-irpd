@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from itertools import product
 from typing import List
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -9,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from test_config import TestConfig
 from output_manager import TestRun, StageRun
 from llms.base_model import RequestOut
-from stages.response_schemas import (
+from testing.stages.schemas import (
     Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
 )
 from utils import (
@@ -57,7 +56,7 @@ class BaseStage(ABC):
                 f"OUTPUTS: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
             )
             name = f"stg_{self.stage}_{instance_type}_response.txt"
-            path = self.sub_path / f"stage_{self.stage}" / case / instance_type / name
+            path = self.sub_path / case / f"stage_{self.stage}" / instance_type / name
             if path.exists():
                 log.info("OUTPUTS: Outputs found.")
                 response = load_json(path, True)
@@ -78,7 +77,7 @@ class BaseStage(ABC):
         log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
         stage_run = StageRun(stage)
         for i in instance_types:
-            path = self.sub_path / f"stage_{stage}" / case / i / f"stg_{stage}_{i}_response.txt"
+            path = self.sub_path / case / f"stage_{stage}" / i / f"stg_{stage}_{i}_response.txt"
             if path.exists():
                 log.info("OUTPUTS: Outputs retreived.")
                 response = load_json(path, True)
@@ -194,7 +193,7 @@ class BaseStage(ABC):
             "input_tokens": sum(
                 tokens[c][i]["input_tokens"] for c in self.cases for i in self._get_instance_types(c)),
             "output_tokens": sum(tokens[c][i]["output_tokens"] for c in self.cases for i in self._get_instance_types(c)),
-            "total_tokens": sum(tokens[c][i]["total_tokens"]  for c in self.cases for i in self._get_instance_types(c))
+            "total_tokens": sum(tokens[c][i]["total_tokens"] for c in self.cases for i in self._get_instance_types(c))
         }
         return tokens
     
@@ -221,7 +220,7 @@ class BaseStage(ABC):
                 "ra": self.ra,
                 "treatment": self.treatment,
                 "test_type": self.test_type,
-                "test_path": self.test_path.as_posix()
+                "test_path": self.test_path.relative_to(self.project_path).as_posix()
             },
             "tokens": tokens
         }

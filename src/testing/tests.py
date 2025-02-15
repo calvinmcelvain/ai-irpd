@@ -2,6 +2,7 @@ import logging
 from itertools import product
 from testing.irpd_base import IRPDBase
 from test_config import TestConfig
+from testing.stages import *
 
 log = logging.getLogger("app.testing.tests")
 
@@ -17,7 +18,8 @@ class Tests(IRPDBase):
         llms = ["GPT_4O_1120"],
         llm_configs = ["base"],
         project_path = None,
-        new_test = True
+        new_test = True,
+        test_paths = None
     ):
         super().__init__(
             case,
@@ -27,9 +29,11 @@ class Tests(IRPDBase):
             llms,
             llm_configs,
             project_path,
-            new_test
+            new_test,
+            test_paths
         )
         self.test = test
+        self._test_type = {"test", "subtest"}
         self._prod_lcrt = list(product(
             self.llms, self.llm_configs, self.ras, self.treatments
         ))
@@ -40,9 +44,14 @@ class Tests(IRPDBase):
                 " Defaulted 'new_test' to True."
             )
             self.new_test = True
-        self._generate_test_configs()
+        if self.test_paths and not len(self.test_paths) == len(self._prod_lcrt):
+            log.error(
+                "test_paths must be the same length as the number of test configs."
+            )
+            raise ValueError
+        self._generate_configs()
     
-    def _generate_test_path(self):
+    def _generate_test_paths(self):
         if self.test == "test":
             test_dir = self.output_path / self.case
             prefix = "test_"
@@ -60,8 +69,11 @@ class Tests(IRPDBase):
             for test, _ in enumerate(self._prod_lcrt, start=1)
         ]
     
-    def _generate_test_configs(self):
-        for idx, llm, llm_config, ra, treatment in enumerate(self.prod_lcrt):
+    def _generate_configs(self):
+        if not self.test_paths:
+            self.test_paths = self._generate_test_paths()
+        for idx, prod in enumerate(self._prod_lcrt):
+            llm, llm_config, ra, treatment = prod
             config = TestConfig(
                 case=self.case,
                 ra=ra,
@@ -72,11 +84,12 @@ class Tests(IRPDBase):
                 test_type=self.test,
                 test_path=self.test_paths[idx]
             )
-            self.TEST_CONFIGS[config.test_id] = config
+            self.configs[config.test_id] = config
     
-    def run(self, max_instances = None, threshold = 0.5):
-        for config in self.TEST_CONFIGS.values():
-            log.info(f"TEST: Start {self.test.upper()} | {config.test_id}")
+    def run(self, max_instances = None, threshold = 0.5, config_ids = None):
+        super().run(max_instances, threshold, config_ids)
+        for config in self._test_configs.values():
+            log.info(f"TEST: Start {self.test.upper()} = {config.test_id}")
             
             path = config.test_path
             if not path.exists():
@@ -86,11 +99,11 @@ class Tests(IRPDBase):
                 log.info(f"TEST: Created test directory: {path.exists()}")
             
             for stage_name in self.stages:
-                context = self.outputs.get(config.test_id, 1)
+                context = self.OUTPUTS.get(config.test_id, 1)
                 stage_instance = globals().get(f"Stage{stage_name}")(
                     config, path, context, max_instances, threshold
                 )
                     
-                output = stage_instance.run()
-                self.OUTPUTS.store(config.test_id, 1, output)
-        log.info(f"Test: End of {self.test.upper()} | {config.test_id}")
+                stage_instance.run()
+                self.OUTPUTS.store(config.test_id, 1, stage_instance.output)
+        log.info(f"Test: End of {self.test.upper()} = {config.test_id}")

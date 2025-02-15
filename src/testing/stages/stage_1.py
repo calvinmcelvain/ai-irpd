@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from stages.base_stage import BaseStage
+from testing.stages.base_stage import BaseStage
 from utils import file_to_string, write_file
 from output_manager import StageRun
 
@@ -8,8 +8,8 @@ log = logging.getLogger("app.stage_1")
 
 
 class Stage1(BaseStage):
-    def __init__(self, test_config, sub_path, context):
-        super().__init__(test_config, sub_path, context)
+    def __init__(self, test_config, sub_path, context, max_instances, threshold):
+        super().__init__(test_config, sub_path, context, max_instances, threshold)
         self.stage = "1"
         self.schema = self.schemas[self.stage]
         self.output = StageRun(self.stage)
@@ -42,7 +42,7 @@ class Stage1(BaseStage):
                 if not self._check_completed_requests(i, c):
                     output = self.output.get(c, i)[0]
                     
-                    write_path = self.sub_path / f"stage_{self.stage}" / c / i
+                    write_path = self.sub_path / c / f"stage_{self.stage}" / i
                     write_path.mkdir(exist_ok=True, parents=True)
                     prefix = f"stg_{self.stage}_{i}_"
                     system_path = write_path / (prefix + "sys_prmpt.txt")
@@ -71,8 +71,6 @@ class Stage1(BaseStage):
                         self.output.store(c, i, output)
                 
             self._process_output()
-            return self.output
         except Exception as e:
             log.error(f"Error in running stage {self.stage}: {e}")
-            return self.output
             

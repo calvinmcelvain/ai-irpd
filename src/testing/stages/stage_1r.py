@@ -1,5 +1,5 @@
 import logging
-from stages.base_stage import BaseStage
+from testing.stages.base_stage import BaseStage
 from utils import file_to_string, write_file
 from output_manager import StageRun
 
@@ -7,8 +7,8 @@ log = logging.getLogger("app.stage_1r")
 
 
 class Stage1r(BaseStage):
-    def __init__(self, test_config, sub_path, context):
-        super().__init__(test_config, sub_path, context)
+    def __init__(self, test_config, sub_path, context, max_instances, threshold):
+        super().__init__(test_config, sub_path, context, max_instances, threshold)
         self.stage = "1r"
         self.schema = self.schemas[self.stage]
         self.output = StageRun(self.stage)
@@ -31,7 +31,7 @@ class Stage1r(BaseStage):
                 output = self.context.get("1", c, i)
                 user_prompts[c][i] = self._output_to_txt(
                     output[0], self.schemas["1"]
-            )
+                )
         return user_prompts
     
     def _process_output(self):
@@ -44,7 +44,7 @@ class Stage1r(BaseStage):
                 if not self._check_completed_requests(i, c):
                     output = self.output.get(c, i)[0]
                     
-                    write_path = self.sub_path / f"stage_{self.stage}" / c / i
+                    write_path = self.sub_path / c / f"stage_{self.stage}" / i
                     write_path.mkdir(exist_ok=True, parents=True)
                     prefix = f"stg_{self.stage}_{i}_"
                     system_path = write_path / (prefix + "sys_prmpt.txt")
