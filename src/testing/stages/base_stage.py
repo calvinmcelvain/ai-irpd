@@ -154,30 +154,18 @@ class BaseStage(ABC):
         if hasattr(output, "refined_categories"):
             return output.refined_categories
     
-    def _output_to_pdf(self):
-        for c in self.cases:
-            text = f"# {c.upper()} Stage {self.stage} Categories\n\n"
-            
-            for i in self._get_instance_types(c):
-                output = self.output.get(c, i)[0]
-                json_output = validate_json_string(output.response, self.schema)
-                
-                if json_output:
-                    categories = self._get_category_att(json_output)
-                    text += self._format_categories(
-                        categories,
-                        f"## {i.capitalize()} Categories\n\n"
-                    )
-            path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
-            txt_to_pdf(text, path)
+    def _txt_to_pdf(self, txt: str, path: Path):
+        txt_to_pdf(txt, path)
         return None
     
-    def _output_to_txt(self, output, output_schema):
-        txt = ""
+    def _output_to_txt(self, output, output_schema, initial_text = ""):
         json_output = validate_json_string(output.response, output_schema)
         if json_output:
             categories = self._get_category_att(json_output)
-            txt += self._format_categories(categories)
+            txt = self._format_categories(categories, initial_text)
+        elif isinstance(output.response, str):
+            txt = initial_text
+            txt += output.response
         return txt
     
     def _compute_tokens(self):
