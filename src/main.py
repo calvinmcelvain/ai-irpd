@@ -20,8 +20,8 @@ class TestClassContainer:
 
 class TestClass(TestClassContainer, Enum):
     get = ("get", "Get")
-    test = ("testing.tests", "Tests")
-    subtest = ("testing.tests", "Tests")
+    test = ("testing.tests", "Test")
+    subtest = ("testing.subtests", "Subtest")
     inter_model = ("testing.inter_model", "InterModel")
     intra_model = ("testing.intra_model", "IntraModel")
     cross_validation = ("testing.cross_validation", "CrossValidation")

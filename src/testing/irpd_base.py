@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import List, Dict
+from typing import List
 from pathlib import Path
 from abc import ABC, abstractmethod
 from utils import get_env_var

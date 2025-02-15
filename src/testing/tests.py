@@ -7,19 +7,19 @@ from testing.stages import *
 log = logging.getLogger("app.tests")
 
 
-class Tests(IRPDBase):
+class Test(IRPDBase):
     def __init__(
         self,
         case,
         ras,
         treatments,
         stages,
-        test: str = "test",
         llms = ["GPT_4O_1120"],
         llm_configs = ["base"],
         project_path = None,
         new_test = True,
-        test_paths = None
+        test_paths = None,
+        test = "test"
     ):
         super().__init__(
             case,
@@ -33,7 +33,6 @@ class Tests(IRPDBase):
             test_paths
         )
         self.test = test
-        self._test_type = {"test", "subtest"}
         self._prod_lcrt = list(product(
             self.llms, self.llm_configs, self.ras, self.treatments
         ))
