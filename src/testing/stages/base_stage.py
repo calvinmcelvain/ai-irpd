@@ -64,7 +64,6 @@ class BaseStage(ABC):
                 return True
             log.info("OUTPUTS: Outputs not found.")
             return None
-        self.output.store(case, instance_type, RequestOut(response=response))
         return True
     
     def _update_context(self, stage, case):
