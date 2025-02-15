@@ -4,7 +4,7 @@ from testing.irpd_base import IRPDBase
 from test_config import TestConfig
 from testing.stages import *
 
-log = logging.getLogger("app.testing.tests")
+log = logging.getLogger("app.tests")
 
 
 class Tests(IRPDBase):

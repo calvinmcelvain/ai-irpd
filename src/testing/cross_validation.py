@@ -2,7 +2,7 @@ import logging
 from testing.irpd_base import IRPDBase
 from stages import *
 
-log = logging.getLogger("app.testing.cross_validation")
+log = logging.getLogger("app.cross_validation")
 
 
 class CrossValidation(IRPDBase):

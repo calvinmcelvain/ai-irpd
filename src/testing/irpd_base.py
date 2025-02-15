@@ -8,7 +8,7 @@ from llms import *
 from test_config import TestConfig
 from output_manager import OutputManager
 
-log = logging.getLogger("app.testing.irpd_base")
+log = logging.getLogger("app.irpd_base")
 
 
 class IRPDBase(ABC):
