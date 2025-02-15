@@ -3,16 +3,17 @@ import logging
 import logging.config
 from datetime import datetime
 from pathlib import Path
-from logging.handlers import RotatingFileHandler
 
 logs_path = Path("src").resolve().parents[1] / "logs"
 logs_path.mkdir(exist_ok=True, parents=True)
 
 
 def setup_logger():
-    today = datetime.now()
-    app_log_file = logs_path / "app-{}.log".format(today.strftime("%Y_%m_%d"))
+    app_log_file = logs_path / "app.log"
     debug_log_file = logs_path / "debug.log"
+
+    open(app_log_file, 'w').close()
+    open(debug_log_file, 'w').close()
 
     logging.config.dictConfig({
         "version": 1,
@@ -37,13 +38,11 @@ def setup_logger():
                 "encoding": "utf-8",
             },
             "debug_file": {
-                "class": "logging.handlers.RotatingFileHandler",
+                "class": "logging.FileHandler",
                 "filename": str(debug_log_file),
                 "level": "DEBUG",
                 "formatter": "detailed",
                 "encoding": "utf-8",
-                "maxBytes": 5 * 1024 * 1024,  # 5 MB
-                "backupCount": 1,
             }
         },
         "loggers": {
