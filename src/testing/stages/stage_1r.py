@@ -47,7 +47,7 @@ class Stage1r(BaseStage):
                     output, self.schema, f"## {i.upper()} Categories\n\n"
                 )
                 
-                write_path = self.sub_path / c / f"stage_{self.stage}" / i
+                write_path = self.sub_path / f"stage_{self.stage}" / c / i
                 write_path.mkdir(exist_ok=True, parents=True)
                 prefix = f"stg_{self.stage}_{i}_"
                 system_path = write_path / (prefix + "sys_prmpt.txt")
@@ -58,7 +58,7 @@ class Stage1r(BaseStage):
                     write_file(system_path, output.system)
                     write_file(user_path, output.user)
                     write_file(response_path, output.response)
-            pdf_path = self.sub_path / c / f"{c}_stg_{self.stage}_categories.pdf"
+            pdf_path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
             self._txt_to_pdf(text, pdf_path)
         
     def run(self):

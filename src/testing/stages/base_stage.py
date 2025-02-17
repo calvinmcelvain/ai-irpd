@@ -51,13 +51,13 @@ class BaseStage(ABC):
         self.context = context
         self.threshold = threshold
         
-    def _check_completed_requests(self, instance_type, case):
+    def _check_completed_requests(self, instance_type, case = None):
         if not self.context.has(self.stage, case, instance_type):
             log.info(
                 f"OUTPUTS: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
             )
             name = f"stg_{self.stage}_{instance_type}_response.txt"
-            path = self.sub_path / case / f"stage_{self.stage}" / instance_type / name
+            path = self.sub_path / f"stage_{self.stage}" / case /  instance_type / name
             if path.exists():
                 log.info("OUTPUTS: Outputs found.")
                 response = load_json(path, True)
@@ -78,7 +78,7 @@ class BaseStage(ABC):
         log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
         stage_run = StageRun(stage)
         for i in instance_types:
-            path = self.sub_path / case / f"stage_{stage}" / i / f"stg_{stage}_{i}_response.txt"
+            path = self.sub_path / f"stage_{stage}" / case /  i / f"stg_{stage}_{i}_response.txt"
             if path.exists():
                 log.info("OUTPUTS: Outputs retreived.")
                 response = load_json(path, True)

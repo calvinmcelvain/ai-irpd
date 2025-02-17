@@ -111,7 +111,7 @@ class Stage2(BaseStage):
         
         for c in self.cases:
             for i in self._get_instance_types(c):
-                write_path = self.sub_path / c / f"stage_{self.stage}" / i 
+                write_path = self.sub_path / f"stage_{self.stage}" / c / i 
                 write_path.mkdir(exist_ok=True, parents=True)
                 prefix = f"stg_{self.stage}_{i}_"
                 system_path = write_path / (prefix + "sys_prmpt.txt")
@@ -132,7 +132,7 @@ class Stage2(BaseStage):
                         write_file(user_path, response.user)
                         write_file(response_path, response.response)
             df = self._build_data_output(c)
-            df_path = self.sub_path / c / f"{c}_stg_{self.stage}_final_output.csv"
+            df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
             df.to_csv(df_path)
         
     def run(self):
