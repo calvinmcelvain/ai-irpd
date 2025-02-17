@@ -20,7 +20,7 @@ class Stage3(BaseStage):
             log.info(
                 f"OUTPUTS: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
             )
-            path = self.sub_path / case / f"stage_{self.stage}" / instance_type / "responses"
+            path = self.sub_path / f"stage_{self.stage}" / case / instance_type / "responses"
             if path.exists():
                 log.info("OUTPUTS: Outputs found.")
                 for response in path.iterdir():
@@ -35,7 +35,7 @@ class Stage3(BaseStage):
     def _get_stg1c_pt2(self):
         log.info(f"OUTPUTS: Getting outputs for Stage 1c part 2.")
         stage_run = StageRun("1c")
-        path = self.sub_path / self.case / f"stage_1c" / "part_2" / f"stg_1c_part_2_response.txt"
+        path = self.sub_path / f"stage_1c" / self.case / "part_2" / f"stg_1c_part_2_response.txt"
         if path.exists():
             log.info("OUTPUTS: Outputs retreived.")
             response = load_json(path, True)
