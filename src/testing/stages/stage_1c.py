@@ -55,7 +55,7 @@ class Stage1c(BaseStage):
         for part in self.parts:
             output = self.output.get(self.case, part)[0]
               
-            write_path = self.sub_path / f"stage_{self.stage}" /  self.case / part
+            write_path = self.sub_path / f"stage_{self.stage}" / part
             write_path.mkdir(exist_ok=True, parents=True)
             prefix = f"stg_{self.stage}_{part}_"
             system_path = write_path / (prefix + "sys_prmpt.txt")

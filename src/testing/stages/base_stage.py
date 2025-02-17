@@ -51,13 +51,16 @@ class BaseStage(ABC):
         self.context = context
         self.threshold = threshold
         
-    def _check_completed_requests(self, instance_type, case = None):
+    def _check_completed_requests(self, instance_type, case):
         if not self.context.has(self.stage, case, instance_type):
             log.info(
                 f"OUTPUTS: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
             )
             name = f"stg_{self.stage}_{instance_type}_response.txt"
-            path = self.sub_path / f"stage_{self.stage}" / case /  instance_type / name
+            if self.stage in {"1c"}:
+                path = self.sub_path / f"stage_{self.stage}" /  instance_type / name
+            else:
+                path = self.sub_path / f"stage_{self.stage}" / case /  instance_type / name
             if path.exists():
                 log.info("OUTPUTS: Outputs found.")
                 response = load_json(path, True)
@@ -70,7 +73,7 @@ class BaseStage(ABC):
     def _update_context(self, stage, case):
         instance_types = self._get_instance_types(case)
         for i in instance_types:
-            if not self.context.has(self.stage, case, i):
+            if not self.context.has(stage, case, i):
                 log.info(
                     f"OUTPUTS: Outputs for Stage {stage}, {case}, {i} not found in context."
                     " Checking test path."
@@ -78,7 +81,7 @@ class BaseStage(ABC):
         log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
         stage_run = StageRun(stage)
         for i in instance_types:
-            path = self.sub_path / f"stage_{stage}" / case /  i / f"stg_{stage}_{i}_response.txt"
+            path = self.sub_path / f"stage_{stage}" / case / i / f"stg_{stage}_{i}_response.txt"
             if path.exists():
                 log.info("OUTPUTS: Outputs retreived.")
                 response = load_json(path, True)
@@ -228,10 +231,6 @@ class BaseStage(ABC):
         df_list = []
         for i in self._get_instance_types(case):
             response_list = []
-            df_path = self.data_path / "test" / f"{case}_{self.treatment}_{self.ra}_{i}.csv"
-            df = pd.read_csv(df_path)
-            if self.max_instances:
-                df = df[:self.max_instances]
             outputs = self.output.get(case, i)
             for j in outputs:
                 response = {}
@@ -245,10 +244,7 @@ class BaseStage(ABC):
                         response[name] = l.rank
                 response_list.append(response)
             response_df = pd.DataFrame.from_records(response_list)
-            print(response_df)
-            print(df)
-            response_df = pd.merge(df, response_df, on="window_number", how="outer")
-            df_list.append(pd.DataFrame.from_records(response_list))
+            df_list.append(response_df)
         final_df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
         return pd.merge(raw_df, final_df, on='window_number')
     

@@ -133,7 +133,7 @@ class Stage2(BaseStage):
                         write_file(response_path, response.response)
             df = self._build_data_output(c)
             df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
-            df.to_csv(df_path)
+            df.to_csv(df_path, index=False)
         
     def run(self):
         try:
