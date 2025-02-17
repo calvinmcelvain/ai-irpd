@@ -57,7 +57,7 @@ class InterModel(IRPDBase):
         self._generate_configs()
     
     def _generate_test_paths(self):
-        test_dir = self.output_path / "cross_model_validation"
+        test_dir = self.output_path / self._test_type
         current_test = self._get_max_test_number(test_dir)
         
         if not self.new_test:
@@ -80,7 +80,7 @@ class InterModel(IRPDBase):
                 llm=self.llms,
                 llm_config=llm_config,
                 stages=self.stages,
-                test_type="replication",
+                test_type=self._test_type,
                 test_path=self.test_paths[idx]
             )
             self.configs[config.test_id] = config
@@ -88,7 +88,7 @@ class InterModel(IRPDBase):
     def run(self, max_instances = None, threshold = 0.5, config_ids = None):
         super().run(max_instances, threshold, config_ids)
         for config in self._test_configs.values():
-            log.info(f"TEST: Start Cross-Model Validation Test = {config.test_id}")
+            log.info(f"TEST: Start of INTER-MODEL Test = {config.test_id}")
             
             path = config.test_path
             if not path.exists():
@@ -118,4 +118,4 @@ class InterModel(IRPDBase):
                         self.OUTPUTS.store(config.test_id, n, stage_instance.output)
                     log.info(f"TEST: End {l} replicate {n}")
                 log.info(f"TEST: End of {l} replications")
-            log.info(f"Test: End of Replication Test = {config.test_id}")
+            log.info(f"Test: End of INTER-MODEL Test = {config.test_id}")

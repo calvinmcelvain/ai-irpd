@@ -52,10 +52,10 @@ class Test(IRPDBase):
     
     def _generate_test_paths(self):
         if self.test == "test":
-            test_dir = self.output_path / self.case
+            test_dir = self.output_path / "base_tests" / self.case
             prefix = "test_"
         else:
-            test_dir = self.output_path / "_subtests"
+            test_dir = self.output_path / "subtests"
             prefix = ""
         
         current_test = self._get_max_test_number(test_dir, prefix)
