@@ -25,9 +25,13 @@ class Stage1rSchema(BaseModel):
     refined_categories: list[Category]
 
 
+class CategoryAssignment(BaseModel):
+    category_name: str
+
+
 class Stage2Schema(BaseModel):
     window_number: int
-    assigned_categories: list[str]
+    assigned_categories: list[CategoryAssignment]
     reasoning: str
 
 

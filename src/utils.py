@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import re
 import importlib
 import json
@@ -6,9 +8,10 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv 
 from json import JSONDecodeError
+from markdown_pdf import MarkdownPdf, Section
 from pydantic import BaseModel, ValidationError
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app.utils")
 
 
 def get_env_var(key: str) -> str:
@@ -16,7 +19,7 @@ def get_env_var(key: str) -> str:
     Retrieve the environment variable associated with `key`.
     """
     value = os.getenv(key)
-    path = Path(__file__).resolve().parent.parent / "configs" / "configs.env"
+    path = Path().resolve().home() / "dotfiles" / "irpd_configs.env"
     if value is None:
         load_dotenv(path, override=True)
         value = os.getenv(key)
@@ -40,19 +43,19 @@ def lazy_import(module_name, class_name):
     return importer()
 
 
-def load_json(file_path: str | Path) -> object:
+def load_json(file_path: str | Path, dumps: bool = False) -> object | str:
     """
-    Returns the JSON object from a JSON file.
+    Returns the JSON object (or string) from a JSON file.
     """
     try:
         json_data = json.loads(Path(file_path).read_text())
     except (JSONDecodeError, FileNotFoundError) as e:
         log.error(f"Error loading JSON from {file_path}: {e}")
         return None
-    return json_data
+    return json.dumps(json_data) if dumps else json_data
 
 
-def validate_json(json_data: object, schema: BaseModel) -> object:
+def validate_json(json_data: object, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.
     """
@@ -65,6 +68,18 @@ def validate_json(json_data: object, schema: BaseModel) -> object:
             f"JSON data: {json.dumps(json_data, indent=2)}"
         )
         return None
+
+
+def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | str:
+    """
+    Returns the object from json schema validation.
+    """
+    try:
+        schema_obj = schema.model_validate_json(json_str)
+        return schema_obj
+    except Exception as e:
+        log.error(f"Error in model validation': {e}\n")
+        return json_str
 
 
 def file_to_string(file_path: str | Path) -> str:
@@ -81,11 +96,28 @@ def write_file(file_path: str | Path, file_write: str) -> None:
     Path(file_path).write_text(file_write)
 
 
+def write_json(file_path: str | Path, data: object, indent: int = 4) -> None:
+    """
+    Write JSON data to a file at the given path.
+    """
+    Path(file_path).write_text(json.dumps(data, indent=indent))
+
+
 def check_directories(paths: list[str]) -> bool:
     """
     Check if all given directories exist.
     """
     return all(Path(path).is_dir() for path in paths)
+
+
+def find_named_parent(path: Path, target: str) -> Path | None:
+    """
+    Finds the nearest parent directory with the given name.
+    """
+    for parent in path.parents:
+        if parent.name == target:
+            return parent
+    return None
 
 
 def get_nested_attr(obj: object, attr_path: str) -> object:
@@ -103,3 +135,30 @@ def regex_group(string: str, pattern: str, group: int = 1) -> str:
     """
     match = re.search(pattern, string)
     return match.group(group)
+
+
+def txt_to_pdf(text: str, file_path: Path) -> None:
+    """
+    Saves text as pdf to file path.
+    """
+    pdf = MarkdownPdf()
+    pdf.add_section(Section(text))
+    pdf.save(file_path)
+    
+
+def is_tail_running() -> bool:
+    """
+    Checks to see if terminal is running a tail log.
+    """
+    if sys.platform == "win32":
+        result = subprocess.run([
+            "tasklist"
+        ], capture_output=True, text=True)
+        return "tail" in result.stdout
+    else:
+        result = subprocess.run([
+            "pgrep",
+            "-f",
+            "tail -f logs/app.log"
+        ], capture_output=True, text=True)
+        return result.returncode == 0

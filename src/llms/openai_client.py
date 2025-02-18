@@ -5,7 +5,7 @@ from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
-from models.base_model import Base, RequestOut
+from llms.base_model import Base, RequestOut
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)
@@ -91,10 +91,12 @@ class OpenAIClient(Base):
             if isinstance(response, ChatCompletion):
                 request_out = RequestOut(
                     response=response.choices[0].message.content,
-                    meta=response
+                    meta=response,
+                    system=system,
+                    user=user
                 )
             else:
-                log.info(
+                log.warning(
                     f"Response was not a Message instance. Got - {response}"
                 )
 

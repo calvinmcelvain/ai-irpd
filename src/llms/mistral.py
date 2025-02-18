@@ -5,7 +5,7 @@ import mistralai
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
 from pydantic import BaseModel
-from models.base_model import Base
+from llms.base_model import Base
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +71,13 @@ class Mistral(Base):
                 input_tokens = response.usage.prompt_tokens
                 tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
                 content = response.choices[0].message.content
-                request_out = self._process_output(id=id, tokens=tokens, content=content)
+                request_out = self._process_output(
+                    id=id,
+                    tokens=tokens, 
+                    content=content,
+                    system=system,
+                    user=user
+                )
             else:
                 log.info(
                     f"Response was not a Message instance. Got - {response}"
