@@ -1,9 +1,12 @@
+import os
+import subprocess
+import sys
 import logging
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 from logger import setup_logger
-from utils import lazy_import
+from utils import lazy_import, is_tail_running
 
 log = logging.getLogger("app")
 
@@ -27,5 +30,23 @@ class TestClass(TestClassContainer, Enum):
     cross_validation = ("testing.cross_validation", "CrossValidation")
 
 
+
 if __name__ == "__main__":
     setup_logger()
+
+    # Optional -- Opens a new terminal/shell w/ live logs
+    repo_path = os.path.expanduser("~/git_repos/irpd-code")
+    if not is_tail_running():
+        if sys.platform == "darwin":
+            subprocess.Popen([
+                "osascript",
+                "-e",
+                f'tell application "Terminal" to do script "cd {repo_path} && tail -f logs/app.log"'
+            ])
+        elif sys.platform == "win32":
+            subprocess.Popen([
+                "start",
+                "cmd",
+                "/k",
+                f'cd /d {repo_path} && tail -f logs/app.log'
+            ], shell=True)

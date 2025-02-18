@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import re
 import importlib
 import json
@@ -142,3 +144,21 @@ def txt_to_pdf(text: str, file_path: Path) -> None:
     pdf = MarkdownPdf()
     pdf.add_section(Section(text))
     pdf.save(file_path)
+    
+
+def is_tail_running() -> bool:
+    """
+    Checks to see if terminal is running a tail log.
+    """
+    if sys.platform == "win32":
+        result = subprocess.run([
+            "tasklist"
+        ], capture_output=True, text=True)
+        return "tail" in result.stdout
+    else:
+        result = subprocess.run([
+            "pgrep",
+            "-f",
+            "tail -f logs/app.log"
+        ], capture_output=True, text=True)
+        return result.returncode == 0
