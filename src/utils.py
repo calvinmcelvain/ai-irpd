@@ -19,7 +19,7 @@ def get_env_var(key: str) -> str:
     Retrieve the environment variable associated with `key`.
     """
     value = os.getenv(key)
-    path = Path(__file__).resolve().parent.parent / "configs" / "configs.env"
+    path = Path().resolve().home() / "dotfiles" / "irpd_configs.env"
     if value is None:
         load_dotenv(path, override=True)
         value = os.getenv(key)
