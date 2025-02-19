@@ -10,26 +10,23 @@ log = logging.getLogger("app.output_manager")
 @dataclass
 class StageRun:
     stage: str
-    stage_outputs: Dict[str, Dict[str, List[RequestOut]]] = field(default_factory=lambda: defaultdict(list))
+    stage_outputs: defaultdict = field(default_factory=lambda: defaultdict(lambda: defaultdict(list)))
     
     def get(self, case: str = None, instance_type: str = None):
-        if case in self.stage_outputs:
-            if instance_type in self.stage_outputs[case]:
+        if case:
+            if instance_type:
                 return self.stage_outputs[case][instance_type]
             return self.stage_outputs[case]
         return self.stage_outputs
     
     def has(self, case: str, instance_type: str):
-        return case in self.stage_outputs and instance_type in self.stage_outputs[case]
+        return instance_type in self.stage_outputs[case]
     
     def store(self, case: str, instance_type: str, output: RequestOut):
-        if case not in self.stage_outputs:
-            self.stage_outputs[case] = {}
-        if instance_type not in self.stage_outputs[case]:
-            self.stage_outputs[case][instance_type] = []
-        
-        self.stage_outputs[case][instance_type] += [output]
-        log.info(f"OUTPUTS: Stored stage {self.stage}, instance {instance_type}.")
+        self.stage_outputs[case][instance_type].append(output)
+        log.info(
+            f"OUTPUTS: Stored --Stage {self.stage} --Instance {instance_type}"
+        )
 
 
 @dataclass
@@ -39,11 +36,8 @@ class TestRun:
     
     def get(self, stage: str, case: str = None, instance_type: str = None):
         if stage in self.stage_runs:
-            if case in self.stage_runs[stage].stage_outputs:
-                if instance_type in self.stage_runs[stage].stage_outputs[case]:
-                    return self.stage_runs[stage].get(case, instance_type)
-            return self.stage_runs[stage].get(case)
-        return self.stage_runs
+            return self.stage_runs[stage].get(case, instance_type)
+        return None
     
     def has(self, stage: str, case: str, instance_type: str):
         return stage in self.stage_runs and self.stage_runs[stage].has(case, instance_type)
@@ -54,40 +48,27 @@ class TestRun:
 
 @dataclass
 class OutputManager:
-    test_runs: Dict[str, Dict[int, TestRun]] = field(default_factory=dict)
+    test_runs: defaultdict = field(default_factory=lambda: defaultdict(lambda: defaultdict(dict)))
     
     def get(
         self,
         test_id: str,
         n: int,
+        llm: str,
         stage: str = None,
         case: str = None,
         instance_type: str = None
     ):
-        if test_id in self.test_runs:
-            test_run = self.test_runs[test_id][n]
-            if stage in test_run.stage_runs:
-                if case in test_run.stage_runs[stage].stage_outputs:
-                    stage_outputs = test_run.stage_runs[stage].stage_outputs
-                    if instance_type in stage_outputs[case]:
-                        return test_run.get(stage, case, instance_type)
-                    return stage_outputs.get(stage, case)
-                return test_run.get(stage)
-            return test_run
-        else:
-            return TestRun(n)
+        test_run = self.test_runs[test_id][llm].get(n)
+        if test_run:
+            return test_run.get(stage, case, instance_type)
+        return None
     
-    def store(self, test_id: str, n: int, stage_run: StageRun = None):
-        if test_id not in self.test_runs:
-            self.test_runs[test_id] = {}
-        
-        if n not in self.test_runs[test_id]:
-            new_test_run = TestRun(
-                stage_runs={stage_run.stage: stage_run},
-                n=n
-            )
-            self.test_runs[test_id][n] = new_test_run
-        else:
-            self.test_runs[test_id][n].store(stage_run)
-        
-        log.info(f"OUTPUTS: Stored stage {stage_run.stage} in replicate {n} of test {test_id}")
+    def store(self, test_id: str, n: int, llm: str, stage_run: StageRun = None):
+        test_run = self.test_runs[test_id][llm].setdefault(n, TestRun(n=n))
+        test_run.store(stage_run)
+        log.info(
+            f"OUTPUTS: Stored --Test {test_id} --Stage {stage_run.stage}"
+            f" --Replicate {n} --LLM {llm} --Test {test_id}"
+        )
+        return None
