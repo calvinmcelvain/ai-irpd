@@ -7,7 +7,7 @@ class TestConfig:
     case: str
     ra: str
     treatment: str
-    llm: object
+    llms: str | list[str]
     llm_config: str
     test_type: str
     test_path: Path
