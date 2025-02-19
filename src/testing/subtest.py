@@ -1,7 +1,7 @@
 import logging
-from testing.tests import Test
+from testing.test import Test
 
-log = logging.getLogger("app.subtests")
+log = logging.getLogger("app.subtest")
 
 
 class Subtest(Test):

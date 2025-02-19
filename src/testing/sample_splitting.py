@@ -2,10 +2,10 @@ import logging
 from testing.irpd_base import IRPDBase
 from stages import *
 
-log = logging.getLogger("app.cross_validation")
+log = logging.getLogger("app.sample_splitting")
 
 
-class CrossValidation(IRPDBase):
+class SampleSplitting(IRPDBase):
     def __init__(
         self,
         case,
@@ -29,7 +29,7 @@ class CrossValidation(IRPDBase):
             new_test,
             test_paths
         )
-        self._test_type = {"cross_validation"}
+        self._test_type = "sample_splitting"
     
     def _generate_test_paths(self):
         pass
