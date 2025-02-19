@@ -110,15 +110,24 @@ class Stage3(BaseStage):
             df_name = f"{c}_stg_2_final_output.csv"
             df = pd.read_csv(self.sub_path / df_name)
             for i in self._get_instance_types(c):
+                if self._check_completed_requests(i, c):
+                    responses = [
+                        validate_json_string(r.response, self.schema)
+                        for r in self.output.get(c, i)
+                    ]
+                    window_nums = [r.window_number for r in responses]
+                else:
+                    window_nums = []
                 outputs = self.context.get("2", c, i)
                 response_list = []
                 for output in outputs:
                     json_out = validate_json_string(output.response, self.schemas["2"])
                     summary_df = df[df.columns.intersection(["summary_1", "summary_2", "window_number"])]
-                    summary_df = summary_df[summary_df["window_number"] == json_out.window_number]
-                    response = pd.DataFrame(summary_df).to_dict("records")[0]
-                    response["assigned_categories"] = [cat.category_name for cat in json_out.assigned_categories]
-                    response_list.append(response)
+                    if not json_out.window_number in window_nums:
+                        summary_df = summary_df[summary_df["window_number"] == json_out.window_number]
+                        response = pd.DataFrame(summary_df).to_dict("records")[0]
+                        response["assigned_categories"] = [cat.category_name for cat in json_out.assigned_categories]
+                        response_list.append(response)
                 user_prompts[c][i] = response_list
         self.user_prompts = user_prompts
         return None
@@ -152,7 +161,7 @@ class Stage3(BaseStage):
                         write_file(response_path, response.response)
             df = self._build_data_output(c)
             df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
-            df.to_csv(df_path)
+            df.to_csv(df_path, index=False)
         
     def run(self):
         try:

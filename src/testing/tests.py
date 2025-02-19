@@ -105,4 +105,4 @@ class Test(IRPDBase):
                     
                 stage_instance.run()
                 self.OUTPUTS.store(config.test_id, 1, stage_instance.output)
-        log.info(f"Test: End of {self.test.upper()} = {config.test_id}")
+        log.info(f"TEST: End of {self.test.upper()} = {config.test_id}")

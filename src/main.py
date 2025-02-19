@@ -1,7 +1,7 @@
-import os
 import subprocess
 import sys
 import logging
+from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     setup_logger()
 
     # Optional -- Opens a new terminal/shell w/ live logs
-    repo_path = os.path.expanduser("~/git_repos/irpd-code")
+    repo_path = Path(__file__).parents[1]
     if not is_tail_running():
         if sys.platform == "darwin":
             subprocess.Popen([

@@ -215,6 +215,7 @@ class BaseStage(ABC):
                 "case": self.case,
                 "ra": self.ra,
                 "treatment": self.treatment,
+                "threshold": self.threshold,
                 "test_type": self.test_type,
                 "test_path": self.test_path.relative_to(self.project_path).as_posix()
             },
