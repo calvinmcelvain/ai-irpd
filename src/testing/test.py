@@ -77,7 +77,7 @@ class Test(IRPDBase):
                 case=self.case,
                 ra=ra,
                 treatment=treatment,
-                llm=self._generate_model_instance(llm, llm_config),
+                llms=llm,
                 llm_config=llm_config,
                 stages=self.stages,
                 test_type=self._test_type,
@@ -90,6 +90,8 @@ class Test(IRPDBase):
         for config in self._test_configs.values():
             log.info(f"TEST: Start {self._test_type.upper()} = {config.test_id}")
             
+            llm = self._generate_model_instance(config.llms, config.llm_config)
+            
             path = config.test_path
             if not path.exists():
                 short_path = path.relative_to(self.project_path)
@@ -100,7 +102,7 @@ class Test(IRPDBase):
             for stage_name in self.stages:
                 context = self.OUTPUTS.get(config.test_id, 1)
                 stage_instance = globals().get(f"Stage{stage_name}")(
-                    config, path, context, max_instances, threshold
+                    config, path, context, llm, max_instances, threshold
                 )
                     
                 stage_instance.run()

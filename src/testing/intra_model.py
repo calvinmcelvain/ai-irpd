@@ -77,7 +77,7 @@ class IntraModel(IRPDBase):
                 case=self.case,
                 ra=ra,
                 treatment=treatment,
-                llm=self._generate_model_instance(llm, llm_config),
+                llms=llm,
                 llm_config=llm_config,
                 stages=self.stages,
                 test_type=self._test_type,
@@ -97,6 +97,8 @@ class IntraModel(IRPDBase):
                 config.test_path.mkdir(exist_ok=True)
                 log.info(f"TEST: Created test directory: {path.exists()}")
             
+            llm = self._generate_model_instance(config.llms, config.llm_config)
+            
             for n in range(1, self.N + 1):
                 sub_path = path / f"replication_{n}"
                 
@@ -104,7 +106,7 @@ class IntraModel(IRPDBase):
                 for stage_name in self.stages:
                     context = self.OUTPUTS.get(config.test_id, n)
                     stage_instance = globals().get(f"Stage{stage_name}")(
-                        config, sub_path, context, max_instances, threshold
+                        config, sub_path, context, llm, max_instances, threshold
                     )
                     
                     stage_instance.run()

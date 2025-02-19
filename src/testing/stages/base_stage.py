@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from test_config import TestConfig
 from output_manager import TestRun, StageRun
-from llms.base_model import RequestOut
+from llms.base_model import RequestOut, Base
 from testing.stages.schemas import (
     Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
 )
@@ -33,6 +33,7 @@ class BaseStage(ABC):
         test_config: TestConfig,
         sub_path: Path,
         context: TestRun,
+        llm: Base,
         max_instances: int | None,
         threshold: float
     ):
@@ -40,7 +41,7 @@ class BaseStage(ABC):
         self.cases = self._get_cases(self.case)
         self.ra = test_config.ra
         self.treatment = test_config.treatment
-        self.llm = test_config.llm
+        self.llm = llm
         self.test_type = test_config.test_type
         self.test_path = test_config.test_path
         self.max_instances = max_instances

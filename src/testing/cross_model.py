@@ -77,7 +77,7 @@ class CrossModel(IRPDBase):
                 case=self.case,
                 ra=ra,
                 treatment=treatment,
-                llm=self.llms,
+                llms=self.llms,
                 llm_config=llm_config,
                 stages=self.stages,
                 test_type=self._test_type,
@@ -101,21 +101,19 @@ class CrossModel(IRPDBase):
                 log.info(f"TEST: Start {l} replications")
                 
                 llm = self._generate_model_instance(l, config.llm_config)
-                llm_config = config
-                llm_config.llm = llm
                 
                 for n in range(1, self.N + 1):
                     sub_path = path / l / f"replication_{n}"
                     
                     log.info(f"START: {l} replicate {n}")
                     for stage_name in self.stages:
-                        context = self.OUTPUTS.get(config.test_id, n)
+                        context = self.OUTPUTS.get(config.test_id, n, l)
                         stage_instance = globals().get(f"Stage{stage_name}")(
-                            llm_config, sub_path, context, max_instances, threshold
+                            config, sub_path, context, llm, max_instances, threshold
                         )
                         
                         stage_instance.run()
-                        self.OUTPUTS.store(config.test_id, n, stage_instance.output)
+                        self.OUTPUTS.store(config.test_id, n, l, stage_instance.output)
                     log.info(f"TEST: End {l} replicate {n}")
                 log.info(f"TEST: End of {l} replications")
             log.info(f"Test: End of CROSS-MODEL Test = {config.test_id}")
