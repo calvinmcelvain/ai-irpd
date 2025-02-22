@@ -109,10 +109,11 @@ class Variability:
                                 
                                 if stage == "1r":
                                     stage_1c = self.responses.get(test, n, llm, "1c", "combined", "part_2")
-                                    u_response = validate_json_string(stage_1c[0].response, schema)
-                                    response.refined_categories = self._threshold_similarity(
-                                        response.refined_categories, u_response.refined_categories, threshold
-                                    )
+                                    if stage_1c:
+                                        u_response = validate_json_string(stage_1c[0].response, schema)
+                                        response.refined_categories = self._threshold_similarity(
+                                            response.refined_categories, u_response.refined_categories, threshold
+                                        )
                                 
                                 if instance not in names[stage][case]:
                                     names[stage][case][instance] = []
@@ -164,7 +165,7 @@ class Variability:
                                                 "method": method,
                                                 "sim": sim
                                             })
-        return pd.DataFrame(data, index=False)
+        return pd.DataFrame(data)
     
     def unique_cats(self, threshold: float):
         data = []
@@ -196,33 +197,34 @@ class Variability:
                                 
                                 if stage == "1r":
                                     stage_1c = self.responses.get(test, n, llm, "1c", "combined", "part_2")
-                                    u_response = validate_json_string(stage_1c[0].response, schema)
-                                    response.refined_categories = self._threshold_similarity(
-                                        response.refined_categories, u_response.refined_categories, threshold
-                                    )
+                                    if stage_1c:
+                                        u_response = validate_json_string(stage_1c[0].response, schema)
+                                        response.refined_categories = self._threshold_similarity(
+                                            response.refined_categories, u_response.refined_categories, threshold
+                                        )
                                 
                                 if instance not in names[stage][case]:
                                     names[stage][case][instance] = []
 
                                 for category in self._get_category_att(response):
                                     names[stage][case][instance].append(category.category_name)
-        for stage in names.keys():
-            for c in names[stage].keys():
-                for inst in names[stage][c].keys():
-                    cat_names = names[stage][c][inst]
-                    unique = set(cat_names)
-                    for cat in unique:
-                        data.append({
-                            "test": test,
-                            "llm": llm,
-                            "stage": stage,
-                            "case": case,
-                            "instance": inst,
-                            "threshold": threshold,
-                            "category": cat,
-                            "count": len([c for c in cat_names is c == cat])
-                        })
-        return pd.DataFrame(data, index=False)
+            for stage in names.keys():
+                for c in names[stage].keys():
+                    for inst in names[stage][c].keys():
+                        cat_names = names[stage][c][inst]
+                        unique = set(cat_names)
+                        for cat in unique:
+                            data.append({
+                                "test": test,
+                                "llm": llm,
+                                "stage": stage,
+                                "case": case,
+                                "instance": inst,
+                                "threshold": threshold,
+                                "category": cat,
+                                "count": len([c for c in cat_names if c == cat])
+                            })
+        return pd.DataFrame(data)
     
 
 

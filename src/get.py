@@ -10,7 +10,6 @@ log = logging.getLogger("app.get")
 
 class Get:
     _VALID_TEST_TYPES = ["subtest", "test", "intra-model", "cross-model"]
-    OUTPUTS: OutputManager = OutputManager()
     
     def __init__(
         self,
@@ -30,6 +29,7 @@ class Get:
         self.output_path = self.project_path / "output"
         self._validate_args()
         self.test_dirs = self._fetch_test_dirs()
+        self.outputs = OutputManager()
     
     def _validate_args(self):
         if not self.test_type in self._VALID_TEST_TYPES:
@@ -96,7 +96,7 @@ class Get:
                             if stage.name.startswith("stage"):
                                 stage_run = StageRun(stage.name.split("stage_")[1])
                                 process_stage(stage, stage_run)
-                                self.OUTPUTS.store(test_dir.name, rep_num, self.llm, stage_run)
+                                self.outputs.store(test_dir.name, rep_num, self.llm, stage_run)
             elif self.test_type == "cross-model":
                 for llm in test_dir.iterdir():
                     if llm.is_dir():
@@ -107,10 +107,10 @@ class Get:
                                     if stage.name.startswith("stage"):
                                         stage_run = StageRun(stage.name.split("stage_")[1])
                                         process_stage(stage, stage_run)
-                                        self.OUTPUTS.store(test_dir.name, rep_num, llm.name, stage_run)
+                                        self.outputs.store(test_dir.name, rep_num, llm.name, stage_run)
             elif self.test_type in {"test", "subtest"}:
                 for stage in test_dir.iterdir():
                     if stage.name.startswith("stage"):
                         stage_run = StageRun(stage.name.split("stage_")[1])
                         process_stage(stage, stage_run)
-                        self.OUTPUTS.store(test_dir.name, 1, self.llm, stage_run)
+                        self.outputs.store(test_dir.name, 1, self.llm, stage_run)
