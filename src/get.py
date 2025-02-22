@@ -43,9 +43,9 @@ class Get:
         if self.test_type == "intra-model" and not self.llm:
             log.warning(
                 "'llm' must be specified for test type: 'intra-model'."
-                " Defaulted to GPT-4O-0806"
+                " Defaulted to GPT_4O_0806"
             )
-            self.llm = "GPT-4O-0806"
+            self.llm = "GPT_4O_0806"
         if not isinstance(self.tests, list):
             self.tests = [self.tests]
         
@@ -70,14 +70,22 @@ class Get:
     def get_outputs(self):
         def process_stage(stage, stage_run):
             stage_name = stage.name.split("stage_")[1]
-            for c in stage.iterdir():
-                if c.is_dir():
-                    for i in c.iterdir():
-                        if i.is_dir():
-                            path = i / f"stg_{stage_name}_{i.name}_response.txt"
-                            if path.exists():
-                                response = RequestOut(response=load_json(path, True))
-                                stage_run.store(c.name, i.name, response)
+            if stage_name == "1c":
+                for i in stage.iterdir():
+                    if i.is_dir():
+                        path = i / f"stg_{stage_name}_{i.name}_response.txt"
+                        if path.exists():
+                            response = RequestOut(response=load_json(path, True))
+                            stage_run.store("combined", i.name, response)
+            else:
+                for c in stage.iterdir():
+                    if c.is_dir():
+                        for i in c.iterdir():
+                            if i.is_dir():
+                                path = i / f"stg_{stage_name}_{i.name}_response.txt"
+                                if path.exists():
+                                    response = RequestOut(response=load_json(path, True))
+                                    stage_run.store(c.name, i.name, response)
 
         for test_dir in self.test_dirs:
             if self.test_type == "intra-model":
