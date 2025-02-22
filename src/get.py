@@ -105,4 +105,4 @@ class Get:
                     if stage.name.startswith("stage"):
                         stage_run = StageRun(stage.name.split("stage_")[1])
                         process_stage(stage, stage_run)
-                        self.OUTPUTS.store(test_dir.name, None, self.llm, stage_run)
+                        self.OUTPUTS.store(test_dir.name, 1, self.llm, stage_run)
