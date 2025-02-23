@@ -10,7 +10,6 @@ log = logging.getLogger("app.get")
 
 class Get:
     _VALID_TEST_TYPES = ["subtest", "test", "intra-model", "cross-model"]
-    OUTPUTS: OutputManager = OutputManager()
     
     def __init__(
         self,
@@ -30,6 +29,7 @@ class Get:
         self.output_path = self.project_path / "output"
         self._validate_args()
         self.test_dirs = self._fetch_test_dirs()
+        self.outputs = OutputManager()
     
     def _validate_args(self):
         if not self.test_type in self._VALID_TEST_TYPES:
@@ -43,9 +43,9 @@ class Get:
         if self.test_type == "intra-model" and not self.llm:
             log.warning(
                 "'llm' must be specified for test type: 'intra-model'."
-                " Defaulted to GPT-4O-0806"
+                " Defaulted to GPT_4O_0806"
             )
-            self.llm = "GPT-4O-0806"
+            self.llm = "GPT_4O_0806"
         if not isinstance(self.tests, list):
             self.tests = [self.tests]
         
@@ -70,14 +70,22 @@ class Get:
     def get_outputs(self):
         def process_stage(stage, stage_run):
             stage_name = stage.name.split("stage_")[1]
-            for c in stage.iterdir():
-                if c.is_dir():
-                    for i in c.iterdir():
-                        if i.is_dir():
-                            path = i / f"stg_{stage_name}_{i.name}_response.txt"
-                            if path.exists():
-                                response = RequestOut(response=load_json(path, True))
-                                stage_run.store(c.name, i.name, response)
+            if stage_name == "1c":
+                for i in stage.iterdir():
+                    if i.is_dir():
+                        path = i / f"stg_{stage_name}_{i.name}_response.txt"
+                        if path.exists():
+                            response = RequestOut(response=load_json(path, True))
+                            stage_run.store("combined", i.name, response)
+            else:
+                for c in stage.iterdir():
+                    if c.is_dir():
+                        for i in c.iterdir():
+                            if i.is_dir():
+                                path = i / f"stg_{stage_name}_{i.name}_response.txt"
+                                if path.exists():
+                                    response = RequestOut(response=load_json(path, True))
+                                    stage_run.store(c.name, i.name, response)
 
         for test_dir in self.test_dirs:
             if self.test_type == "intra-model":
@@ -88,7 +96,7 @@ class Get:
                             if stage.name.startswith("stage"):
                                 stage_run = StageRun(stage.name.split("stage_")[1])
                                 process_stage(stage, stage_run)
-                                self.OUTPUTS.store(test_dir.name, rep_num, self.llm, stage_run)
+                                self.outputs.store(test_dir.name, rep_num, self.llm, stage_run)
             elif self.test_type == "cross-model":
                 for llm in test_dir.iterdir():
                     if llm.is_dir():
@@ -99,10 +107,10 @@ class Get:
                                     if stage.name.startswith("stage"):
                                         stage_run = StageRun(stage.name.split("stage_")[1])
                                         process_stage(stage, stage_run)
-                                        self.OUTPUTS.store(test_dir.name, rep_num, llm.name, stage_run)
+                                        self.outputs.store(test_dir.name, rep_num, llm.name, stage_run)
             elif self.test_type in {"test", "subtest"}:
                 for stage in test_dir.iterdir():
                     if stage.name.startswith("stage"):
                         stage_run = StageRun(stage.name.split("stage_")[1])
                         process_stage(stage, stage_run)
-                        self.OUTPUTS.store(test_dir.name, 1, self.llm, stage_run)
+                        self.outputs.store(test_dir.name, 1, self.llm, stage_run)

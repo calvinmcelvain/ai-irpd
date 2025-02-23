@@ -1,267 +1,230 @@
-# Packages
-import sys, os
+import sys
 import numpy as np
 import pandas as pd
-import re
-from dotenv import load_dotenv
+from pathlib import Path
+from typing import List, Dict
 from itertools import combinations
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-# Appending src dir. for module import
-sys.path.append(os.path.dirname(os.getcwd()))
-
-# Loading Environment Variables
-load_dotenv(os.path.join(os.path.dirname(os.getcwd()), "configs/configs.env"))
-
-# Modules
-from src.testing.process_inputs import load_json
-from src.utils import get_instance_types
-from src.testing.schemas import Stage1, Stage1r
+sys.path.append(Path().resolve().parent.as_posix())
+sys.path.append((Path().resolve().parent / "src").as_posix())
+from src.output_manager import OutputManager
+from src.utils import validate_json_string
+from src.testing.stages.schemas import *
+from src.get import Get
 
 
-def get_responses(
-    test_number: int, stage: str, case: str = 'uni', replication_dir: str = None
-    ):
-    """
-    Gets all responses from replication test.
-    """
-    if replication_dir is None:
-        replication_dir = os.path.join(
-            os.getenv('PROJECT_DIRECTORY'), "output", "replication_tests"
-        )
-    if case == 'uni_switch':
-        instance_types = ['ucoop', 'udef', 'coop', 'def']
-    else:
-        instance_types = get_instance_types(case=case)
-    test_dir = os.path.join(replication_dir, f'test_{test_number}')
-    
-    stage_schemas = {
-        '1': Stage1,
-        '1r': Stage1r
+class Variability:
+    SCHEMA_MAP = {
+        "1": Stage1Schema,
+        "1r": Stage1rSchema,
+        "1c": {
+            "part_1": Stage1Schema,
+            "part_2": Stage1rSchema,
+        },
+        "2": Stage2Schema,
+        "3": Stage3Schema
     }
     
-    if stage in {'1', '1r'}:
-        schema = stage_schemas[stage]
-        responses = {
-            t: [
-                load_json(os.path.join(
-                    test_dir, replication, f"stage_{stage}_{t}",
-                    f"stg_{stage}_{t}_response.txt"
-                ), schema)
-                for replication in os.listdir(test_dir)
-                if replication.startswith('replication')
-            ]
-            for t in instance_types
-        }
-    elif stage == '1c':
-        responses = {
-            '1c_1': [],
-            '1c_2': []
-        }
-        for t in instance_types:
-            responses[t] = []
-        for replication in os.listdir(test_dir):
-            if replication.startswith('replication'):
-                responses['1c_1'].append(
-                    load_json(
-                        os.path.join(
-                            test_dir, replication, "stage_1c",
-                            "part_1", "stg_1c_1_response.txt"
-                        ), 
-                        Stage1
-                    )
-                )
-                responses['1c_2'].append(
-                    load_json(
-                        os.path.join(
-                            test_dir, replication, "stage_1c",
-                            "part_2", "stg_1c_2_response.txt"
-                        ), 
-                        Stage1r
-                    )
-                )
-                for t in instance_types:
-                    responses[t].append(
-                        load_json(os.path.join(
-                            test_dir, replication, f"stage_1r_{t}",
-                            f"stg_1r_{t}_response.txt"
-                        ), Stage1r)
-                    )
-    elif stage in {'2', '3'}:
-        final_outputs_dir = os.path.join(test_dir, "final_outputs")
-        responses = [
-            pd.read_csv(os.path.join(final_outputs_dir, file))
-            for file in os.listdir(final_outputs_dir) if file.endswith('.csv')
+    def __init__(self, responses: OutputManager):
+        self.responses = responses
+    
+    @staticmethod
+    def _get_category_att(output):
+        if hasattr(output, "categories"):
+            return output.categories
+        if hasattr(output, "refined_categories"):
+            return output.refined_categories
+        if hasattr(output, "assigned_categories"):
+            return output.assigned_categories
+        if hasattr(output, "category_ranking"):
+            return output.category_ranking
+    
+    @staticmethod
+    def _jaccard_sim(s1: set, s2: set):
+        return len(s1.intersection(s2)) / len(s1.union(s2))
+    
+    def _threshold_similarity(self, categories: List, unified_categories: List, threshold: float):
+        all_cat_names = [
+            cat.category_name.replace("_", " ")
+            for cat in categories + unified_categories
         ]
-    return responses
-
-
-def name_similarity(test_responses: dict) -> pd.DataFrame:
-    """
-    Calculating category name similarities.
-    """
-    dfs = []
-    for test in range(len(test_responses)):
-        responses = test_responses[test]
-        new_values = {key: [] for key in responses.keys()}
-        for key, items in responses.items():
-            for item in items:
-                try:
-                    category_names = [
-                        category.category_name.replace("_", " ")
-                        for category in item.categories
-                    ]
-                except AttributeError:
-                    category_names = [
-                        category.category_name.replace("_", " ")
-                        for category in item.refined_categories
-                    ]
-                new_values[key].append(" ".join(category_names))
+        all_cat_defs = [
+            cat.definition for cat in categories + unified_categories
+        ]
+        cat_names_w_ids = list(enumerate(all_cat_names[:len(categories)]))
         
         vectorizer = TfidfVectorizer()
-        data = []
-        for key, combined_texts in new_values.items():
-            if len(combined_texts) < 2:
-                continue
-
-            tfidf_matrix = vectorizer.fit_transform(combined_texts)
-            sim_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
-            
-            upper_triangle = np.triu_indices_from(sim_matrix, k=1)
-            upper_triangle_values = sim_matrix[upper_triangle]
-            
-            for sim in upper_triangle_values:
-                data.append({
-                    'instance_type': key,
-                    'similarity': sim,
-                    'test': test
-                })
+        tfidf_matrix_names = vectorizer.fit_transform(all_cat_names)
+        tfidf_matrix_defs = vectorizer.fit_transform(all_cat_defs)
         
-        dfs.append(pd.DataFrame(data))
-    
-    return pd.concat(dfs, axis=0, ignore_index=True)
-    
-
-def definition_similarity(test_responses: dict) -> pd.DataFrame:
-    """
-    Calculates category definition similarity by matching pairs of definitions 
-    with the maximum cosine similarity, with respect to the matching scheme.
-    """
-    dfs = []
-    for test in range(len(test_responses)):
-        responses = test_responses[test]
-        data = []
-        for key in responses.keys():
-            definitions_with_ids = []
-            for replication_id, replication in enumerate(responses[key]):
-                try:
-                    for category in replication.categories:
-                        definitions_with_ids.append(
-                            (replication_id, category.definition)
-                        )
-                except AttributeError:
-                    for category in replication.refined_categories:
-                        definitions_with_ids.append(
-                            (replication_id, category.definition)
-                        )
+        num_categories = len(cat_names_w_ids)
         
-            definitions = [item[1] for item in definitions_with_ids]
-            replication_ids = [item[0] for item in definitions_with_ids]
-            
-            vectorizer = TfidfVectorizer()
-            tfidf_matrix = vectorizer.fit_transform(definitions)
-            similarity_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
-            
-            # EX: (sim_score, rep_id1, rep_id2)
-            similarity_scores = []
-            for i, j in combinations(range(len(definitions)), 2):
-                if replication_ids[i] != replication_ids[j]:
-                    similarity_scores.append((similarity_matrix[i, j], i, j))
-            
-            similarity_scores.sort(reverse=True, key=lambda x: x[0])
-            
-            matched = set()
-            for sim, i, j in similarity_scores:
-                if i not in matched and j not in matched:
-                    matched.add(i)
-                    matched.add(j)
-                    data.append({
-                        'instance_type': key,
-                        'similarity': sim,
-                        'test': test
-                    })
-        dfs.append(pd.DataFrame(data))
-    return pd.concat(dfs, axis=0, ignore_index=True)
+        sim_matrix_names = cosine_similarity(
+            tfidf_matrix_names[:num_categories], 
+            tfidf_matrix_names[num_categories:]
+        )
+        sim_matrix_defs = cosine_similarity(
+            tfidf_matrix_defs[:num_categories], 
+            tfidf_matrix_defs[num_categories:]
+        )
+        sim_matrix = sim_matrix_names + sim_matrix_defs
+        
+        results = []
+        for cat_idx, sim_array in enumerate(sim_matrix):
+            if all(sim_array < threshold):
+                results.append(categories[cat_idx])
+        return results
 
+    def category_sims(self, threshold: float):
+        data = []
+        stages = {"1", "1r", "1c"}
 
-def unique_categories(test_responses: dict) -> pd.DataFrame:
-    """
-    Gets the unique categories and counts from all replicates within a 
-    replication test
-    """
-    data = []
-    
-    for test_idx, responses in enumerate(test_responses):
-        category_counts = {}
-        for instance_type, items in responses.items():
-            for item in items:
-                try:
-                    categories = [cat.category_name for cat in item.categories]
-                except AttributeError:
-                    categories = [
-                        cat.category_name for cat in item.refined_categories
-                    ]
+        for test, llm_dict in self.responses.test_runs.items():
+            for llm, n_dict in llm_dict.items():
+                names = {}
+                defs = {}
+
+                for n, _ in n_dict.items():
+                    for stage in stages:
+                        stage_response = self.responses.get(test, n, llm, stage)
+                        
+                        if not stage_response:
+                            continue
+                        
+                        schema = self.SCHEMA_MAP[stage]
+                        if stage not in names:
+                            names[stage] = {}
+                            defs[stage] = {}
+
+                        for case, values in stage_response.items():
+                            if case not in names[stage]:
+                                names[stage][case] = {}
+                                defs[stage][case] = {}
+
+                            for instance, instance_value in values.items():
+                                if stage == "1c":
+                                    schema = self.SCHEMA_MAP[stage][instance]
+                                response = validate_json_string(instance_value[0].response, schema)
+                                
+                                if stage == "1r":
+                                    stage_1c = self.responses.get(test, n, llm, "1c", "combined", "part_2")
+                                    if stage_1c:
+                                        u_response = validate_json_string(stage_1c[0].response, schema)
+                                        response.refined_categories = self._threshold_similarity(
+                                            response.refined_categories, u_response.refined_categories, threshold
+                                        )
+                                
+                                if instance not in names[stage][case]:
+                                    names[stage][case][instance] = []
+                                    defs[stage][case][instance] = []
+
+                                for category in self._get_category_att(response):
+                                    names[stage][case][instance].append((n, category.category_name.replace("_", " ")))
+                                    defs[stage][case][instance].append((n, category.definition))
                 
-                for category in categories:
-                    key = (instance_type, category)
-                    category_counts[key] = category_counts.get(key, 0) + 1
-        
-        data.extend({
-            'instance_type': instance_type,
-            'category': category,
-            'count': count,
-            'test': test_idx
-        } for (instance_type, category), count in category_counts.items())
+                for stage in names.keys():
+                    for c in names[stage].keys():
+                        for inst in names[stage][c].keys():
+                            replicates = [item[0] for item in names[stage][c][inst]]
+                            name_list = [item[1] for item in names[stage][c][inst]]
+                            def_list = [item[1] for item in defs[stage][c][inst]]
+                            
+                            for k, values in {"name": name_list, "definition": def_list}.items():
+                                vec = TfidfVectorizer().fit_transform(values)
+                                cosine = cosine_similarity(vec, vec)
+
+                                cosine_scores = [
+                                    (cosine[i, j], i, j)
+                                    for i, j in combinations(range(len(values)), 2)
+                                    if replicates[i] != replicates[j]
+                                ]
+                                jaccard_scores = [
+                                    (self._jaccard_sim(set(values[i]), set(values[j])), i, j)
+                                    for i, j in combinations(range(len(values)), 2)
+                                    if replicates[i] != replicates[j]
+                                ]
+
+                                cosine_scores.sort(reverse=True, key=lambda x: x[0])
+                                jaccard_scores.sort(reverse=True, key=lambda x: x[0])
+                                
+                                for method, scores in {"cosine": cosine_scores, "jaccard": jaccard_scores}.items():
+                                    matched = set()
+                                    for sim, i, j in scores:
+                                        if i not in matched and j not in matched:
+                                            matched.add(i)
+                                            matched.add(j)
+                                            data.append({
+                                                "test": test,
+                                                "llm": llm,
+                                                "stage": stage,
+                                                "case": case,
+                                                "instance": inst,
+                                                "type": k,
+                                                "threshold": threshold,
+                                                "method": method,
+                                                "sim": sim
+                                            })
+        return pd.DataFrame(data)
     
-    return pd.DataFrame(data)
+    def unique_cats(self, threshold: float):
+        data = []
+        stages = {"1", "1r", "1c"}
 
+        for test, llm_dict in self.responses.test_runs.items():
+            for llm, n_dict in llm_dict.items():
+                names = {}
 
-def unified_category_similarity(test_responses: dict) -> pd.DataFrame:
-    """
-    Calculates similarity of categories and unified categories definitions.
-    """
-    data = []
-    replication_len = len(test_responses['1c_2'])
-    vectorizer = TfidfVectorizer()
-    for test in range(replication_len):
-        unified_cats = test_responses['1c_2'][test].refined_categories
-        for t in test_responses.keys():
-            if t in {'ucoop', 'udef', 'coop', 'def'}:
-                other_cats = test_responses[t][test].refined_categories
-                num_cats = len(other_cats)
-                all_cat_names = [
-                    cat.category_name.replace("_", " ")
-                    for cat in unified_cats + other_cats
-                ]
-                all_cat_defs = [
-                    cat.definition for cat in unified_cats + other_cats
-                ]
-                name_mat = vectorizer.fit_transform(all_cat_names)
-                def_mat = vectorizer.fit_transform(all_cat_defs)
-                name_sim = cosine_similarity(
-                    name_mat[:num_cats], name_mat[num_cats:]
-                )
-                def_sim = cosine_similarity(
-                    def_mat[:num_cats], def_mat[num_cats:]
-                )
-                df = pd.DataFrame({
-                    "name_sim": pd.DataFrame(name_sim).max().to_numpy(),
-                    "def_sim": pd.DataFrame(def_sim).max().to_numpy(),
-                    "type": t,
-                })
-                data.append(df)
-    return pd.concat(data, axis=0, ignore_index=True)
+                for n, _ in n_dict.items():
+                    for stage in stages:
+                        stage_response = self.responses.get(test, n, llm, stage)
+                        
+                        if not stage_response:
+                            continue
+                        
+                        schema = self.SCHEMA_MAP[stage]
+                        if stage not in names:
+                            names[stage] = {}
+
+                        for case, values in stage_response.items():
+                            if case not in names[stage]:
+                                names[stage][case] = {}
+
+                            for instance, instance_value in values.items():
+                                if stage == "1c":
+                                    schema = self.SCHEMA_MAP[stage][instance]
+                                response = validate_json_string(instance_value[0].response, schema)
+                                
+                                if stage == "1r":
+                                    stage_1c = self.responses.get(test, n, llm, "1c", "combined", "part_2")
+                                    if stage_1c:
+                                        u_response = validate_json_string(stage_1c[0].response, schema)
+                                        response.refined_categories = self._threshold_similarity(
+                                            response.refined_categories, u_response.refined_categories, threshold
+                                        )
+                                
+                                if instance not in names[stage][case]:
+                                    names[stage][case][instance] = []
+
+                                for category in self._get_category_att(response):
+                                    names[stage][case][instance].append(category.category_name)
+            for stage in names.keys():
+                for c in names[stage].keys():
+                    for inst in names[stage][c].keys():
+                        cat_names = names[stage][c][inst]
+                        unique = set(cat_names)
+                        for cat in unique:
+                            data.append({
+                                "test": test,
+                                "llm": llm,
+                                "stage": stage,
+                                "case": case,
+                                "instance": inst,
+                                "threshold": threshold,
+                                "category": cat,
+                                "count": len([c for c in cat_names if c == cat])
+                            })
+        return pd.DataFrame(data)
     
 
 
