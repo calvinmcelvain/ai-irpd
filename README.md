@@ -1,6 +1,6 @@
 # AI-IRPD Project
 
-This project is a specific research project aimed at creating game-theory categories from summaries of instances in an experimental economics game (Indefinitely Repeated Prisoner-Dilemma games (IRPD)), and classifying those summaries into the created categories. This project is not generally meant for public use due to its specialized nature.
+This project focuses on creating game-theory categories from summaries of instances/cases in an experimental economics game (Indefinitely Repeated Prisoner-Dilemma games (IRPD)) and classifying those summaries into the created categories.
 
 ## Overview
 
@@ -34,7 +34,7 @@ The research project involves several stages to process and classify summaries d
 
 ## Additional Tests
 
-### Replication/Stability Tests
+### Intra-Model (Replication) Tests
 
 - **Description**: Conduct replications of certain stages to measure the stability and replicability of the categorization process.
 
@@ -44,36 +44,13 @@ The research project involves several stages to process and classify summaries d
 
 ## Project Structure
 
-The project is organized into several modules and scripts to handle different stages and functionalities:
+The project is organized into several modules/packages and scripts to handle different stages and functionalities:
 
-- **models/**: Contains the LLM model configurations and request handling, as well as the IRPD testing class.
-- **schemas/**: Defines the JSON schemas for different stages.
-- **utils/**: Utility functions for data preparation, replication analysis, and stage processing.
-  - **plots/**: Plots for visualizing replication/stability tests.
-
-## Getting Started
-
-### Installation
-
-1. Clone the repository:
-
-```sh
-git clone https://github.com/calvinmcelvain/ai-irpd.git
-```
-
-2. Install the required packages:
-
-
-```sh
-pip install -r requirements.txt
-```
-
-3. Set up environment variables:
-    - Create a `configs.env` file in the root directory with the necessary configurations (e.g., LLM API keys and/or main preoject directory).
-
-## Contributing
-
-This project is primarily for internal research purposes. If you have any suggestions or improvements, please feel free to reach out.
+- **/src**
+  - **llms/**: Contains the LLM model configurations and request handling, as well as the IRPD testing class.
+    - **models.py**: Aggregates all LLMs and their clients.
+  - **testing/**: Contains all testing modules and **stages/** package.
+- **tools/**: Tools not otherwise used for testing.
 
 ## License
 
