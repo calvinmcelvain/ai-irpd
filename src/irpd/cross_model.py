@@ -1,13 +1,13 @@
 import logging
 from itertools import product
-from testing.irpd_base import IRPDBase
-from test_config import TestConfig
-from testing.stages import *
+from irpd.irpd_base import IRPDBase
+from irpd.test_config import TestConfig
+from irpd.stages import *
 
-log = logging.getLogger("app.intra_model")
+log = logging.getLogger(__name__)
 
 
-class IntraModel(IRPDBase):
+class CrossModel(IRPDBase):
     def __init__(
         self,
         case,
@@ -32,24 +32,24 @@ class IntraModel(IRPDBase):
             new_test,
             test_paths
         )
-        self._test_type = "intra_model"
+        self._test_type = "cross_model"
         if N > 1:
             self.N = N
         else:
             log.warning("N must be greater than or equal to 1. Defaulted to 1")
             self.N = 1
-        self._prod_lcrt = list(product(
-            self.llms, self.llm_configs, self.ras, self.treatments
+        self._prod_crt = list(product(
+            self.llm_configs, self.ras, self.treatments
         ))
         
-        if not new_test and len(self._prod_lcrt) > 1:
+        if not new_test and len(self._prod_crt) > 1:
             log.warning(
                 "Cannot have multiple test configs w/ previous test",
                 " Defaulted 'new_test' to True."
             )
             self.new_test = True
         
-        if self.test_paths and not len(self.test_paths) == len(self._prod_lcrt):
+        if self.test_paths and not len(self.test_paths) == len(self._prod_crt):
             log.error(
                 "test_paths must be the same length as the number of test configs."
             )
@@ -65,19 +65,19 @@ class IntraModel(IRPDBase):
         
         return [
             test_dir / f"test_{test + current_test}"
-            for test, _ in enumerate(self._prod_lcrt, start=1)
+            for test, _ in enumerate(self._prod_crt, start=1)
         ]
     
     def _generate_configs(self):
         if not self.test_paths:
             self.test_paths = self._generate_test_paths()
-        for idx, prod in enumerate(self._prod_lcrt):
-            llm, llm_config, ra, treatment = prod
+        for idx, prod in enumerate(self._prod_crt):
+            llm_config, ra, treatment = prod
             config = TestConfig(
                 case=self.case,
                 ra=ra,
                 treatment=treatment,
-                llms=llm,
+                llms=self.llms,
                 llm_config=llm_config,
                 stages=self.stages,
                 test_type=self._test_type,
@@ -88,7 +88,7 @@ class IntraModel(IRPDBase):
     def run(self, max_instances = None, threshold = 0.5, config_ids = None):
         super().run(max_instances, threshold, config_ids)
         for config in self._test_configs.values():
-            log.info(f"TEST: Start INTRA-MODEL Test = {config.test_id}")
+            log.info(f"TEST: Start of CROSS-MODEL Test = {config.test_id}")
             
             path = config.test_path
             if not path.exists():
@@ -97,19 +97,23 @@ class IntraModel(IRPDBase):
                 config.test_path.mkdir(exist_ok=True)
                 log.info(f"TEST: Created test directory: {path.exists()}")
             
-            llm = self._generate_model_instance(config.llms, config.llm_config)
-            
-            for n in range(1, self.N + 1):
-                sub_path = path / f"replication_{n}"
+            for l in self.llms:
+                log.info(f"TEST: Start {l} replications")
                 
-                log.info(f"START: Replicate {n}")
-                for stage_name in self.stages:
-                    context = self.OUTPUTS.get(config.test_id, n)
-                    stage_instance = globals().get(f"Stage{stage_name}")(
-                        config, sub_path, context, llm, max_instances, threshold
-                    )
+                llm = self._generate_model_instance(l, config.llm_config)
+                
+                for n in range(1, self.N + 1):
+                    sub_path = path / l / f"replication_{n}"
                     
-                    stage_instance.run()
-                    self.OUTPUTS.store(config.test_id, n, stage_instance.output)
-                log.info(f"TEST: End Replicate {n}")
-            log.info(f"Test: End of INTRA-MODEL Test = {config.test_id}")
+                    log.info(f"START: {l} replicate {n}")
+                    for stage_name in self.stages:
+                        context = self.OUTPUTS.get(config.test_id, n, l)
+                        stage_instance = globals().get(f"Stage{stage_name}")(
+                            config, sub_path, context, llm, max_instances, threshold
+                        )
+                        
+                        stage_instance.run()
+                        self.OUTPUTS.store(config.test_id, n, l, stage_instance.output)
+                    log.info(f"TEST: End {l} replicate {n}")
+                log.info(f"TEST: End of {l} replications")
+            log.info(f"Test: End of CROSS-MODEL Test = {config.test_id}")

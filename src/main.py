@@ -2,33 +2,11 @@ import subprocess
 import sys
 import logging
 from pathlib import Path
-from dataclasses import dataclass
-from enum import Enum
-from functools import cached_property
 from logger import setup_logger
-from utils import lazy_import, is_tail_running
+from utils import is_tail_running
+from irpd.test_type import TestClass
 
 log = logging.getLogger("app")
-
-
-@dataclass(frozen=True)
-class TestClassContainer:
-    module: str
-    test_class: str
-    
-    @cached_property
-    def impl(self):
-        return lazy_import(self.module, self.test_class)
-    
-
-class TestClass(TestClassContainer, Enum):
-    get = ("get", "Get")
-    test = ("testing.test", "Test")
-    subtest = ("testing.subtest", "Subtest")
-    cross_model = ("testing.cross_model", "CrossModel")
-    intra_model = ("testing.intra_model", "IntraModel")
-    sample_splitting = ("testing.sample_splitting", "SampleSplitting")
-
 
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
 import logging
 import pandas as pd
-from testing.stages.base_stage import BaseStage
+from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, load_json, validate_json_string
-from output_manager import StageRun
+from irpd.output_manager import StageRun
 from llms.base_model import RequestOut
 
-log = logging.getLogger("app.stage_2")
+log = logging.getLogger(__name__)
 
 
-class Stage2(BaseStage):
-    def __init__(self, test_config, sub_path, context, max_instances, threshold):
-        super().__init__(test_config, sub_path, context, max_instances, threshold)
-        self.stage = "2"
+class Stage3(BaseStage):
+    def __init__(self, test_config, sub_path, context, llm, max_instances, threshold):
+        super().__init__(test_config, sub_path, context, llm, max_instances, threshold)
+        self.stage = "3"
         self.schema = self.schemas[self.stage]
         self.output = StageRun(self.stage)
     
@@ -32,10 +32,30 @@ class Stage2(BaseStage):
             return None
         return True
     
+    def _get_stg2(self, case):
+        instance_types = self._get_instance_types(case)
+        for i in instance_types:
+            if not self.context.has("2", case, i):
+                log.info(
+                    f"OUTPUTS: Outputs for Stage 2, {case}, {i} not found in context."
+                    " Checking test path."
+                )
+        log.info(f"OUTPUTS: Getting outputs for Stage 2, case {case}.")
+        stage_run = StageRun("2")
+        for i in instance_types:
+            path = self.sub_path / "stage_2" / case / i / "responses"
+            for response in path.iterdir():
+                    if response.name.endswith("response.txt"):
+                        response = load_json(response, True)
+                        stage_run.store(case, i, RequestOut(response=response))
+        self.context.store(stage_run)
+        log.info(f"OUTPUTS: Stage 2, case {case} outputs stored in context.")
+        return None
+    
     def _get_stg1c_pt2(self):
         log.info(f"OUTPUTS: Getting outputs for Stage 1c part 2.")
         stage_run = StageRun("1c")
-        path = self.sub_path / f"stage_1c" / self.case / "part_2" / f"stg_1c_part_2_response.txt"
+        path = self.sub_path / f"stage_1c" / "part_2" / f"stg_1c_part_2_response.txt"
         if path.exists():
             log.info("OUTPUTS: Outputs retreived.")
             response = load_json(path, True)
@@ -58,7 +78,7 @@ class Stage2(BaseStage):
         system_prompts = {case: {} for case in self.cases}
         for c in self.cases:
             for i in self._get_instance_types(c):
-                prompt_name = f"stg_2_{self.treatment}.md"
+                prompt_name = f"stg_3_{self.treatment}.md"
                 prompt_path = self.prompt_path / c / self.ra / prompt_name
                 system_prompts[c][i] = file_to_string(prompt_path)
                 
@@ -86,21 +106,29 @@ class Stage2(BaseStage):
     def _get_user_prompt(self):
         user_prompts = {case: {} for case in self.cases}
         for c in self.cases:
+            self._get_stg2(c)
+            df_name = f"{c}_stg_2_final_output.csv"
+            df = pd.read_csv(self.sub_path / df_name)
             for i in self._get_instance_types(c):
-                df_name = f"{c}_{self.treatment}_{self.ra}_{i}.csv"
-                df_path = self.data_path / "test" / df_name
-                df = pd.read_csv(df_path)
-                if self.max_instances:
-                    df = df[:self.max_instances]
                 if self._check_completed_requests(i, c):
-                    if len(self.output.get(c, i)) == len(df):
-                        responses = [
-                            validate_json_string(r.response, self.schema)
-                            for r in self.output.get(c, i)
-                        ]
-                        window_nums = [r.window_number for r in responses]
-                        df = df[~df["window_number"].isin(window_nums)]
-                user_prompts[c][i] = df.to_dict("records")
+                    responses = [
+                        validate_json_string(r.response, self.schema)
+                        for r in self.output.get(c, i)
+                    ]
+                    window_nums = [r.window_number for r in responses]
+                else:
+                    window_nums = []
+                outputs = self.context.get("2", c, i)
+                response_list = []
+                for output in outputs:
+                    json_out = validate_json_string(output.response, self.schemas["2"])
+                    summary_df = df[df.columns.intersection(["summary_1", "summary_2", "window_number"])]
+                    if not json_out.window_number in window_nums:
+                        summary_df = summary_df[summary_df["window_number"] == json_out.window_number]
+                        response = pd.DataFrame(summary_df).to_dict("records")[0]
+                        response["assigned_categories"] = [cat.category_name for cat in json_out.assigned_categories]
+                        response_list.append(response)
+                user_prompts[c][i] = response_list
         self.user_prompts = user_prompts
         return None
     

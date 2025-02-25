@@ -6,17 +6,17 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from test_config import TestConfig
-from output_manager import TestRun, StageRun
+from irpd.test_config import TestConfig
+from irpd.output_manager import TestRun, StageRun
 from llms.base_model import RequestOut, Base
-from testing.stages.schemas import (
+from irpd.stages.schemas import (
     Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
 )
 from utils import (
     find_named_parent, validate_json_string, txt_to_pdf, write_json, load_json
 )
 
-log = logging.getLogger("app.base_stage")
+log = logging.getLogger(__name__)
 
 
 class BaseStage(ABC):

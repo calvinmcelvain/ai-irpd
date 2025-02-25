@@ -1,10 +1,10 @@
 import logging
 from itertools import product
-from testing.irpd_base import IRPDBase
-from test_config import TestConfig
-from testing.stages import *
+from irpd.irpd_base import IRPDBase
+from irpd.test_config import TestConfig
+from irpd.stages import *
 
-log = logging.getLogger("app.tests")
+log = logging.getLogger(__name__)
 
 
 class Test(IRPDBase):
@@ -100,11 +100,11 @@ class Test(IRPDBase):
                 log.info(f"TEST: Created test directory: {path.exists()}")
             
             for stage_name in self.stages:
-                context = self.OUTPUTS.get(config.test_id, 1)
+                context = self.OUTPUTS.get(config.test_id, 1, config.llms)
                 stage_instance = globals().get(f"Stage{stage_name}")(
                     config, path, context, llm, max_instances, threshold
                 )
                     
                 stage_instance.run()
-                self.OUTPUTS.store(config.test_id, 1, stage_instance.output)
+                self.OUTPUTS.store(config.test_id, 1, config.llms, stage_instance.output)
         log.info(f"TEST: End of {self._test_type.upper()} = {config.test_id}")

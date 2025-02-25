@@ -1,8 +1,8 @@
 import logging
-from testing.irpd_base import IRPDBase
+from irpd.irpd_base import IRPDBase
 from stages import *
 
-log = logging.getLogger("app.sample_splitting")
+log = logging.getLogger(__name__)
 
 
 class SampleSplitting(IRPDBase):

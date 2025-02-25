@@ -1,15 +1,15 @@
 import logging
 import pandas as pd
-from testing.stages.base_stage import BaseStage
+from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file
-from output_manager import StageRun
+from irpd.output_manager import StageRun
 
-log = logging.getLogger("app.stage_1")
+log = logging.getLogger(__name__)
 
 
 class Stage1(BaseStage):
-    def __init__(self, test_config, sub_path, context, max_instances, threshold):
-        super().__init__(test_config, sub_path, context, max_instances, threshold)
+    def __init__(self, test_config, sub_path, context, llm, max_instances, threshold):
+        super().__init__(test_config, sub_path, context, llm, max_instances, threshold)
         self.stage = "1"
         self.schema = self.schemas[self.stage]
         self.output = StageRun(self.stage)

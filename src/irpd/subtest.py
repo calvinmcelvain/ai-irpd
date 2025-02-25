@@ -1,7 +1,7 @@
 import logging
-from testing.test import Test
+from irpd.test import Test
 
-log = logging.getLogger("app.subtest")
+log = logging.getLogger(__name__)
 
 
 class Subtest(Test):

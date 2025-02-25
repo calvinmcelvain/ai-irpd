@@ -1,10 +1,10 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict
 from collections import defaultdict
 from llms.base_model import RequestOut
 
-log = logging.getLogger("app.output_manager")
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -37,7 +37,7 @@ class TestRun:
     def get(self, stage: str, case: str = None, instance_type: str = None):
         if stage in self.stage_runs:
             return self.stage_runs[stage].get(case, instance_type)
-        return None
+        return self
     
     def has(self, stage: str, case: str, instance_type: str):
         return stage in self.stage_runs and self.stage_runs[stage].has(case, instance_type)
@@ -61,8 +61,8 @@ class OutputManager:
     ):
         test_run = self.test_runs[test_id][llm].get(n)
         if test_run:
-            return test_run.get(stage, case, instance_type)
-        return None
+            return self.test_runs[test_id][llm][n].get(stage, case, instance_type)
+        return TestRun(n)
     
     def store(self, test_id: str, n: int, llm: str, stage_run: StageRun = None):
         test_run = self.test_runs[test_id][llm].setdefault(n, TestRun(n=n))

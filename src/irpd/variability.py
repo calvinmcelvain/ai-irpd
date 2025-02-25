@@ -1,17 +1,11 @@
-import sys
-import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import List, Dict
+from typing import List
 from itertools import combinations
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-sys.path.append(Path().resolve().parent.as_posix())
-sys.path.append((Path().resolve().parent / "src").as_posix())
-from src.output_manager import OutputManager
-from src.utils import validate_json_string
-from src.testing.stages.schemas import *
-from src.get import Get
+from irpd.output_manager import OutputManager
+from utils import validate_json_string
+from irpd.stages.schemas import *
 
 
 class Variability:

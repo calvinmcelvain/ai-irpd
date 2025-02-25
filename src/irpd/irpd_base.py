@@ -5,10 +5,10 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from utils import get_env_var
 from llms import *
-from test_config import TestConfig
-from output_manager import OutputManager
+from irpd.test_config import TestConfig
+from irpd.output_manager import OutputManager
 
-log = logging.getLogger("app.irpd_base")
+log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
