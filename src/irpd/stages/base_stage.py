@@ -27,6 +27,7 @@ class BaseStage(ABC):
         "2": Stage2Schema,
         "3": Stage3Schema
     }
+    retries = 3
     
     def __init__(
         self,
