@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+from llms.base_model import RequestOut
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, validate_json_string
 from irpd.output_manager import StageRun
@@ -84,10 +85,10 @@ class Stage1c(BaseStage):
                     pt2_output.response, self.schemas["1r"]
                 )
                 
-                categories.refined_categories = self._threshold_similarity(
-                    categories.refined_categories, ucategories.refined_categories
+                new_1r_cats = self._threshold_similarity(
+                    categories, ucategories
                 )
-                output.response = categories.model_dump_json()
+                output = RequestOut(response = new_1r_cats.model_dump_json())
                 text += self._output_to_txt(
                     output,
                     self.schemas["1r"],

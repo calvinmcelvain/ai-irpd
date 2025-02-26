@@ -74,11 +74,11 @@ class Stage2(BaseStage):
                         pt2_output.response, self.schemas["1r"]
                     )
                     
-                    categories.refined_categories = self._threshold_similarity(
-                        categories.refined_categories, ucategories.refined_categories
+                    new_1r_cats = self._threshold_similarity(
+                        categories, ucategories
                     )
-                    stg1r.response = categories.model_dump_json()
-                system_prompts[c][i] += self._output_to_txt(stg1r, self.schemas["1r"])
+                    output = RequestOut(response=new_1r_cats.model_dump_json())
+                system_prompts[c][i] += self._output_to_txt(output, self.schemas["1r"])
         self.system_prompts = system_prompts
         return None
     

@@ -121,15 +121,19 @@ class BaseStage(ABC):
             category_texts.append(category_text)
         return initial_text + "".join(category_texts)
     
-    def _threshold_similarity(self, categories: List, unified_categories: List):
+    def _threshold_similarity(
+        self, categories: Stage1rSchema, unified_categories: Stage1rSchema
+    ):
+        cats = categories.refined_categories
+        ucats = unified_categories.refined_categories
         all_cat_names = [
             cat.category_name.replace("_", " ")
-            for cat in categories + unified_categories
+            for cat in cats + ucats
         ]
         all_cat_defs = [
-            cat.definition for cat in categories + unified_categories
+            cat.definition for cat in cats + ucats
         ]
-        cat_names_w_ids = list(enumerate(all_cat_names[:len(categories)]))
+        cat_names_w_ids = list(enumerate(all_cat_names[:len(cats)]))
         
         vectorizer = TfidfVectorizer()
         tfidf_matrix_names = vectorizer.fit_transform(all_cat_names)
@@ -150,8 +154,9 @@ class BaseStage(ABC):
         results = []
         for cat_idx, sim_array in enumerate(sim_matrix):
             if all(sim_array < self.threshold):
-                results.append(categories[cat_idx])
-        return results
+                results.append(cats[cat_idx])
+        categories.refined_categories = results
+        return categories
     
     @staticmethod
     def _get_category_att(output):
