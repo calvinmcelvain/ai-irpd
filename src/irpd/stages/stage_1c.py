@@ -98,8 +98,9 @@ class Stage1c(BaseStage):
                         self.schemas["1r"],
                         f"## {i.upper()} Categories\n\n"
                     )
-                except Exception:
+                except Exception as e:
                     pdf = False
+                    log.error(f"Error occured in processing {c}, part {i}: {e}.")
                     continue
         pdf_path = self.sub_path / f"stg_{self.stage}_categories.pdf"
         if pdf:

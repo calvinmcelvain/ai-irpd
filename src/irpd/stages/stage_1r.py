@@ -64,8 +64,9 @@ class Stage1r(BaseStage):
                         write_file(system_path, output.system)
                         write_file(user_path, output.user)
                         write_file(response_path, output.response)
-                except Exception:
+                except Exception as e:
                     pdf = False
+                    log.error(f"Error occured in processing {c}, instance {i}: {e}.")
                     continue
             pdf_path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
             if pdf:

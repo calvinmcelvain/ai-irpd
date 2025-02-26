@@ -163,8 +163,9 @@ class Stage3(BaseStage):
                         if not any(path.exists() for path in [user_path, response_path]):
                             write_file(user_path, response.user)
                             write_file(response_path, response.response)
-                except Exception:
+                except Exception as e:
                     create_df = False
+                    log.error(f"Error occured in processing {c}, instance {i}: {e}.")
                     continue
             df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
             if create_df:
