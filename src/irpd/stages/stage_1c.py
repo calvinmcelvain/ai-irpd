@@ -111,7 +111,6 @@ class Stage1c(BaseStage):
                         schema=self.schemas[self.schema_map[part]]
                     )
                     self.output.store(self.case, part, output)
-            
             self._process_output()
         except Exception as e:
             log.error(f"Error in running stage {self.stage}: {e}")

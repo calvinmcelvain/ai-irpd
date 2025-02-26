@@ -20,7 +20,8 @@ class Stage1r(BaseStage):
                 prompt_name = f"stg_1r_{self.treatment}.md"
                 prompt_path = self.prompt_path / c / self.ra / prompt_name
                 system_prompts[c][i] =  file_to_string(prompt_path)
-        return system_prompts
+        self.system_prompts = system_prompts
+        return None
     
     def _get_user_prompt(self):
         user_prompts = {case: {} for case in self.cases}
@@ -32,7 +33,8 @@ class Stage1r(BaseStage):
                 user_prompts[c][i] = self._output_to_txt(
                     output[0], self.schemas["1"]
                 )
-        return user_prompts
+        self.user_prompts = user_prompts
+        return None
     
     def _process_output(self):
         meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
@@ -62,16 +64,14 @@ class Stage1r(BaseStage):
             self._txt_to_pdf(text, pdf_path)
         
     def run(self):
+        super().run()
         try:
             for c in self.cases:
                 for i in self._get_instance_types(c):
                     if not self._check_completed_requests(i, c):
-                        system_prompt = self._get_system_prompt()
-                        user_prompt = self._get_user_prompt()
-                        
                         output = self.llm.request(
-                            user=str(user_prompt[c][i]),
-                            system=str(system_prompt[c][i]),
+                            user=str(self.user_prompts[c][i]),
+                            system=str(self.system_prompts[c][i]),
                             schema=self.schema
                         )
                         self.output.store(c, i, output)

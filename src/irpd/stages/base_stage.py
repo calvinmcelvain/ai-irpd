@@ -271,4 +271,5 @@ class BaseStage(ABC):
     
     @abstractmethod
     def run(self):
-        pass
+        self._get_user_prompt()
+        self._get_system_prompt()

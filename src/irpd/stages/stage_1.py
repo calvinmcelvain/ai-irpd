@@ -21,7 +21,8 @@ class Stage1(BaseStage):
                 prompt_name = f"stg_1_{self.treatment}_{i}.md"
                 prompt_path = self.prompt_path / c / self.ra / prompt_name
                 system_prompts[c][i] =  file_to_string(prompt_path)
-        return system_prompts
+        self.system_prompts = system_prompts
+        return None
     
     def _get_user_prompt(self):
         user_prompts = {case: {} for case in self.cases}
@@ -30,7 +31,8 @@ class Stage1(BaseStage):
                 df_name = f"{c}_{self.treatment}_{self.ra}_{i}.csv"
                 df_path = self.data_path / "test" / df_name
                 user_prompts[c][i] = pd.read_csv(df_path).to_dict("records")
-        return user_prompts
+        self.user_prompts = user_prompts
+        return None
     
     def _process_output(self):
         meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
@@ -60,20 +62,17 @@ class Stage1(BaseStage):
             self._txt_to_pdf(text, pdf_path)
         
     def run(self):
+        super().run()
         try:
             for c in self.cases:
                 for i in self._get_instance_types(c):
                     if not self._check_completed_requests(i, c):
-                        system_prompt = self._get_system_prompt()
-                        user_prompt = self._get_user_prompt()
-                        
                         output = self.llm.request(
-                            user=str(user_prompt[c][i]),
-                            system=str(system_prompt[c][i]),
+                            user=str(self.user_prompts[c][i]),
+                            system=str(self.system_prompts[c][i]),
                             schema=self.schema
                         )
                         self.output.store(c, i, output)
-                
             self._process_output()
         except Exception as e:
             log.error(f"Error in running stage {self.stage}: {e}")

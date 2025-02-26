@@ -135,9 +135,8 @@ class Stage2(BaseStage):
             df.to_csv(df_path, index=False)
         
     def run(self):
+        super().run()
         try:
-            self._get_system_prompt()
-            self._get_user_prompt()
             for c in self.cases:
                 for i in self._get_instance_types(c):
                     if len(self.user_prompts[c][i]) != 0:
