@@ -45,6 +45,7 @@ class Stage1r(BaseStage):
         
         text = f"# Stage {self.stage} Output Categories\n\n"
         for c in self.cases:
+            pdf = True
             for i in self._get_instance_types(c):
                 try:
                     output = self.output.get(c, i)[0]
