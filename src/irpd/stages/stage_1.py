@@ -93,7 +93,7 @@ class Stage1(BaseStage):
                             log.error(f"Stage 1 error: {e}")
                             self._process_output()
                             raise Exception
-        if self.retries == 3:
+        if retries == self.retries:
             log.error("Max retries for HTTP requests was hit.")
         self._process_output()
             
