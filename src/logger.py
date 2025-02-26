@@ -5,15 +5,18 @@ from datetime import datetime
 from pathlib import Path
 
 logs_path = Path("src").resolve().parents[1] / "logs"
+app_log_file = logs_path / "app.log"
+debug_log_file = logs_path / "debug.log"
 logs_path.mkdir(exist_ok=True, parents=True)
 
 
-def setup_logger():
-    app_log_file = logs_path / "app.log"
-    debug_log_file = logs_path / "debug.log"
-
+def clear_logger():
     open(app_log_file, 'w').close()
     open(debug_log_file, 'w').close()
+
+
+def setup_logger():
+    clear_logger()
 
     logging.config.dictConfig({
         "version": 1,
