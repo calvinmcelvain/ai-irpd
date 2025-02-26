@@ -35,7 +35,7 @@ class Stage2(BaseStage):
     def _get_stg1c_pt2(self):
         log.info(f"OUTPUTS: Getting outputs for Stage 1c part 2.")
         stage_run = StageRun("1c")
-        path = self.sub_path / f"stage_1c" / self.case / "part_2" / f"stg_1c_part_2_response.txt"
+        path = self.sub_path / f"stage_1c" / "part_2" / f"stg_1c_part_2_response.txt"
         if path.exists():
             log.info("OUTPUTS: Outputs retreived.")
             response = load_json(path, True)
@@ -52,7 +52,6 @@ class Stage2(BaseStage):
             self._get_stg1c_pt2()
         if self.context.has("1c", self.case, "part_2"):
             pt2_output = self.context.get("1c", self.case, "part_2")[0]
-            text 
             text += "\n" + self._output_to_txt(pt2_output, self.schemas["1r"])
         
         system_prompts = {case: {} for case in self.cases}

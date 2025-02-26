@@ -87,8 +87,10 @@ class BaseStage(ABC):
                 log.info("OUTPUTS: Outputs retreived.")
                 response = load_json(path, True)
                 stage_run.store(case, i, RequestOut(response=response))
+            else:
+                log.warning("OUTPUTS: Outputs not found.")
         self.context.store(stage_run)
-        log.info(f"OUTPUTS: Stage {stage}, case {case} outputs stored in context.")
+        log.info(f"OUTPUTS: Stage {stage}, {case} outputs stored in context.")
         return None
     
     @staticmethod
