@@ -121,6 +121,7 @@ class Stage1c(BaseStage):
                             schema=self.schemas[self.schema_map[part]]
                         )
                         self.output.store(self.case, part, output)
+                        break
                     except Timeout:
                         retries += 1
                         log.warning("HTTP Request Timeout. Retrying...")

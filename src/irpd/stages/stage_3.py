@@ -187,6 +187,7 @@ class Stage3(BaseStage):
                                     schema=self.schema
                                 )
                                 self.output.store(c, i, output)
+                                break
                             except Timeout:
                                 retries += 1
                                 log.warning("HTTP Request Timeout. Retrying...")
