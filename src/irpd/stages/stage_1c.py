@@ -1,5 +1,7 @@
-import pandas as pd
 import logging
+import pandas as pd
+import time as t
+from requests.exceptions import Timeout
 from llms.base_model import RequestOut
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, validate_json_string
@@ -73,45 +75,63 @@ class Stage1c(BaseStage):
         text += self._output_to_txt(
             pt2_output, self.schemas[self.schema_map["part_2"]], f"## Unified Categories\n\n"
         )
+        pdf = True
         for c in self.cases:
             for i in self._get_instance_types(c):
-                if not self.context.has("1r", c, i):
-                    self._update_context("1r", c)
-                output = self.context.get("1r", c, i)[0]
-                categories = validate_json_string(
-                    output.response, self.schemas["1r"]
-                )
-                ucategories = validate_json_string(
-                    pt2_output.response, self.schemas["1r"]
-                )
-                
-                new_1r_cats = self._threshold_similarity(
-                    categories, ucategories
-                )
-                output = RequestOut(response = new_1r_cats.model_dump_json())
-                text += self._output_to_txt(
-                    output,
-                    self.schemas["1r"],
-                    f"## {i.upper()} Categories\n\n"
-                )
-        
+                try:
+                    if not self.context.has("1r", c, i):
+                        self._update_context("1r", c)
+                    output = self.context.get("1r", c, i)[0]
+                    categories = validate_json_string(
+                        output.response, self.schemas["1r"]
+                    )
+                    ucategories = validate_json_string(
+                        pt2_output.response, self.schemas["1r"]
+                    )
+                    
+                    new_1r_cats = self._threshold_similarity(
+                        categories, ucategories
+                    )
+                    output = RequestOut(response = new_1r_cats.model_dump_json())
+                    text += self._output_to_txt(
+                        output,
+                        self.schemas["1r"],
+                        f"## {i.upper()} Categories\n\n"
+                    )
+                except Exception as e:
+                    pdf = False
+                    log.error(f"Error occured in processing {c}, part {i}: {e}.")
+                    continue
         pdf_path = self.sub_path / f"stg_{self.stage}_categories.pdf"
-        self._txt_to_pdf(text, pdf_path)
+        if pdf:
+            self._txt_to_pdf(text, pdf_path)
         
     def run(self):
-        try:
-            for part in self.parts:
-                if not self._check_completed_requests(part, self.case):
-                    system_prompt = self._get_system_prompt()
-                    user_prompt = self._get_user_prompt()
-                    
-                    output = self.llm.request(
-                        user=str(user_prompt),
-                        system=str(system_prompt),
-                        schema=self.schemas[self.schema_map[part]]
-                    )
-                    self.output.store(self.case, part, output)
-            self._process_output()
-        except Exception as e:
-            log.error(f"Error in running stage {self.stage}: {e}")
+        for part in self.parts:
+            if not self._check_completed_requests(part, self.case):
+                retries = 0
+                while retries < self.retries:
+                    try:
+                        system_prompt = self._get_system_prompt()
+                        user_prompt = self._get_user_prompt()
+                        
+                        output = self.llm.request(
+                            user=str(user_prompt),
+                            system=str(system_prompt),
+                            schema=self.schemas[self.schema_map[part]]
+                        )
+                        self.output.store(self.case, part, output)
+                        break
+                    except Timeout:
+                        retries += 1
+                        log.warning("HTTP Request Timeout. Retrying...")
+                        t.sleep(3)
+                    except Exception as e:
+                        log.error(f"Stage 1 error: {e}")
+                        self._process_output()
+                        raise Exception
+        if retries == self.retries:
+            log.error("Max retries for HTTP requests was hit.")
+        self._process_output()
+            
             

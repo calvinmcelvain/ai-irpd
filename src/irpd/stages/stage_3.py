@@ -1,5 +1,7 @@
 import logging
 import pandas as pd
+import time as t
+from requests.exceptions import Timeout
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, load_json, validate_json_string
 from irpd.output_manager import StageRun
@@ -138,44 +140,62 @@ class Stage3(BaseStage):
             self._write_meta()
         
         for c in self.cases:
+            create_df = True
             for i in self._get_instance_types(c):
-                write_path = self.sub_path / f"stage_{self.stage}" / c / i 
-                write_path.mkdir(exist_ok=True, parents=True)
-                prefix = f"stg_{self.stage}_{i}_"
-                system_path = write_path / (prefix + "sys_prmpt.txt")
-                if not system_path.exists():
-                    write_file(system_path, self.system_prompts[c][i])
-                
-                prompts_path = write_path / "prompts"
-                responses_path = write_path / "responses"
-                prompts_path.mkdir(exist_ok=True)
-                responses_path.mkdir(exist_ok=True)
-                for response in self.output.get(c, i):
-                    output = validate_json_string(response.response, self.schema)
-                    prefix = f"{output.window_number}_"
-                    user_path = prompts_path / (prefix + "prompt.txt")
-                    response_path = responses_path / (prefix + "response.txt")
+                try:
+                    write_path = self.sub_path / f"stage_{self.stage}" / c / i 
+                    write_path.mkdir(exist_ok=True, parents=True)
+                    prefix = f"stg_{self.stage}_{i}_"
+                    system_path = write_path / (prefix + "sys_prmpt.txt")
+                    if not system_path.exists():
+                        write_file(system_path, self.system_prompts[c][i])
                     
-                    if not any(path.exists() for path in [user_path, response_path]):
-                        write_file(user_path, response.user)
-                        write_file(response_path, response.response)
-            df = self._build_data_output(c)
+                    prompts_path = write_path / "prompts"
+                    responses_path = write_path / "responses"
+                    prompts_path.mkdir(exist_ok=True)
+                    responses_path.mkdir(exist_ok=True)
+                    for response in self.output.get(c, i):
+                        output = validate_json_string(response.response, self.schema)
+                        prefix = f"{output.window_number}_"
+                        user_path = prompts_path / (prefix + "prompt.txt")
+                        response_path = responses_path / (prefix + "response.txt")
+                        
+                        if not any(path.exists() for path in [user_path, response_path]):
+                            write_file(user_path, response.user)
+                            write_file(response_path, response.response)
+                except Exception as e:
+                    create_df = False
+                    log.error(f"Error occured in processing {c}, instance {i}: {e}.")
+                    continue
             df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
-            df.to_csv(df_path, index=False)
+            if create_df:
+                df = self._build_data_output(c)
+                df.to_csv(df_path, index=False)
         
     def run(self):
         super().run()
-        try:
-            for c in self.cases:
-                for i in self._get_instance_types(c):
-                    if len(self.user_prompts[c][i]) != 0:
-                        for row in self.user_prompts[c][i]:
-                            output = self.llm.request(
-                                user=str(row),
-                                system=str(self.system_prompts[c][i]),
-                                schema=self.schema
-                            )
-                            self.output.store(c, i, output)
-            self._process_output()
-        except Exception as e:
-            log.error(f"Error in running stage {self.stage}: {e}")
+        for c in self.cases:
+            for i in self._get_instance_types(c):
+                if len(self.user_prompts[c][i]) != 0:
+                    for row in self.user_prompts[c][i]:
+                        retries = 0
+                        while retries < self.retries:
+                            try:
+                                output = self.llm.request(
+                                    user=str(row),
+                                    system=str(self.system_prompts[c][i]),
+                                    schema=self.schema
+                                )
+                                self.output.store(c, i, output)
+                                break
+                            except Timeout:
+                                retries += 1
+                                log.warning("HTTP Request Timeout. Retrying...")
+                                t.sleep(3)
+                            except Exception as e:
+                                log.error(f"Stage 1 error: {e}")
+                                self._process_output()
+                                raise Exception
+        if retries == self.retries:
+            log.error("Max retries for HTTP requests was hit.")
+        self._process_output()

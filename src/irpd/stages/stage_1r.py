@@ -1,4 +1,6 @@
 import logging
+import time as t
+from requests.exceptions import Timeout
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file
 from irpd.output_manager import StageRun
@@ -43,39 +45,57 @@ class Stage1r(BaseStage):
         
         text = f"# Stage {self.stage} Output Categories\n\n"
         for c in self.cases:
+            pdf = True
             for i in self._get_instance_types(c):
-                output = self.output.get(c, i)[0]
-                text += self._output_to_txt(
-                    output, self.schema, f"## {i.upper()} Categories\n\n"
-                )
-                
-                write_path = self.sub_path / f"stage_{self.stage}" / c / i
-                write_path.mkdir(exist_ok=True, parents=True)
-                prefix = f"stg_{self.stage}_{i}_"
-                system_path = write_path / (prefix + "sys_prmpt.txt")
-                user_path = write_path / (prefix + "user_prmpt.txt")
-                response_path = write_path / (prefix + "response.txt")
-                
-                if not any(path.exists() for path in [system_path, user_path, response_path]):
-                    write_file(system_path, output.system)
-                    write_file(user_path, output.user)
-                    write_file(response_path, output.response)
+                try:
+                    output = self.output.get(c, i)[0]
+                    text += self._output_to_txt(
+                        output, self.schema, f"## {i.upper()} Categories\n\n"
+                    )
+                    
+                    write_path = self.sub_path / f"stage_{self.stage}" / c / i
+                    write_path.mkdir(exist_ok=True, parents=True)
+                    prefix = f"stg_{self.stage}_{i}_"
+                    system_path = write_path / (prefix + "sys_prmpt.txt")
+                    user_path = write_path / (prefix + "user_prmpt.txt")
+                    response_path = write_path / (prefix + "response.txt")
+                    
+                    if not any(path.exists() for path in [system_path, user_path, response_path]):
+                        write_file(system_path, output.system)
+                        write_file(user_path, output.user)
+                        write_file(response_path, output.response)
+                except Exception as e:
+                    pdf = False
+                    log.error(f"Error occured in processing {c}, instance {i}: {e}.")
+                    continue
             pdf_path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
-            self._txt_to_pdf(text, pdf_path)
+            if pdf:
+                self._txt_to_pdf(text, pdf_path)
         
     def run(self):
         super().run()
-        try:
-            for c in self.cases:
-                for i in self._get_instance_types(c):
-                    if not self._check_completed_requests(i, c):
-                        output = self.llm.request(
-                            user=str(self.user_prompts[c][i]),
-                            system=str(self.system_prompts[c][i]),
-                            schema=self.schema
-                        )
-                        self.output.store(c, i, output)
-            self._process_output()
-        except Exception as e:
-            log.error(f"Error in running stage {self.stage}: {e}")
+        for c in self.cases:
+            for i in self._get_instance_types(c):
+                if not self._check_completed_requests(i, c):
+                    retries = 0
+                    while retries < self.retries:
+                        try:
+                            output = self.llm.request(
+                                user=str(self.user_prompts[c][i]),
+                                system=str(self.system_prompts[c][i]),
+                                schema=self.schema
+                            )
+                            self.output.store(c, i, output)
+                            break
+                        except Timeout:
+                            retries += 1
+                            log.warning("HTTP Request Timeout. Retrying...")
+                            t.sleep(3)
+                        except Exception as e:
+                            log.error(f"Stage 1 error: {e}")
+                            self._process_output()
+                            raise Exception
+        if retries == self.retries:
+            log.error("Max retries for HTTP requests was hit.")
+        self._process_output()
             
