@@ -1,5 +1,6 @@
 import logging
 from itertools import product
+from logger import clear_logger
 from irpd.irpd_base import IRPDBase
 from irpd.test_config import TestConfig
 from irpd.stages import *
@@ -88,6 +89,7 @@ class CrossModel(IRPDBase):
     def run(self, max_instances = None, threshold = 0.5, config_ids = None):
         super().run(max_instances, threshold, config_ids)
         for config in self._test_configs.values():
+            clear_logger(app=False)
             log.info(f"TEST: Start of CROSS-MODEL Test = {config.test_id}")
             
             path = config.test_path

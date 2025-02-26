@@ -1,5 +1,6 @@
 import logging
 from itertools import product
+from logger import clear_logger
 from irpd.irpd_base import IRPDBase
 from irpd.test_config import TestConfig
 from irpd.stages import *
@@ -88,6 +89,7 @@ class Test(IRPDBase):
     def run(self, max_instances = None, threshold = 0.5, config_ids = None):
         super().run(max_instances, threshold, config_ids)
         for config in self._test_configs.values():
+            clear_logger(app=False)
             log.info(f"TEST: Start {self._test_type.upper()} = {config.test_id}")
             
             llm = self._generate_model_instance(config.llms, config.llm_config)
