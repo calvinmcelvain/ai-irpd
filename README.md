@@ -56,7 +56,7 @@ The project is organized into several modules/packages and scripts to handle dif
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License. See the `LICENSE` file for more details.
+This project is licensed under the Apache license 2.0 License. See the `LICENSE` file for more details.
 
 ## Contact
 
