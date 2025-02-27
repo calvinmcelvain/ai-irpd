@@ -3,7 +3,7 @@ import logging
 from typing import List
 from pathlib import Path
 from abc import ABC, abstractmethod
-from utils import get_env_var
+from utils import get_env_var, str_to_list
 from llms import *
 from irpd.test_config import TestConfig
 from irpd.output_manager import OutputManager
@@ -54,9 +54,10 @@ class IRPDBase(ABC):
         self.configs = {}
 
     def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
-        if not isinstance(arg, list) or not all(isinstance(item, str) for item in arg):
-            arg = [arg]
-            setattr(self, name, [arg])
+        arg = str_to_list(arg)
+        if not all(isinstance(item, str) for item in arg):
+            log.error(f"Arguement {name} have only string value(s)")
+            raise ValueError
 
         valid_set = set(valid_values)
         index_map = {value: i for i, value in enumerate(valid_values)} 
@@ -92,15 +93,13 @@ class IRPDBase(ABC):
         )
     
     def remove_configs(self, config_ids: str | List[str]):
-        if isinstance(config_ids, str):
-            config_ids = [config_ids]
+        config_ids = str_to_list(config_ids)
         for id in config_ids:
             del self.configs[id]
         return None
 
     def add_configs(self, configs: TestConfig | List[TestConfig]):
-        if not isinstance(configs, list):
-            configs = [configs]
+        configs = str_to_list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
                 log.error(f"Test config {config} was not a TestConfig instance. Did not add.")
@@ -125,8 +124,7 @@ class IRPDBase(ABC):
         threshold: float = 0.5,
         config_ids: str | List[str] = None
     ):
-        if isinstance(config_ids, str):
-            config_ids = [config_ids]
+        config_ids = str_to_list(config_ids)
         if config_ids:
             self._test_configs = {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
