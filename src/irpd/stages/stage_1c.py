@@ -96,7 +96,7 @@ class Stage1c(BaseStage):
                     text += self._output_to_txt(
                         output,
                         self.schemas["1r"],
-                        f"## {i.upper()} Categories\n\n"
+                        f"## {c.capitalize()}; {i.upper()} Categories\n\n"
                     )
                 except Exception as e:
                     pdf = False

@@ -41,9 +41,9 @@ class Stage1(BaseStage):
         if not meta_path.exists():
             self._write_meta()
         
-        text = f"# Stage {self.stage} Output Categories\n\n"
         for c in self.cases:
             pdf = True
+            text = f"# {c.capitalize()} Stage {self.stage} Output Categories\n\n"
             for i in self._get_instance_types(c):
                 try:
                     output = self.output.get(c, i)[0]
