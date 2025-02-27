@@ -108,8 +108,8 @@ class Stage1c(BaseStage):
         
     def run(self):
         for part in self.parts:
+            retries = 0
             if not self._check_completed_requests(part, self.case):
-                retries = 0
                 while retries < self.retries:
                     try:
                         system_prompt = self._get_system_prompt()

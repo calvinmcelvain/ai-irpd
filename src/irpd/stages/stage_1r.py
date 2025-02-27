@@ -76,8 +76,8 @@ class Stage1r(BaseStage):
         super().run()
         for c in self.cases:
             for i in self._get_instance_types(c):
+                retries = 0
                 if not self._check_completed_requests(i, c):
-                    retries = 0
                     while retries < self.retries:
                         try:
                             output = self.llm.request(
