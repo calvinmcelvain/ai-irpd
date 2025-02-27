@@ -41,9 +41,9 @@ class Stage1(BaseStage):
         if not meta_path.exists():
             self._write_meta()
         
-        text = f"# Stage {self.stage} Output Categories\n\n"
         for c in self.cases:
             pdf = True
+            text = f"# Stage {self.stage} Output Categories\n\n"
             for i in self._get_instance_types(c):
                 try:
                     output = self.output.get(c, i)[0]
@@ -74,8 +74,8 @@ class Stage1(BaseStage):
         super().run()
         for c in self.cases:
             for i in self._get_instance_types(c):
+                retries = 0
                 if not self._check_completed_requests(i, c):
-                    retries = 0
                     while retries < self.retries:
                         try:
                             output = self.llm.request(

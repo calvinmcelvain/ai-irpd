@@ -176,6 +176,7 @@ class Stage3(BaseStage):
         super().run()
         for c in self.cases:
             for i in self._get_instance_types(c):
+                retries = 0
                 if len(self.user_prompts[c][i]) != 0:
                     for row in self.user_prompts[c][i]:
                         retries = 0
