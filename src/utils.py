@@ -31,6 +31,12 @@ def get_env_var(key: str) -> str:
     return value
 
 
+def str_to_list(value: str | list) -> list:
+    if isinstance(value, str):
+        return [value]
+    return value
+
+
 def lazy_import(module_name, class_name):
     """
     Function found from:
