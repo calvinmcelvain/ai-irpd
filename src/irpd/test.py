@@ -1,6 +1,8 @@
 import logging
 from itertools import product
+from pathlib import Path
 from logger import clear_logger
+from utils import str_to_list
 from irpd.irpd_base import IRPDBase
 from irpd.test_config import TestConfig
 from irpd.stages import *
@@ -44,11 +46,15 @@ class Test(IRPDBase):
                 " Defaulted 'new_test' to True."
             )
             self.new_test = True
-        if self.test_paths and not len(self.test_paths) == len(self._prod_lcrt):
-            log.error(
-                "test_paths must be the same length as the number of test configs."
-            )
-            raise ValueError
+        if self.test_paths:
+            test_paths = str_to_list(self.test_paths)
+            if not all(isinstance(path, Path) for path in test_paths):
+                test_paths = [Path(path) for path in test_paths]
+            if not len(self.test_paths) == len(self._prod_lcrt):
+                log.error(
+                    "test_paths must be the same length as the number of test configs."
+                )
+                raise ValueError
         self._generate_configs()
     
     def _generate_test_paths(self):
