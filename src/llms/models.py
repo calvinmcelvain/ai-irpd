@@ -22,11 +22,11 @@ class ModelClassContainer:
 
 class ModelClass(ModelClassContainer, Enum):
     GPT = ("llms.gpt", "GPT", "GPTConfigs")
-    Claude = ("llms.claude", "Claude", "ClaudeConfigs")
-    Gemini = ("llms.gemini", "Gemini", "GeminiConfigs")
-    Nova = ("llms.nova", "Nova", "NovaConfigs")
-    Mistral = ("llms.mistral", "Mistral", "MistralConfigs")
-    Grok = ("llms.grok", "Grok", "GrokConfigs")
+    CLAUDE = ("llms.claude", "Claude", "ClaudeConfigs")
+    GEMINI = ("llms.gemini", "Gemini", "GeminiConfigs")
+    NOVA = ("llms.nova", "Nova", "NovaConfigs")
+    MISTRAL = ("llms.mistral", "Mistral", "MistralConfigs")
+    GROK = ("llms.grok", "Grok", "GrokConfigs")
 
 
 @dataclass(frozen=True)
@@ -87,27 +87,45 @@ class LLMModel(LLMModelContainer, Enum):
         "GROK_2_1212",
         "grok-2-1212",
         "XAI_API_KEY",
-        ModelClass.Grok
+        ModelClass.GROK
     )
     CLAUDE_3_5_SONNET = (
         "CLAUDE_3_5_SONNET",
         "claude-3.5-sonnet-20241022",
         "ANTHROPIC_API_KEY",
-        ModelClass.Claude,
+        ModelClass.CLAUDE,
         OtherArgs(json_tool=True)
+    )
+    GEMINI_2_FLASH = (
+        "GEMINI_2_FLASH",
+        "gemini-2.0-flash-001",
+        "GOOGLE_API_KEY",
+        ModelClass.GEMINI
+    )
+    GEMINI_2_FLASH_LITE = (
+        "GEMINI_2_FLASH_LITE",
+        "gemini-2.0-flash-lite-001",
+        "GOOGLE_API_KEY",
+        ModelClass.GEMINI
+    )
+    GEMINI_1_5_PRO = (
+        "GEMINI_1_5_PRO",
+        "gemini-1.5-pro-002",
+        "GOOGLE_API_KEY",
+        ModelClass.GEMINI
     )
     NOVA_PRO_V1 = (
         "NOVA_PRO_V1",
         "amazon.nova-pro-v1:0",
         "BEDROCK_API_KEY",
-        ModelClass.Nova,
+        ModelClass.NOVA,
         OtherArgs(json_tool=True, region="us-east-1")
     )
     MISTRAL_LARGE_2411 = (
         "MISTRAL_LARGE_2411",
         "mistral-large-2411",
         "MISTRAL_API_KEY",
-        ModelClass.Mistral
+        ModelClass.MISTRAL
     )
     
     def get_model_instance(
