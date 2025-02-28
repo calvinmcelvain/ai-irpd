@@ -77,15 +77,11 @@ class OpenAIClient(Base):
                     response = client.chat.completions.create(**request_load)
             except (APIConnectionError, APITimeoutError) as e:
                 attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got error - {e}"
-                )
+                log.exception(f"Attempt {attempt_n}: Got error - {e}")
                 time.sleep(r.uniform(0.5, 2.0))
             except RateLimitError as e:
                 attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got RateLimit error - {e}"
-                )
+                log.exception(f"Attempt {attempt_n}: Got RateLimit error - {e}")
                 time.sleep(rate_limit_time)
         
             if isinstance(response, ChatCompletion):
@@ -99,13 +95,10 @@ class OpenAIClient(Base):
                 log.warning(
                     f"Response was not a Message instance. Got - {response}"
                 )
+                return response
 
         if self.print_response:
-            log.info(
-                f"Request response: {request_out.response}"
-            )
-            log.info(
-                f"Request meta: {request_out.meta}"
-            )
+            print(f"Request response: {request_out.response}")
+            print(f"Request meta: {request_out.meta}")
         
         return request_out

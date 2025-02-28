@@ -60,9 +60,7 @@ class Mistral(Base):
                     response = client.chat.complete(**request_load)
             except Exception as e:
                 attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got error - {e}"
-                )
+                log.exception(f"Attempt {attempt_n}: Got error - {e}")
                 time.sleep(r.uniform(0.5, 2.0))
         
             if isinstance(response, ChatCompletionResponse):
@@ -79,16 +77,13 @@ class Mistral(Base):
                     user=user
                 )
             else:
-                log.info(
+                log.warning(
                     f"Response was not a Message instance. Got - {response}"
                 )
+                return response
 
         if self.print_response:
-            log.info(
-                f"Request response: {request_out.response}"
-            )
-            log.info(
-                f"Request meta: {request_out.meta}"
-            )
+            print(f"Request response: {request_out.response}")
+            print(f"Request meta: {request_out.meta}")
         
         return request_out
