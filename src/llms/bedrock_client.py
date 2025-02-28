@@ -90,15 +90,11 @@ class BedrockClient(Base):
                 response = client.invoke_model(**request_load)
             except (ex.ModelTimeoutException, ex.ModelErrorException) as e:
                 attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got error - {e}"
-                )
+                log.exception(f"Attempt {attempt_n}: Got error - {e}")
                 time.sleep(r.uniform(0.5, 2.0))
             except (ex.ThrottlingException, ex.ServiceQuotaExceededException) as e:
                 attempt_n += 1
-                log.info(
-                    f"Attempt {attempt_n}: Got RateLimit error - {e}"
-                )
+                log.exception(f"Attempt {attempt_n}: Got RateLimit error - {e}")
                 time.sleep(rate_limit_time)
             
             meta_data = response['ResponseMetadata']
@@ -116,12 +112,8 @@ class BedrockClient(Base):
             )
 
         if self.print_response:
-            log.info(
-                f"Request response: {request_out.response}"
-            )
-            log.info(
-                f"Request meta: {request_out.meta}"
-            )
+            print(f"Request response: {request_out.response}")
+            print(f"Request meta: {request_out.meta}")
         
         return request_out
         

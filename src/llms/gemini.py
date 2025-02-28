@@ -92,6 +92,7 @@ class Gemini(Base):
                 )
             else:
                 log.error(f"Response was not a Message instance. Got - {response}")
+                return response
 
         if self.print_response:
             print(f"Request response: {request_out.response}")
