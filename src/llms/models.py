@@ -98,6 +98,13 @@ class LLMModel(LLMModelContainer, Enum):
         ModelClass.CLAUDE,
         OtherArgs(json_tool=True)
     )
+    CLAUDE_3_7_SONNET = (
+        "CLAUDE_3_7_SONNET",
+        "claude-3-7-sonnet-20250219",
+        "ANTHROPIC_API_KEY",
+        ModelClass.CLAUDE,
+        OtherArgs(json_tool=True)
+    )
     GEMINI_2_FLASH = (
         "GEMINI_2_FLASH",
         "gemini-2.0-flash-001",
