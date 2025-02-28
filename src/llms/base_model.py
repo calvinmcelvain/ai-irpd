@@ -61,12 +61,14 @@ class Base(ABC):
     def _prep_user_message(user: str):
         return {"role": "user", "content": user}
     
-    @abstractmethod
-    def default_configs(self):
+    def _prep_messages(self, user: str, system: str):
+        pass
+    
+    def _json_tool_call(self, schema: BaseModel):
         pass
     
     @abstractmethod
-    def _prep_messages(self, user: str, system: str):
+    def default_configs(self):
         pass
     
     @abstractmethod
@@ -81,8 +83,4 @@ class Base(ABC):
         schema: BaseModel = None,
         **kwargs
     ):
-        pass
-    
-    @abstractmethod
-    def _json_tool_call(self, schema: BaseModel):
         pass

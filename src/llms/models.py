@@ -4,6 +4,8 @@ from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
+import sys
+sys.path.append(Path().resolve().parent.as_posix())
 from utils import lazy_import, load_json, validate_json, get_env_var
 
 
@@ -21,12 +23,12 @@ class ModelClassContainer:
 
 
 class ModelClass(ModelClassContainer, Enum):
-    GPT = ("llms.gpt", "GPT", "GPTConfigs")
-    Claude = ("llms.claude", "Claude", "ClaudeConfigs")
-    Gemini = ("llms.gemini", "Gemini", "GeminiConfigs")
-    Nova = ("llms.nova", "Nova", "NovaConfigs")
-    Mistral = ("llms.mistral", "Mistral", "MistralConfigs")
-    Grok = ("llms.grok", "Grok", "GrokConfigs")
+    gpt = ("llms.gpt", "GPT", "GPTConfigs")
+    claude = ("llms.claude", "Claude", "ClaudeConfigs")
+    gemini = ("llms.gemini", "Gemini", "GeminiConfigs")
+    nova = ("llms.nova", "Nova", "NovaConfigs")
+    mistral = ("llms.mistral", "Mistral", "MistralConfigs")
+    grok = ("llms.grok", "Grok", "GrokConfigs")
 
 
 @dataclass(frozen=True)
@@ -49,65 +51,71 @@ class LLMModel(LLMModelContainer, Enum):
         "GPT_4O_0806",
         "gpt-4o-2024-08-06",
         "OPENAI_API_KEY",
-        ModelClass.GPT
+        ModelClass.gpt
     )
     GPT_4O_1120 = (
         "GPT_4O_1120",
         "gpt-4o-2024-11-20",
         "OPENAI_API_KEY",
-        ModelClass.GPT
+        ModelClass.gpt
     )
     GPT_4O_MINI_0718 = (
         "GPT_4O_MINI_0718",
         "gpt-4o-mini-2024-07-18",
         "OPENAI_API_KEY",
-        ModelClass.GPT,
+        ModelClass.gpt,
         OtherArgs(json_tool=True)
     )
     GPT_O1_1217 = (
         "GPT_O1_1217",
         "o1-2024-12-17",
         "OPENAI_API_KEY",
-        ModelClass.GPT
+        ModelClass.gpt
     )
     GPT_O1_MINI_0912 = (
         "GPT_O1_MINI_0912",
         "o1-mini-2024-09-12",
         "OPENAI_API_KEY",
-        ModelClass.GPT,
+        ModelClass.gpt,
         OtherArgs(json_tool=True)
     )
     GPT_O3_MINI_0131 = (
         "GPT_O3_MINI_0131",
         "o3-mini-2025-01-31",
         "OPENAI_API_KEY",
-        ModelClass.GPT
+        ModelClass.gpt
     )
     GROK_2_1212 = (
         "GROK_2_1212",
         "grok-2-1212",
         "XAI_API_KEY",
-        ModelClass.Grok
+        ModelClass.grok
     )
     CLAUDE_3_5_SONNET = (
         "CLAUDE_3_5_SONNET",
         "claude-3.5-sonnet-20241022",
         "ANTHROPIC_API_KEY",
-        ModelClass.Claude,
+        ModelClass.claude,
         OtherArgs(json_tool=True)
+    )
+    GEMINI_2_FLASH = (
+        "GEMINI_2_FLASH",
+        "gemini-2.0-flash",
+        "GOOGLE_API_KEY",
+        ModelClass.gemini
     )
     NOVA_PRO_V1 = (
         "NOVA_PRO_V1",
         "amazon.nova-pro-v1:0",
         "BEDROCK_API_KEY",
-        ModelClass.Nova,
+        ModelClass.nova,
         OtherArgs(json_tool=True, region="us-east-1")
     )
     MISTRAL_LARGE_2411 = (
         "MISTRAL_LARGE_2411",
         "mistral-large-2411",
         "MISTRAL_API_KEY",
-        ModelClass.Mistral
+        ModelClass.mistral
     )
     
     def get_model_instance(
@@ -116,7 +124,7 @@ class LLMModel(LLMModelContainer, Enum):
         print_response: bool = False
     ):
         model_class, model_configs = self.model_class.impl
-        config_path = Path().resolve() / "llms" / "llm_configs.json"
+        config_path = Path().resolve() / "llm_configs.json"
         config_json = validate_json(
             load_json(config_path)[config][self.key],
             model_configs
