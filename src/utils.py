@@ -4,6 +4,7 @@ import sys
 import re
 import importlib
 import json
+import yaml
 import logging
 from pathlib import Path
 from dotenv import load_dotenv 
@@ -47,6 +48,22 @@ def lazy_import(module_name, class_name):
         return getattr(module, class_name)
 
     return importer()
+
+
+def load_config(file_path: str = "configs.yml") -> object:
+    """
+    Load a YAML config file.
+    """
+    try:
+        with open(file_path, "r") as f:
+            config = yaml.safe_load(f)
+        return config
+    except FileNotFoundError as e:
+        log.error(f"Configuration file not found: {file_path}")
+        return None
+    except yaml.YAMLError as e:
+        log.error(f"Error parsing YAML file: {file_path}: {e}")
+        return None
 
 
 def load_json(file_path: str | Path, dumps: bool = False) -> object | str:

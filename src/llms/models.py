@@ -4,9 +4,9 @@ from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-import sys
-sys.path.append(Path().resolve().parent.as_posix())
-from utils import lazy_import, load_json, validate_json, get_env_var
+from utils import lazy_import, load_config, validate_json, get_env_var
+
+CONFIGS = load_config("llm_configs.yml")
 
 
 @dataclass(frozen=True)
@@ -143,9 +143,8 @@ class LLMModel(LLMModelContainer, Enum):
         print_response: bool = False
     ):
         model_class, model_configs = self.model_class.impl
-        config_path = Path().resolve() / "llm_configs.json"
         config_json = validate_json(
-            load_json(config_path)[config][self.key],
+            CONFIGS[config][self.key],
             model_configs
         )
         return model_class(
