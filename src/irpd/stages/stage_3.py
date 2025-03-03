@@ -109,7 +109,7 @@ class Stage3(BaseStage):
         user_prompts = {case: {} for case in self.cases}
         for c in self.cases:
             self._get_stg2(c)
-            df_name = f"{c}_stg_2_final_output.csv"
+            df_name = f"stg_2_final_output.csv"
             df = pd.read_csv(self.sub_path / df_name)
             for i in self._get_instance_types(c):
                 if self._check_completed_requests(i, c):
@@ -167,10 +167,10 @@ class Stage3(BaseStage):
                     create_df = False
                     log.error(f"Error occured in processing {c}, instance {i}: {e}.")
                     continue
-            df_path = self.sub_path / f"{c}_stg_{self.stage}_final_output.csv"
-            if create_df:
-                df = self._build_data_output(c)
-                df.to_csv(df_path, index=False)
+        df_path = self.sub_path / f"stg_{self.stage}_final_output.csv"
+        if create_df:
+            df = self._build_data_output()
+            df.to_csv(df_path, index=False)
         
     def run(self):
         super().run()

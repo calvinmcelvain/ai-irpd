@@ -235,28 +235,35 @@ class BaseStage(ABC):
         
         return None
     
-    def _build_data_output(self, case: str):
-        raw_df_path = self.data_path / "raw" / f"{case}_{self.treatment}_{self.ra}.csv"
-        raw_df = pd.read_csv(raw_df_path)
-        df_list = []
-        for i in self._get_instance_types(case):
-            response_list = []
-            outputs = self.output.get(case, i)
-            for j in outputs:
-                response = {}
-                output = validate_json_string(j.response, self.schema)
-                response["reasoning"] = output.reasoning
-                response["window_number"] = output.window_number
-                for l in self._get_category_att(output):
-                    name = f"{i}_{l.category_name}"
-                    response[name] = 1
-                    if hasattr(l, "rank"):
-                        response[name] = l.rank
-                response_list.append(response)
-            response_df = pd.DataFrame.from_records(response_list)
-            df_list.append(response_df)
-        final_df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
-        return pd.merge(raw_df, final_df, on='window_number')
+    def _build_data_output(self):
+        dfs = []
+        for case in self.cases:
+            raw_df_path = self.data_path / "raw" / f"{case}_{self.treatment}_{self.ra}.csv"
+            raw_df = pd.read_csv(raw_df_path)
+            df_list = []
+            for i in self._get_instance_types(case):
+                response_list = []
+                outputs = self.output.get(case, i)
+                for j in outputs:
+                    response = {}
+                    output = validate_json_string(j.response, self.schema)
+                    response["reasoning"] = output.reasoning
+                    response["window_number"] = output.window_number
+                    for l in self._get_category_att(output):
+                        name = f"{i}_{l.category_name}"
+                        response[name] = 1
+                        if hasattr(l, "rank"):
+                            response[name] = l.rank
+                    response_list.append(response)
+                response_df = pd.DataFrame.from_records(response_list)
+                df_list.append(response_df)
+            df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
+            merged_df = pd.merge(raw_df, df, on='window_number')
+            if len(self.cases) > 1:
+                merged_df["case"] = self.cases.index(case)
+            dfs.append(merged_df)
+        return pd.concat(dfs, ignore_index=True, sort=False)
+                
     
     @abstractmethod
     def _get_system_prompt(self):
