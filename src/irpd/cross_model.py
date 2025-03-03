@@ -18,8 +18,8 @@ class CrossModel(IRPDBase):
         treatments,
         stages,
         N: int,
-        llms = ["GPT_4O_1120"],
-        llm_configs = ["base"],
+        llms = None,
+        llm_configs = None,
         project_path = None,
         new_test = True,
         test_paths = None

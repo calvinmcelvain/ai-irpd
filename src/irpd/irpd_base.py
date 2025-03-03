@@ -3,12 +3,16 @@ import logging
 from typing import List
 from pathlib import Path
 from abc import ABC, abstractmethod
-from utils import get_env_var, str_to_list
+from utils import get_env_var, str_to_list, load_config
 from llms import *
 from irpd.test_config import TestConfig
 from irpd.output_manager import OutputManager
 
 log = logging.getLogger(__name__)
+
+CONFIGS = load_config()
+DEFAULTS = CONFIGS["defaults"]
+VALID_VALUES = CONFIGS["valid_values"]
 
 
 class IRPDBase(ABC):
@@ -26,60 +30,64 @@ class IRPDBase(ABC):
         case: str,
         ras: List[str],
         treatments: List[str],
-        stages: List[str],
-        llms: List[str] = ["GPT_4O_1120"],
-        llm_configs: List[str] = ["base"],
-        project_path: str = None,
+        stages: List[str] = None,
+        llms: List[str] = None,
+        llm_configs: List[str] = None,
+        project_path: str | Path = None,
         new_test: bool = True,
         test_paths: List = None
     ):
-        self.case = self._validate_arg(
-            [case], self._VALID_CASES, "cases")[0]
-        self.ras = self._validate_arg(
-            ras, self._VALID_RAS, "ras")
-        self.treatments = self._validate_arg(
-            treatments, self._VALID_TREATMENTS, "treatments")
-        self.stages = self._validate_arg(
-            stages, self._VALID_STAGES, "stages")
-        self.llms = self._validate_arg(
-            llms, self._VALID_LLMS, "llms")
-        self.llm_configs = self._validate_arg(
-            llm_configs, self._VALID_LLM_CONFIGS, "llm_configs")
-        self.project_path = Path(
-            project_path if project_path else get_env_var("PROJECT_DIRECTORY")
-        )
-        self.output_path = self.project_path / "output"
+        self.case = case
+        self.ras = ras
+        self.treatments = treatments
+        self.stages = stages
+        self.llms = llms
+        self.llm_configs = llm_configs
+        self.project_path = project_path
         self.new_test = new_test
         self.test_paths = test_paths
+        self._validate_values()
+
+        if not project_path:
+            self.project_path = Path(get_env_var("PROJECT_DIRECTORY"))
+        self.output_path = self.project_path / "output"
         self.configs = {}
 
-    def _validate_arg(self, arg: list[str], valid_values: list[str], name: str):
-        arg = str_to_list(arg)
-        if not all(isinstance(item, str) for item in arg):
-            log.error(f"Arguement {name} have only string value(s)")
-            raise ValueError
+    def _validate_values(self):
+        attributes = ["case", "ras", "treatments", "stages", "llms", "llm_configs"]
+        for attr in attributes:
+            value = getattr(self, attr)
+            if value is None:
+                setattr(self, attr, DEFAULTS[attr])
+            else:
+                valid_values = VALID_VALUES[attr]
+                value = str_to_list(value)
+                if not all(isinstance(item, str) for item in value):
+                    log.error(f"Argument {attr} must have only string value(s)")
+                    raise ValueError(f"Argument {attr} must have only string value(s)")
 
-        valid_set = set(valid_values)
-        index_map = {value: i for i, value in enumerate(valid_values)} 
+                valid_set = set(valid_values)
+                index_map = {v: i for i, v in enumerate(valid_values)}
 
-        valid_items, invalid_items = [], []
-        for item in arg:
-            (valid_items if item in valid_set else invalid_items).append(item)
+                valid_items, invalid_items = [], []
+                for item in value:
+                    (valid_items if item in valid_set else invalid_items).append(item)
 
-        if not valid_items:
-            log.error(
-                f"All provided `{name}` values are invalid. No valid items remain."
-                f" Allowed values: {valid_values}", 
-            )
-            raise ValueError
-        
-        if invalid_items:
-            log.warning(
-                f"Some `{name}` values are invalid and were ignored: {invalid_items}. "
-                f"Allowed values: {valid_values}"
-            )
+                if not valid_items:
+                    log.error(
+                        f"All provided `{attr}` values are invalid. No valid items remain."
+                        f" Allowed values: {valid_values}"
+                    )
+                    raise ValueError(f"All provided `{attr}` values are invalid. No valid items remain.")
 
-        return sorted(valid_items, key=lambda x: index_map[x])
+                if invalid_items:
+                    log.warning(
+                        f"Some `{attr}` values are invalid and were ignored: {invalid_items}. "
+                        f"Allowed values: {valid_values}"
+                    )
+
+                setattr(self, attr, sorted(valid_items, key=lambda x: index_map[x]))
+                self.case = self.case[0]    # Needs to be string, not list
     
     def _generate_model_instance(self, llm: str, config: str):
         return getattr(LLMModel, llm).get_model_instance(config=config)
