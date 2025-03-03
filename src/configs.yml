@@ -1,0 +1,4 @@
+defaults:
+  llm: GPT_4O_1120
+  llm_configs: base
+  
