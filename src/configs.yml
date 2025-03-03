@@ -7,7 +7,7 @@ valid_values:
     - "1c"
     - "2"
     - "3"
-  cases:
+  case:
     - uni
     - uniresp
     - switch
