@@ -51,7 +51,7 @@ class IRPDBase(ABC):
         for attr in attributes:
             value = getattr(self, attr)
             if value is None:
-                setattr(self, attr, DEFAULTS[attr])
+                setattr(self, attr, str_to_list(DEFAULTS[attr]))
             else:
                 valid_values = VALID_VALUES[attr]
                 value = str_to_list(value)
@@ -59,12 +59,11 @@ class IRPDBase(ABC):
                     log.error(f"Argument {attr} must have only string value(s)")
                     raise ValueError(f"Argument {attr} must have only string value(s)")
 
-                valid_set = set(valid_values)
                 index_map = {v: i for i, v in enumerate(valid_values)}
 
                 valid_items, invalid_items = [], []
                 for item in value:
-                    (valid_items if item in valid_set else invalid_items).append(item)
+                    (valid_items if item in valid_values else invalid_items).append(item)
 
                 if not valid_items:
                     log.error(
@@ -78,9 +77,8 @@ class IRPDBase(ABC):
                         f"Some `{attr}` values are invalid and were ignored: {invalid_items}. "
                         f"Allowed values: {valid_values}"
                     )
-
                 setattr(self, attr, sorted(valid_items, key=lambda x: index_map[x]))
-                self.case = self.case[0]    # Needs to be string, not list
+        self.case = self.case[0]    # Needs to be string, not list
     
     def _generate_model_instance(self, llm: str, config: str):
         return getattr(LLMModel, llm).get_model_instance(config=config)
