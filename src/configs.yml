@@ -44,6 +44,6 @@ valid_values:
 
 # Default values to test models
 defaults:
-  llm: GPT_4O_1120
+  llms: GPT_4O_1120
   llm_configs: base
   

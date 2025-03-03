@@ -15,14 +15,7 @@ DEFAULTS = CONFIGS["defaults"]
 VALID_VALUES = CONFIGS["valid_values"]
 
 
-class IRPDBase(ABC):
-    _VALID_STAGES = ['0', '1', '1r', '1c', '2', '3']
-    _VALID_CASES = ["uni", "uniresp", "switch", "first", "uni_switch"]
-    _VALID_RAS = ["ra1", "ra2", "both", "exp"]
-    _VALID_TREATMENTS = ["imperfect", "perfect", "merged"]
-    _VALID_LLMS = LLMModel._member_names_
-    _VALID_LLM_CONFIGS = ["base", "res1", "res2", "res3"]
-    
+class IRPDBase(ABC):    
     OUTPUTS: OutputManager = OutputManager()
 
     def __init__(
