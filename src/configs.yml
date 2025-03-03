@@ -1,3 +1,28 @@
+# Valid values
+valid_values:
+  stages:
+    - "0"
+    - "1"
+    - "1r"
+    - "1c"
+    - "2"
+    - "3"
+  cases:
+    - uni
+    - uniresp
+    - switch
+    - first
+    - uni_switch
+  ras:
+    - ra1
+    - ra2
+    - both
+  treatments:
+    - imperfect
+    - perfect
+    - merged
+
+# Default values to test models
 defaults:
   llm: GPT_4O_1120
   llm_configs: base
