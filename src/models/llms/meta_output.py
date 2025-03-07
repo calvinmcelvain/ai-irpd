@@ -9,7 +9,9 @@ class MetaOutput:
     output_tokens: int
     prompt: Prompts
     created: int = None
+    total_tokens: int = None
     
     def __post_init__(self):
+        self.total_tokens = sum([self.input_tokens, self.output_tokens])
         if not self.created:
             self.created = int(datetime.now().timestamp())
