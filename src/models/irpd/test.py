@@ -3,26 +3,26 @@ from itertools import product
 from pathlib import Path
 from logger import clear_logger
 from utils import str_to_list
-from irpd.irpd_base import IRPDBase
+from models.irpd.base_irpd import IRPDBase
 from irpd.test_config import TestConfig
 from irpd.stages import *
 
 log = logging.getLogger(__name__)
 
 
-class IntraModel(IRPDBase):
+class Test(IRPDBase):
     def __init__(
         self,
         case,
         ras,
         treatments,
         stages,
-        N: int,
         llms = None,
         llm_configs = None,
         project_path = None,
         new_test = True,
-        test_paths = None
+        test_paths = None,
+        test = "test"
     ):
         super().__init__(
             case,
@@ -35,12 +35,7 @@ class IntraModel(IRPDBase):
             new_test,
             test_paths
         )
-        self._test_type = "intra_model"
-        if N > 1:
-            self.N = N
-        else:
-            log.warning("N must be greater than or equal to 1. Defaulted to 1")
-            self.N = 1
+        self._test_type = test
         self._prod_lcrt = list(product(
             self.llms, self.llm_configs, self.ras, self.treatments
         ))
@@ -51,7 +46,6 @@ class IntraModel(IRPDBase):
                 " Defaulted 'new_test' to True."
             )
             self.new_test = True
-        
         if self.test_paths:
             test_paths = str_to_list(self.test_paths)
             if not all(isinstance(path, Path) for path in test_paths):
@@ -64,14 +58,20 @@ class IntraModel(IRPDBase):
         self._generate_configs()
     
     def _generate_test_paths(self):
-        test_dir = self.output_path / self._test_type
-        current_test = self._get_max_test_number(test_dir)
+        if self._test_type == "test":
+            test_dir = self.output_path / "base_tests" / self.case
+            prefix = "test_"
+        else:
+            test_dir = self.output_path / "subtests"
+            prefix = ""
+        
+        current_test = self._get_max_test_number(test_dir, prefix)
         
         if not self.new_test:
-            return [test_dir / f"test_{current_test}"]
+            return [test_dir / f"{prefix}{current_test}"]
         
         return [
-            test_dir / f"test_{test + current_test}"
+            test_dir / f"{prefix}{test + current_test}"
             for test, _ in enumerate(self._prod_lcrt, start=1)
         ]
     
@@ -96,7 +96,9 @@ class IntraModel(IRPDBase):
         super().run(max_instances, threshold, config_ids)
         for config in self._test_configs.values():
             clear_logger(app=False)
-            log.info(f"TEST: Start INTRA-MODEL Test = {config.test_id}")
+            log.info(f"TEST: Start {self._test_type.upper()} = {config.test_id}")
+            
+            llm = self._generate_model_instance(config.llms, config.llm_config)
             
             path = config.test_path
             if not path.exists():
@@ -105,19 +107,12 @@ class IntraModel(IRPDBase):
                 config.test_path.mkdir(exist_ok=True)
                 log.info(f"TEST: Created test directory: {path.exists()}")
             
-            llm = self._generate_model_instance(config.llms, config.llm_config)
-            
-            for n in range(1, self.N + 1):
-                sub_path = path / f"replication_{n}"
-                
-                log.info(f"START: Replicate {n}")
-                for stage_name in self.stages:
-                    context = self.OUTPUTS.get(config.test_id, n, config.llms)
-                    stage_instance = globals().get(f"Stage{stage_name}")(
-                        config, sub_path, context, llm, max_instances, threshold
-                    )
+            for stage_name in self.stages:
+                context = self.OUTPUTS.get(config.test_id, 1, config.llms)
+                stage_instance = globals().get(f"Stage{stage_name}")(
+                    config, path, context, llm, max_instances, threshold
+                )
                     
-                    stage_instance.run()
-                    self.OUTPUTS.store(config.test_id, n, config.llms, stage_instance.output)
-                log.info(f"TEST: End Replicate {n}")
-            log.info(f"Test: End of INTRA-MODEL Test = {config.test_id}")
+                stage_instance.run()
+                self.OUTPUTS.store(config.test_id, 1, config.llms, stage_instance.output)
+        log.info(f"TEST: End of {self._test_type.upper()} = {config.test_id}")

@@ -1,5 +1,5 @@
 import logging
-from irpd.irpd_base import IRPDBase
+from models.irpd.base_irpd import IRPDBase
 from stages import *
 
 log = logging.getLogger(__name__)
