@@ -1,6 +1,9 @@
 import logging
 import time
 import random as r
+from utils import validate_json_string
+from models.llms.request_output import RequestOut
+from models.llms.meta_output import MetaOutput
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message import Message
@@ -17,7 +20,6 @@ class AnthropicToolCall(BaseModel):
     
 
 class AnthropicClient(Base):
-    
     @abstractmethod
     def default_configs(self):
         pass
@@ -36,6 +38,7 @@ class AnthropicClient(Base):
         return messages
         
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
+        super().request(user, system, schema)
         client = self.create_client()
         
         request_load = {"model": self.model}
@@ -61,17 +64,14 @@ class AnthropicClient(Base):
                 time.sleep(rate_limit_time)
         
             if isinstance(response, Message):
-                id = response.id
-                output_tokens = response.usage.output_tokens
-                input_tokens = response.usage.input_tokens
-                tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
                 content = next(i.input if "tool_use" in i.type else i.text for i in response.content)
-                request_out = self._process_output(
-                    id=id,
-                    tokens=tokens,
-                    content=content,
+                request_out = self._request_out(
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                    user=user,
                     system=system,
-                    user=user
+                    content=content,
+                    schema=schema
                 )
             else:
                 log.warning(
@@ -80,7 +80,7 @@ class AnthropicClient(Base):
                 return response
 
         if self.print_response:
-            print(f"Request response: {request_out.response}")
+            print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")
         
         return request_out

@@ -1,4 +1,8 @@
 from pydantic import BaseModel
+from models.prompts import Prompts
+from models.llms.request_output import RequestOut
+from models.llms.meta_output import MetaOutput
+from utils import validate_json_string
 from abc import ABC, abstractmethod
 
 
@@ -33,6 +37,27 @@ class Base(ABC):
     
     def _json_tool_call(self, schema: BaseModel):
         pass
+    
+    @staticmethod
+    def _request_out(
+        input_tokens: int,
+        output_tokens: int,
+        system: str,
+        user: str,
+        content: str,
+        schema: str
+    ):
+        prompts = Prompts(system=system, user=user)
+        meta = MetaOutput(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            prompt=prompts
+        )
+        return RequestOut(
+            text=content,
+            parsed=validate_json_string(content, schema),
+            meta=meta
+        )
     
     @abstractmethod
     def default_configs(self):

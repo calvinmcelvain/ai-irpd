@@ -2,6 +2,9 @@ import logging
 import time
 import random as r
 from pydantic import BaseModel, Field
+from utils import validate_json_string
+from models.llms.request_output import RequestOut
+from models.llms.meta_output import MetaOutput
 from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
 from google.api_core.exceptions import (
@@ -24,7 +27,6 @@ class GeminiConfigs(BaseModel):
 
 
 class Gemini(Base):
-    
     def create_client(self):
         return genai.Client(api_key=self.api_key)
     
@@ -40,6 +42,7 @@ class Gemini(Base):
         return {"contents": user}
     
     def request(self, user, system, schema: BaseModel = None, **kwargs):
+        super().request(user, system, schema)
         client = self.create_client()
         
         configs = self.configs.model_dump(exclude_none=True)
@@ -78,17 +81,14 @@ class Gemini(Base):
                 time.sleep(r.uniform(0.5, 2.0))
         
             if isinstance(response, GenerateContentResponse):
-                request_out = response
-                output_tokens = response.usage_metadata.candidates_token_count
-                input_tokens = response.usage_metadata.prompt_token_count
-                tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
                 content = response.parsed.model_dump_json()
-                request_out = self._process_output(
-                    id="none",
-                    tokens=tokens, 
-                    content=content,
+                request_out = self._request_out(
+                    input_tokens=response.usage_metadata.prompt_token_count,
+                    output_tokens=response.usage_metadata.candidates_token_count,
                     system=system,
-                    user=user
+                    user=user,
+                    content=content,
+                    schema=schema
                 )
             else:
                 log.error(f"Response was not a Message instance. Got - {response}")

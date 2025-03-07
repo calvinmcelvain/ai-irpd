@@ -68,6 +68,7 @@ class BedrockClient(Base):
         return out
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
+        super().request(user, system, schema)
         client = self.create_client()
         
         user_m = self._add_json_requirement(user) if schema else user
@@ -96,23 +97,19 @@ class BedrockClient(Base):
                 attempt_n += 1
                 log.exception(f"Attempt {attempt_n}: Got RateLimit error - {e}")
                 time.sleep(rate_limit_time)
-            
             meta_data = response['ResponseMetadata']
-            id = meta_data['RequestId']
-            output_tokens = int(meta_data['HTTPHeaders']['x-amzn-bedrock-output-token-count'])
-            input_tokens = int(meta_data['HTTPHeaders']['x-amzn-bedrock-input-token-count'])
-            tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
             content = self._dump_response(response)
-            request_out = self._process_output(
-                id=id,
-                tokens=tokens,
-                content=content,
+            request_out = self._request_out(
+                input_tokens=int(meta_data['HTTPHeaders']['x-amzn-bedrock-input-token-count']),
+                output_tokens=int(meta_data['HTTPHeaders']['x-amzn-bedrock-output-token-count']),
+                user=user,
                 system=system,
-                user=user
+                content=content,
+                schema=schema
             )
 
         if self.print_response:
-            print(f"Request response: {request_out.response}")
+            print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")
         
         return request_out

@@ -64,17 +64,14 @@ class Mistral(Base):
                 time.sleep(r.uniform(0.5, 2.0))
         
             if isinstance(response, ChatCompletionResponse):
-                id = response.id
-                output_tokens = response.usage.completion_tokens
-                input_tokens = response.usage.prompt_tokens
-                tokens = {"output_tokens": output_tokens, "input_tokens": input_tokens}
                 content = response.choices[0].message.content
-                request_out = self._process_output(
-                    id=id,
-                    tokens=tokens, 
-                    content=content,
+                request_out = self._request_out(
+                    input_tokens=response.usage.prompt_tokens,
+                    output_tokens=response.usage.completion_tokens,
+                    user=user,
                     system=system,
-                    user=user
+                    content=content,
+                    schema=schema
                 )
             else:
                 log.warning(
@@ -83,7 +80,7 @@ class Mistral(Base):
                 return response
 
         if self.print_response:
-            print(f"Request response: {request_out.response}")
+            print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")
         
         return request_out
