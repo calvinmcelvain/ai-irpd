@@ -52,6 +52,23 @@ def str_to_path(path: Union[str, Path]) -> Path:
     return path
 
 
+def create_directory(path: Union[str, Path]) -> None:
+    """
+    Creates directory.
+    """
+    path_c = str_to_path(path)
+    try:
+        if not path_c.exists():
+            path_c.mkdir(exist_ok=True)
+            log.info(f"PATH: Created directory: {path_c.as_posix()}")
+        else:
+            log.info(f"PATH: Path exists: {path_c.as_posix()}")
+        return None
+    except Exception as e:
+        log.error(f"Error creating directory '{path_c}': {e}")
+        raise
+
+
 def lazy_import(module_name: str, class_name: str) -> object:
     """
     Function found from:
