@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from models.llms.meta_output import MetaOutput
+from models.meta_output import MetaOutput
 
 
 class RequestOut(BaseModel):

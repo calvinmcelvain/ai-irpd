@@ -1,7 +1,7 @@
 from typing import Dict
 from pathlib import Path
 from dataclasses import dataclass
-from models.llms.request_output import RequestOut
+from models.request_output import RequestOut
 
 
 @dataclass
