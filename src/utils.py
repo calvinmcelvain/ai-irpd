@@ -84,11 +84,11 @@ def load_json(file_path: str | Path, dumps: bool = False) -> object | str:
         json_data = json.loads(Path(file_path).read_text())
     except (JSONDecodeError, FileNotFoundError) as e:
         log.error(f"Error loading JSON from {file_path}: {e}")
-        return None
+        raise
     return json.dumps(json_data) if dumps else json_data
 
 
-def validate_json(json_data: object, schema: BaseModel) -> BaseModel | None:
+def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.
     """
@@ -96,14 +96,14 @@ def validate_json(json_data: object, schema: BaseModel) -> BaseModel | None:
         schema_obj = schema.model_validate(json_data)
         return schema_obj
     except ValidationError as e:
-        log.error(
+        log.exception(
             f"Validation error for schema '{schema.__name__}': {e}\n"
             f"JSON data: {json.dumps(json_data, indent=2)}"
         )
         return None
 
 
-def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | str:
+def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.
     """
@@ -111,63 +111,113 @@ def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | str:
         schema_obj = schema.model_validate_json(json_str)
         return schema_obj
     except Exception as e:
-        log.error(f"Error in model validation': {e}\n")
-        return json_str
+        log.exception(f"Error in model validation': {e}\n")
+        return None
 
 
 def file_to_string(file_path: str | Path) -> str:
     """
     Return file contents as a string.
     """
-    return Path(file_path).read_text()
+    try:
+        return Path(file_path).read_text()
+    except FileNotFoundError:
+        log.error(f"File not found: {file_path}")
+        raise
+    except Exception as e:
+        log.error(f"Error reading file '{file_path}': {e}")
+        raise
 
 
 def write_file(file_path: str | Path, file_write: str) -> None:
     """
     Write a string to a file at the given path.
     """
-    Path(file_path).write_text(file_write)
+    try:
+        Path(file_path).write_text(file_write)
+    except Exception as e:
+        log.error(f"Error writing to file '{file_path}': {e}")
+        raise
 
 
 def write_json(file_path: str | Path, data: object, indent: int = 4) -> None:
     """
     Write JSON data to a file at the given path.
     """
-    Path(file_path).write_text(json.dumps(data, indent=indent))
+    try:
+        Path(file_path).write_text(json.dumps(data, indent=indent))
+    except TypeError as e:
+        log.error(f"Error serializing JSON data: {e}")
+        raise
+    except Exception as e:
+        log.error(f"Error writing JSON to file '{file_path}': {e}")
+        raise
 
 
 def check_directories(paths: list[str]) -> bool:
     """
     Check if all given directories exist.
     """
-    return all(Path(path).is_dir() for path in paths)
+    try:
+        return all(Path(path).is_dir() for path in paths)
+    except Exception as e:
+        log.exception(f"Error checking directories: {e}")
+        return False
 
 
 def find_named_parent(path: Path, target: str) -> Path | None:
     """
     Finds the nearest parent directory with the given name.
     """
-    for parent in path.parents:
-        if parent.name == target:
-            return parent
-    return None
+    try:
+        for parent in path.parents:
+            if parent.name == target:
+                return parent
+    except Exception as e:
+        log.exception(
+            f"Error finding named parent '{target}' in path '{path}': {e}"
+        )
+        return None
 
 
 def get_nested_attr(obj: object, attr_path: str) -> object:
     """
     Gets nested attribute.
     """
-    for attr in attr_path.split("."):
-        obj = getattr(obj, attr)
-    return obj
+    try:
+        for attr in attr_path.split("."):
+            obj = getattr(obj, attr)
+        return obj
+    except AttributeError as e:
+        log.error(
+            f"Error accessing attribute '{attr}' in path '{attr_path}': {e}"
+        )
+        raise
 
 
 def regex_group(string: str, pattern: str, group: int = 1) -> str:
     """
     Returns group of regex match.
     """
-    match = re.search(pattern, string)
-    return match.group(group)
+    try:
+        match = re.search(pattern, string)
+        if match:
+            return match.group(group)
+        else:
+            log.warning(
+                f"No match found for pattern '{pattern}' in string '{string}'"
+            )
+            return ""
+    except IndexError:
+        log.exception(
+            f"Group {group} not found in the match for pattern '{pattern}'"
+        )
+        return ""
+    except re.error as e:
+        log.exception(
+            f"Regex error for pattern '{pattern}': {e}"
+        )
+        return ""
 
 
 def txt_to_pdf(text: str, file_path: Path) -> None:
