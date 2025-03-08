@@ -35,12 +35,24 @@ def get_env_var(key: str) -> str:
 
 
 def str_to_list(value: str | list) -> list:
+    """
+    Returns list containing string/
+    """
     if isinstance(value, str):
         return [value]
     return value
 
 
-def lazy_import(module_name, class_name):
+def str_to_path(path: str | Path) -> Path:
+    """
+    Return Path object for path arg.
+    """
+    if isinstance(path, str):
+        return Path(str)
+    return path
+
+
+def lazy_import(module_name: str, class_name: str) -> object:
     """
     Function found from:
     https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/utils.py
@@ -48,7 +60,6 @@ def lazy_import(module_name, class_name):
     def importer():
         module = importlib.import_module(module_name)
         return getattr(module, class_name)
-
     return importer()
 
 
