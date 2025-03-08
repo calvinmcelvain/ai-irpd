@@ -90,6 +90,16 @@ class IRPDBase(ABC):
         invalid_items = [item for item in values if item not in valid_values]
         return valid_items, invalid_items
     
+    def _validate_test_paths(self):
+        self.test_paths = [Path(path) for path in to_list(self.test_paths)]
+        if not len(self.test_paths) == len(self._prod):
+            log.error(
+                "test_paths must be the same length as the number of test configs."
+            )
+            raise ValueError(
+                "test_paths must be the same length as the number of test configs."
+            )
+    
     def _generate_llm_instance(
         self,
         llm: str,
