@@ -1,30 +1,37 @@
 import logging
+import pandas as pd
+from pydantic import BaseModel
+from typing import Union, Optional
 from pathlib import Path
-from utils import get_env_var, file_to_string
+
+from utils import get_env_var, file_to_string, str_to_path
+from models.prompts import Prompts
+from models.irpd.test_config import TestConfig
+from models.irpd.test_output import TestOutput
+
 
 log = logging.getLogger(__name__)
 
 
-class Prompt:
+
+class TestPrompts:
     def __init__(
         self,
-        case: str,
         stage: str,
-        treatmnet: str,
-        ra: str,
-        test_type: str,
-        prompt_path: str | Path = None
+        test_config: TestConfig,
+        context: Optional[TestOutput],
+        prompt_path: Union[str, Path] = None,
+        data_path: Union[str, Path] = None
     ):
-        self.case = case
         self.stage = stage
-        self.treatment = treatmnet
-        self.ra = ra
-        self.test_type = test_type
+        self.case = test_config.case
+        self.treatment = test_config.treatmnet
+        self.ra = test_config.ra
+        self.config = test_config
+        self.context = context
         
-        if not prompt_path:
-            prompt_path = Path(get_env_var("PROMPT_DIRECTORY"))
-        if isinstance(prompt_path, str):
-            prompt_path = Path(prompt_path)
+        self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
+        self.prompts_path = str_to_path(prompt_path or get_env_var("PROMPTS_PATH"))
         self.sections_path = prompt_path / "sections"
         self.fixed_path = prompt_path / "fixed"
     
@@ -51,24 +58,121 @@ class Prompt:
         section_path = self.sections_path / "task" / f"stage_{self.stage}.md"
         return self._get_section(section_path, "Task")
     
-    def _constrains(self, type: str = "category_name"):
-        section_path = self.sections_path / "constraints" / f"{type}.md"
+    def _constraints(self):
+        section_path = self.sections_path / "constraints" / f"stage_{self.stage}.md"
         return self._get_section(section_path, "Constraints")
     
     def _data_definitions(self):
         section_path = self.sections_path / "data_definitions"
-        initial = file_to_string(section_path / "initial.md")
-        ra = file_to_string(section_path / f"{self.ra}.md")
-        window = file_to_string(section_path / "window_number.md")
-        section = initial + ra + window
+        
+        section = file_to_string(section_path / "initial.md")
+        
+        if self.stage in {"1", "1c"}:
+            section += file_to_string(section_path / "stage_1" / f"{self.ra}.md")
+        
+        section += file_to_string(section_path / "stage_1" / "window_number.md")
+        
         if self.stage == "1c":
-            section += file_to_string(section_path / "instance_types" / f"{self.case}.md")
+            section += file_to_string(section_path / "stage_1" / "subset" / f"{self.case}.md")
         if not section:
             log.warning(f"PROMPTS: Data Definitions was empty.")
             return section
         return section + "\n"
     
-    def construct_prompt(self):
-        pass
+    @staticmethod
+    def _get_att(output):
+        if hasattr(output, "categories"):
+            return output.categories
+        if hasattr(output, "refined_categories"):
+            return output.refined_categories
+        if hasattr(output, "assigned_categories"):
+            return output.assigned_categories
+        if hasattr(output, "category_ranking"):
+            return output.category_ranking
+    
+    @staticmethod
+    def _categories_to_txt(categories: BaseModel):
+        category_texts = []
+        for category in categories:
+            example_texts = []
+            for idx, example in enumerate(category.examples, start=1):
+                example_texts.append(
+                    f"  {idx}. Window number: {example.window_number},"
+                    f" Reasoning: {example.reasoning}"
+                )
+            category_text = (
+                f"### {category.category_name}\n\n"
+                f"**Definition**: {category.definition}\n\n"
+                f"**Examples**:\n\n{"\n".join(example_texts)}\n\n"
+            )
+            category_texts.append(category_text)
+        return "".join(category_texts)
+    
+    def _construct_system_prompt(self):
+        a = self._task_overview()
+        b = self._experimental_context()
+        c = self._summary_context()
+        d = self._task()
+        e = self._constraints()
+        prompt = a + b + c + d + e
+        
+        if self.stage in {"1"}:
+            prompt += self._data_definitions()
+        if self.stage in {"2", "3"}:
+            prompt += "\n## Categories"
+            context = self.context.stage_outputs.get("1r").outputs
+            for k in context.keys():
+                categories = self._get_att(context.get(k)[0].parsed)
+                prompt += self._categories_to_txt(categories)
+        return prompt
+    
+    def _construct_user_prompt(self, subset: str = None):
+        summary_path = self.data_path / "ra_summaries.csv"
+        if {"0"} not in self.context.stage_outputs.keys():
+            df = pd.read_csv(summary_path)
+            if self.treatment != "merged":
+                df = df[(df["treatment"] == self.treatment)]
+            if self.ra != "both":
+                df = df.drop(columns=[f"summary_{self.ra}"])
+            if subset != "full":
+                df = df.drop(columns=["subset"])
+            for case in self.case.split("_"):
+                df = df[(df["case"] == case)]
+        else:
+            log.error("Stage 0 has not been setup yet for prompts.")
+            raise ValueError
+        if self.stage == "1":
+            return df.to_dict("records")
+        if self.stage == "1r":
+            context = self.context.stage_outputs
+            categories = context.get("1").outputs.get(subset)[0].parsed
+            return self._categories_to_txt(self._get_att(categories))
+        if self.stage == "1c":
+            prompt = ""
+            context = self.context.stage_outputs.get("1r").outputs
+            for k in context.keys():
+                categories = self._get_att(context.get(k)[0].parsed)
+                prompt += self._categories_to_txt(categories)
+            return prompt
+        if self.stage in {"2", "3"}:
+            if self.config.max_instances:
+                df = df[:self.config.max_instances]
+            if self.stage in self.context.stage_outputs.keys():
+                context = self.context.stage_outputs.get(self.stage).outputs
+                window_nums = [r.window_number for r in context.get(subset)]
+                df = df[~df["window_number"].isin(window_nums)]
+            if self.stage == "3":
+                stage_2 = self.context.stage_outputs.get("2").outputs.get(subset)
+                for r in stage_2:
+                    assigned_cats = [c.category_name for c in r.parsed.assigned_categories]
+                    df["assigned_categories"] = assigned_cats
+            return df.to_dict("records")
+            
+    def get_prompts(self, subset: str = None, fixed: bool = False) -> Prompts:
+        if fixed:
+            return None
+        system = self._construct_system_prompt()
+        user = self._construct_user_prompt(subset)
+        return Prompts(system=system, user=user)
         
         

@@ -26,9 +26,9 @@ class IRPDBase(ABC):
     def __init__(
         self, 
         case: str,
-        ras: Optional[List[str]],
-        treatments: Optional[List[str]],
-        stages: Optional[List[str]] = None,
+        ras: List[str],
+        treatments: List[str],
+        stages: List[str],
         llms: Optional[List[str]] = None,
         llm_configs: Optional[List[str]] = None,
         output_path: Optional[Union[str, Path]] = None,

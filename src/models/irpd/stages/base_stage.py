@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from irpd.test_config import TestConfig
 from irpd.output_manager import TestRun, StageRun
 from models.llms.base_llm import RequestOut, Base
-from irpd.stages.schemas import (
+from src.models.irpd.schemas import (
     Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
 )
 from utils import (
