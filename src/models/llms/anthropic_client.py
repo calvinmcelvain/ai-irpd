@@ -1,14 +1,11 @@
 import logging
 import time
 import random as r
-from utils import validate_json_string
-from models.llms.request_output import RequestOut
-from models.llms.meta_output import MetaOutput
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message import Message
 from pydantic import BaseModel
-from llms.base_model import Base
+from models.llms.base_llm import BaseLLM
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)
@@ -19,7 +16,7 @@ class AnthropicToolCall(BaseModel):
     input_schema: object | None
     
 
-class AnthropicClient(Base):
+class AnthropicClient(BaseLLM):
     @abstractmethod
     def default_configs(self):
         pass

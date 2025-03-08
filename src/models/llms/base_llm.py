@@ -6,7 +6,7 @@ from utils import validate_json_string
 from abc import ABC, abstractmethod
 
 
-class Base(ABC):
+class BaseLLM(ABC):
     configs: BaseModel
     
     def __init__(

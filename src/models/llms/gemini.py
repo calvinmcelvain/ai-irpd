@@ -2,16 +2,13 @@ import logging
 import time
 import random as r
 from pydantic import BaseModel, Field
-from utils import validate_json_string
-from models.llms.request_output import RequestOut
-from models.llms.meta_output import MetaOutput
 from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
 from google.api_core.exceptions import (
     ResourceExhausted,
     InternalServerError
 )
-from llms.base_model import Base
+from models.llms.base_llm import BaseLLM
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +23,7 @@ class GeminiConfigs(BaseModel):
     presence_penalty: float = Field(None, ge=0, le=1)
 
 
-class Gemini(Base):
+class Gemini(BaseLLM):
     def create_client(self):
         return genai.Client(api_key=self.api_key)
     

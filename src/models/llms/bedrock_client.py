@@ -4,7 +4,7 @@ import random as r
 import json
 import boto3
 from pydantic import BaseModel
-from llms.base_model import Base
+from models.llms.base_llm import BaseLLM
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class BedrockToolCall(BaseModel):
     inputSchema: object | None
 
 
-class BedrockClient(Base):
+class BedrockClient(BaseLLM):
     def __init__(
         self,
         api_key = None,

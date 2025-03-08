@@ -5,7 +5,7 @@ from requests.exceptions import Timeout
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, load_json, validate_json_string
 from irpd.output_manager import StageRun
-from llms.base_model import RequestOut
+from src.models.llms.base_llm import RequestOut
 
 log = logging.getLogger(__name__)
 

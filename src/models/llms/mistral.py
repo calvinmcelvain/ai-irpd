@@ -4,10 +4,10 @@ import random as r
 import mistralai
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
-from pydantic import BaseModel
-from llms.base_model import Base
+from models.llms.base_llm import BaseLLM
 
 log = logging.getLogger(__name__)
+
 
 class MistralConfigs(BaseModel):
     max_completion_tokens: int = Field(None, ge=1, le=4096)
@@ -23,8 +23,7 @@ class MistralToolCall(BaseModel):
     parameters: object | None
 
 
-class Mistral(Base):
-    
+class Mistral(BaseLLM):
     def create_client(self):
         return mistralai.Mistral(api_key=self.api_key)
     

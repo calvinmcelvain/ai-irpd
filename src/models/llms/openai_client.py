@@ -5,7 +5,7 @@ from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
-from llms.base_model import Base
+from models.llms.base_llm import BaseLLM
 from abc import abstractmethod
 
 log = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class OpenAIToolCall(BaseModel):
     parameters: object | None
 
 
-class OpenAIClient(Base):
+class OpenAIClient(BaseLLM):
     def __init__(
         self,
         api_key = None,

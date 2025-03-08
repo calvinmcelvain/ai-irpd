@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 import time as t
 from requests.exceptions import Timeout
-from llms.base_model import RequestOut
+from src.models.llms.base_llm import RequestOut
 from irpd.stages.base_stage import BaseStage
 from utils import file_to_string, write_file, validate_json_string
 from irpd.output_manager import StageRun
