@@ -6,6 +6,8 @@ import importlib
 import json
 import yaml
 import logging
+import configs
+import importlib.resources as pkg_resources
 from pathlib import Path
 from dotenv import load_dotenv 
 from json import JSONDecodeError
@@ -50,20 +52,28 @@ def lazy_import(module_name, class_name):
     return importer()
 
 
-def load_config(file_path: str = "configs.yml") -> object:
+def load_config(config: str) -> dict:
     """
     Load a YAML config file.
     """
+    if not config.strip():
+        raise ValueError("Config filename cannot be empty.")
+
+    if not config.endswith(".yml"):
+        log.warning(
+            f"Config file '{config}' missing .yml extension. Appending automatically."
+        )
+        config += ".yml"
+
     try:
-        with open(file_path, "r") as f:
-            config = yaml.safe_load(f)
-        return config
-    except FileNotFoundError as e:
-        log.error(f"Configuration file not found: {file_path}")
-        return None
+        with pkg_resources.open_text(configs, config) as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        log.error(f"Configuration file not found: {config}")
+        raise
     except yaml.YAMLError as e:
-        log.error(f"Error parsing YAML file: {file_path}: {e}")
-        return None
+        log.error(f"Error parsing YAML file '{config}': {e}")
+        raise
 
 
 def load_json(file_path: str | Path, dumps: bool = False) -> object | str:
