@@ -98,6 +98,10 @@ class OpenAIClient(BaseLLM):
                     f"Response was not a Message instance. Got - {response}"
                 )
                 return response
+        
+        if attempt_n == max_attempts:
+            log.error("Max attempts exceeded.")
+            raise
 
         if self.print_response:
             print(f"Request response: {request_out.text}")

@@ -68,7 +68,6 @@ class BedrockClient(BaseLLM):
         return out
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
-        super().request(user, system, schema)
         client = self.create_client()
         
         user_m = self._add_json_requirement(user) if schema else user
@@ -107,6 +106,10 @@ class BedrockClient(BaseLLM):
                 content=content,
                 schema=schema
             )
+        
+        if attempt_n == max_attempts:
+            log.error("Max attempts exceeded.")
+            raise
 
         if self.print_response:
             print(f"Request response: {request_out.text}")

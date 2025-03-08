@@ -39,7 +39,6 @@ class Gemini(BaseLLM):
         return {"contents": user}
     
     def request(self, user, system, schema: BaseModel = None, **kwargs):
-        super().request(user, system, schema)
         client = self.create_client()
         
         configs = self.configs.model_dump(exclude_none=True)
@@ -91,6 +90,10 @@ class Gemini(BaseLLM):
                 log.error(f"Response was not a Message instance. Got - {response}")
                 return response
 
+        if attempt_n == max_attempts:
+            log.error("Max attempts exceeded.")
+            raise
+        
         if self.print_response:
             print(f"Request response: {request_out.response}")
             print(f"Request meta: {request_out.meta}")

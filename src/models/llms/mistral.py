@@ -78,6 +78,10 @@ class Mistral(BaseLLM):
                 )
                 return response
 
+        if attempt_n == max_attempts:
+            log.error("Max attempts exceeded.")
+            raise
+        
         if self.print_response:
             print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")

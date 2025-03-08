@@ -35,7 +35,6 @@ class AnthropicClient(BaseLLM):
         return messages
         
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
-        super().request(user, system, schema)
         client = self.create_client()
         
         request_load = {"model": self.model}
@@ -75,7 +74,11 @@ class AnthropicClient(BaseLLM):
                     f"Response was not a Message instance. Got - {response}"
                 )
                 return response
-
+        
+        if attempt_n == max_attempts:
+            log.error("Max attempts exceeded.")
+            raise
+            
         if self.print_response:
             print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")
