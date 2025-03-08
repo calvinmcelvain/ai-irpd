@@ -136,7 +136,7 @@ class LLMModel(LLMModelContainer, Enum):
         LLMModelClass.MISTRAL
     )
     
-    def get_model_instance(
+    def get_llm_instance(
         self,
         config: str = "base",
         print_response: bool = False
