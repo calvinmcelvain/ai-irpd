@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 
+
 class Stage0Schema(BaseModel):
     window_number: int
     summary: str
