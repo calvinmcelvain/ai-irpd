@@ -8,6 +8,7 @@ import yaml
 import logging
 import configs
 import importlib.resources as pkg_resources
+from typing import List, Dict, Union, Optional
 from pathlib import Path
 from dotenv import load_dotenv 
 from json import JSONDecodeError
@@ -30,11 +31,10 @@ def get_env_var(key: str) -> str:
             log.warning(
                 f"Environment variable '{key}' is missing or set to NA."
             )
-    
     return value
 
 
-def str_to_list(value: str | list) -> list:
+def to_list(value: Union[str, list]) -> list:
     """
     Returns list containing string/
     """
@@ -43,7 +43,7 @@ def str_to_list(value: str | list) -> list:
     return value
 
 
-def str_to_path(path: str | Path) -> Path:
+def str_to_path(path: Union[str, Path]) -> Path:
     """
     Return Path object for path arg.
     """
@@ -87,7 +87,7 @@ def load_config(config: str) -> dict:
         raise
 
 
-def load_json(file_path: str | Path, dumps: bool = False) -> object | str:
+def load_json(file_path: Union[str, Path], dumps: bool = False) -> object | str:
     """
     Returns the JSON object (or string) from a JSON file.
     """
@@ -126,7 +126,7 @@ def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | None:
         return None
 
 
-def file_to_string(file_path: str | Path) -> str:
+def file_to_string(file_path: Union[str, Path]) -> str:
     """
     Return file contents as a string.
     """
@@ -140,7 +140,7 @@ def file_to_string(file_path: str | Path) -> str:
         raise
 
 
-def write_file(file_path: str | Path, file_write: str) -> None:
+def write_file(file_path: Union[str, Path], file_write: str) -> None:
     """
     Write a string to a file at the given path.
     """
@@ -151,7 +151,7 @@ def write_file(file_path: str | Path, file_write: str) -> None:
         raise
 
 
-def write_json(file_path: str | Path, data: object, indent: int = 4) -> None:
+def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None:
     """
     Write JSON data to a file at the given path.
     """
@@ -165,7 +165,7 @@ def write_json(file_path: str | Path, data: object, indent: int = 4) -> None:
         raise
 
 
-def check_directories(paths: list[str]) -> bool:
+def check_directories(paths: List[str]) -> bool:
     """
     Check if all given directories exist.
     """
