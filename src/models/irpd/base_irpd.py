@@ -1,87 +1,103 @@
 import re
 import logging
-from typing import List
+from typing import List, Dict, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
-from utils import get_env_var, str_to_list, load_config
-from llms import *
-from irpd.test_config import TestConfig
-from irpd.output_manager import OutputManager
 
-log = logging.getLogger(__name__)
+from utils import get_env_var, to_list, load_config, str_to_path
+from models.llm_model import LLMModel
+from models.irpd.test_output import TestOutput
+from models.irpd.test_config import TestConfig
 
-CONFIGS = load_config()
+
+CONFIGS = load_config("irpd_configs.yml")
 DEFAULTS = CONFIGS["defaults"]
 VALID_VALUES = CONFIGS["valid_values"]
 
+log = logging.getLogger(__name__)
+
+
 
 class IRPDBase(ABC):    
-    OUTPUTS: OutputManager = OutputManager()
-
+    output: Dict[str, List[TestOutput]]
+    configs: Dict[str, TestConfig]
+    
     def __init__(
         self, 
         case: str,
-        ras: List[str],
-        treatments: List[str],
-        stages: List[str] = None,
-        llms: List[str] = None,
-        llm_configs: List[str] = None,
-        project_path: str | Path = None,
-        new_test: bool = True,
-        test_paths: List = None
+        ras: Optional[List[str]],
+        treatments: Optional[List[str]],
+        stages: Optional[List[str]] = None,
+        llms: Optional[List[str]] = None,
+        llm_configs: Optional[List[str]] = None,
+        output_path: Optional[Union[str, Path]] = None,
+        prompts_path: Optional[Union[str, Path]] = None,
+        data_path: Optional[Union[str, Path]] = None,
+        test_paths: Optional[List[str]] = None
     ):
         self.case = case
-        self.ras = ras
-        self.treatments = treatments
-        self.stages = stages
-        self.llms = llms
-        self.llm_configs = llm_configs
-        self.project_path = project_path
-        self.new_test = new_test
-        self.test_paths = test_paths
+        self.ras = ras or []
+        self.treatments = treatments or []
+        self.stages = stages or []
+        self.llms = llms or []
+        self.llm_configs = llm_configs or []
+        self.test_paths = test_paths or []
+
         self._validate_values()
 
-        if not project_path:
-            self.project_path = Path(get_env_var("PROJECT_DIRECTORY"))
-        self.output_path = self.project_path / "output"
-        self.configs = {}
+        self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
+        self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
+        self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
 
     def _validate_values(self):
         attributes = ["case", "ras", "treatments", "stages", "llms", "llm_configs"]
         for attr in attributes:
             value = getattr(self, attr)
-            if value is None:
-                setattr(self, attr, str_to_list(DEFAULTS[attr]))
-            else:
-                valid_values = VALID_VALUES[attr]
-                value = str_to_list(value)
-                if not all(isinstance(item, str) for item in value):
-                    log.error(f"Argument {attr} must have only string value(s)")
-                    raise ValueError(f"Argument {attr} must have only string value(s)")
+            default_value = to_list(DEFAULTS.get(attr, ""))
+            valid_values = VALID_VALUES.get(attr, [])
 
-                index_map = {v: i for i, v in enumerate(valid_values)}
+            if not valid_values:
+                log.warning(f"No valid values found for `{attr}` in irpd configs.")
+            if not value:
+                setattr(self, attr, default_value)
+                continue
 
-                valid_items, invalid_items = [], []
-                for item in value:
-                    (valid_items if item in valid_values else invalid_items).append(item)
+            value = to_list(value)
+            self._ensure_strings(attr, value)
+            valid_items, invalid_items = self._filter_valid_items(value, valid_values)
 
-                if not valid_items:
-                    log.error(
-                        f"All provided `{attr}` values are invalid. No valid items remain."
-                        f" Allowed values: {valid_values}"
-                    )
-                    raise ValueError(f"All provided `{attr}` values are invalid. No valid items remain.")
+            if not valid_items:
+                raise ValueError(
+                    f"All provided `{attr}` values are invalid: {value}. "
+                    f"Allowed values: {valid_values}"
+                )
+            if invalid_items:
+                log.warning(
+                    f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
+                    f"Allowed values: {valid_values}"
+                )
+            setattr(self, attr, valid_items)
+        self.case = self.case[0] if isinstance(self.case, list) else self.case
 
-                if invalid_items:
-                    log.warning(
-                        f"Some `{attr}` values are invalid and were ignored: {invalid_items}. "
-                        f"Allowed values: {valid_values}"
-                    )
-                setattr(self, attr, sorted(valid_items, key=lambda x: index_map[x]))
-        self.case = self.case[0]    # Needs to be string, not list
+    def _ensure_strings(self, attr: str, values: List[str]):
+        if not all(isinstance(item, str) for item in values):
+            log.error(f"Argument `{attr}` must contain only string values.")
+            raise TypeError(f"Argument `{attr}` must contain only string values.")
+
+    def _filter_valid_items(self, values: List[str], valid_values: List[str]):
+        valid_items = [item for item in values if item in valid_values]
+        invalid_items = [item for item in values if item not in valid_values]
+        return valid_items, invalid_items
     
-    def _generate_model_instance(self, llm: str, config: str):
-        return getattr(LLMModel, llm).get_model_instance(config=config)
+    def _generate_llm_instance(
+        self,
+        llm: str,
+        config: str,
+        print_response: bool = False
+    ):
+        return getattr(LLMModel, llm).get_llm_instance(
+            config=config, print_response=print_response
+        )
     
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
@@ -91,14 +107,14 @@ class IRPDBase(ABC):
             default=0
         )
     
-    def remove_configs(self, config_ids: str | List[str]):
-        config_ids = str_to_list(config_ids)
+    def remove_configs(self, config_ids: Union[str, List[str]]):
+        config_ids = to_list(config_ids)
         for id in config_ids:
             del self.configs[id]
         return None
 
-    def add_configs(self, configs: TestConfig | List[TestConfig]):
-        configs = str_to_list(configs)
+    def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
+        configs = to_list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
                 log.error(f"Test config {config} was not a TestConfig instance. Did not add.")
@@ -119,11 +135,11 @@ class IRPDBase(ABC):
     @abstractmethod
     def run(
         self,
-        max_instances: int = None,
-        threshold: float = 0.5,
-        config_ids: str | List[str] = None
+        max_instances: Optional[int] = None,
+        config_ids: Union[str, List[str]] = None,
+        print_response: bool = False
     ):
-        config_ids = str_to_list(config_ids)
+        config_ids = to_list(config_ids)
         if config_ids:
             self._test_configs = {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
