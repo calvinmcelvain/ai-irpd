@@ -8,4 +8,4 @@ class TestOutput:
     id: str
     llm: str
     replication: int
-    stages: Dict[str, StageOutput]
+    stage_outputs: Dict[str, StageOutput]
