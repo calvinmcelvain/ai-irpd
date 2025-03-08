@@ -14,6 +14,7 @@ CONFIGS = load_config("irpd_configs.yml")
 DEFAULTS = CONFIGS["defaults"]
 VALID_VALUES = CONFIGS["valid_values"]
 
+
 log = logging.getLogger(__name__)
 
 
