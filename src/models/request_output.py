@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from typing import Optional
 from models.meta_output import MetaOutput
 
 
 class RequestOut(BaseModel):
     text: str
-    meta: MetaOutput
-    parsed: BaseModel = None
+    meta: Optional[MetaOutput]
+    parsed: Optional[BaseModel]
