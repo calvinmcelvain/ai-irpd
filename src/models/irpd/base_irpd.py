@@ -150,7 +150,31 @@ class IRPDBase(ABC):
                 replication=replication,
                 stage_outputs=test_out
             ))
+        return None
     
+    def _get_context(
+        self,
+        config: TestConfig,
+        sub_path: Path,
+        stage: str,
+        llm: str,
+        replication: int
+    ):
+        if config.id in self.output.keys():
+            test_out = next((c for c in self.output[config.id] if c.llm == llm and c.replication == replication), None)
+            if test_out:
+                if stage in test_out.stage_outputs.keys():
+                    return test_out.stage_outputs.get(stage)
+            return None
+        self.output[config.id] = []
+        self._update_output(
+            config=config,
+            llm=llm,
+            replication=replication,
+            sub_path=sub_path
+        )
+        return next((c for c in self.output[config.id] if c.llm == llm and c.replication == replication), None)
+
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
         pattern = re.compile(rf"{re.escape(prefix)}(\d+)")
