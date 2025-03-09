@@ -95,13 +95,14 @@ class Test(IRPDBase):
                 print_response=print_response
             )
             
+            self.output[config.id] = []
+            self._update_output(config=config, llm=llm_str, replication=1, sub_path=config.test_path)
+            
             create_directory(config.test_path)
             
             for stage_name in self.stages:
                 context = self._get_context(
                     config=config,
-                    sub_path=config.test_path,
-                    stage=stage_name,
                     llm=llm_str,
                     replication=1
                 )
@@ -122,6 +123,10 @@ class Test(IRPDBase):
                     sub_path=config.test_path,
                     llm=llm,
                     prompts=prompts
-                )    
+                )
+                
                 stage_instance.run()
+                
+                idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
+                self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
         log.info(f"TEST: End of {self._test_type.upper()} = {config.id}")

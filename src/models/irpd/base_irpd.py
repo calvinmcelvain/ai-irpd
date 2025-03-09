@@ -134,11 +134,12 @@ class IRPDBase(ABC):
         replication: int,
         sub_path: Path
     ):
-        log.info("OUTPUT: Checking for missing output.")
+        log.info("OUTPUT: Checking for output.")
         exist_stgs = [s for s in config.stages if (sub_path / f"stage_{s}").exists()]
         if exist_stgs:
             test_out = {}
             for s in exist_stgs:
+                log.info(f"OUTPUT: Stage {s} found.")
                 stage_out = {}
                 stage_path = sub_path / f"stage_{s}"
                 subsets = [s for s in stage_path.iterdir() if s.is_dir()]
@@ -163,32 +164,26 @@ class IRPDBase(ABC):
                 replication=replication,
                 stage_outputs=test_out
             ))
-            log.info("OUTPUT: Output retrieved.")
         else:
-            log.info("OUTPUT: Output not found.")
+            log.info("OUTPUT: No outputs not found.")
         return None
     
     def _get_context(
         self,
         config: TestConfig,
-        sub_path: Path,
         llm: str,
         replication: int
     ):
-        if config.id in self.output.keys():
-            test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
-            test_out = self.output[config.id][test_idx]
-            return test_out
-        self.output[config.id] = []
-        self._update_output(
-            config=config,
-            llm=llm,
-            replication=replication,
-            sub_path=sub_path
-        )
         test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
         if test_idx:
             return self.output[config.id][test_idx]
+        else:
+            test_out = TestOutput(
+                id=config.id,
+                llm=llm,
+                replication=replication
+            )
+            self.output[config.id].append(test_out)
         return None
 
     @staticmethod
