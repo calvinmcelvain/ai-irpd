@@ -7,6 +7,7 @@ from logger import clear_logger
 from utils import to_list, create_directory, lazy_import
 from models.irpd.base_irpd import IRPDBase
 from models.irpd.test_config import TestConfig
+from models.irpd.test_prompts import TestPrompts
 from models.irpd.stages import *
 
 
@@ -72,7 +73,7 @@ class Test(IRPDBase):
                 test_path=self.test_paths[idx],
                 stages=self.stages
             )
-            self.configs[config.id] = config
+            self.configs[config.id] = config                
     
     def run(
         self,
@@ -97,12 +98,30 @@ class Test(IRPDBase):
             create_directory(config.test_path)
             
             for stage_name in self.stages:
-                context = self.output.get(config.id, None)
-                prompts = s
-                stage_class = globals().get(f"Stage{stage_name}")(
-                    config, path, context, llm, max_instances, threshold
+                context = self._get_context(
+                    config=config,
+                    sub_path=config.test_path,
+                    stage=stage_name,
+                    llm=llm_str,
+                    replication=1
                 )
-                    
+                prompts = TestPrompts(
+                    stage=stage_name,
+                    test_config=config,
+                    context=context,
+                    prompt_path=self.prompts_path,
+                    data_path=self.data_path
+                )
+                
+                stage_class = lazy_import(
+                    f"models.irpd.stages.stage_{stage_name}",
+                    f"Stage{stage_name}"
+                )
+                stage_instance = stage_class(
+                    test_config=config,
+                    sub_path=config.test_path,
+                    llm=llm,
+                    prompts=prompts
+                )    
                 stage_instance.run()
-                self.OUTPUTS.store(config.id, 1, config.llms, stage_instance.output)
         log.info(f"TEST: End of {self._test_type.upper()} = {config.id}")
