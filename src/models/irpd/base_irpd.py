@@ -115,6 +115,18 @@ class IRPDBase(ABC):
             config=config, print_response=print_response
         )
     
+    def _output_indx(
+        self,
+        id: str,
+        llm: str,
+        replication: int
+    ):
+        test = self.output[id]
+        test_out = next((c for c in test if c.llm == llm and c.replication == replication), None)
+        if test_out:
+            return test.index(test_out)
+        return None
+    
     def _update_output(
         self,
         config: TestConfig,
@@ -122,6 +134,7 @@ class IRPDBase(ABC):
         replication: int,
         sub_path: Path
     ):
+        log.info("OUTPUT: Checking for missing output.")
         exist_stgs = [s for s in config.stages if (sub_path / f"stage_{s}").exists()]
         if exist_stgs:
             test_out = {}
@@ -150,22 +163,22 @@ class IRPDBase(ABC):
                 replication=replication,
                 stage_outputs=test_out
             ))
+            log.info("OUTPUT: Output retrieved.")
+        else:
+            log.info("OUTPUT: Output not found.")
         return None
     
     def _get_context(
         self,
         config: TestConfig,
         sub_path: Path,
-        stage: str,
         llm: str,
         replication: int
     ):
         if config.id in self.output.keys():
-            test_out = next((c for c in self.output[config.id] if c.llm == llm and c.replication == replication), None)
-            if test_out:
-                if stage in test_out.stage_outputs.keys():
-                    return test_out.stage_outputs.get(stage)
-            return None
+            test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
+            test_out = self.output[config.id][test_idx]
+            return test_out
         self.output[config.id] = []
         self._update_output(
             config=config,
@@ -173,7 +186,10 @@ class IRPDBase(ABC):
             replication=replication,
             sub_path=sub_path
         )
-        return next((c for c in self.output[config.id] if c.llm == llm and c.replication == replication), None)
+        test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
+        if test_idx:
+            return self.output[config.id][test_idx]
+        return None
 
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
