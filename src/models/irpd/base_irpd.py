@@ -4,10 +4,15 @@ from typing import List, Dict, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from utils import get_env_var, to_list, load_config, str_to_path
+from utils import (
+    get_env_var, to_list, load_config, str_to_path, validate_json_string,
+    file_to_string, lazy_import
+)
 from models.llm_model import LLMModel
+from models.request_output import RequestOut
 from models.irpd.test_output import TestOutput
 from models.irpd.test_config import TestConfig
+from models.irpd.stage_output import StageOutput
 
 
 CONFIGS = load_config("irpd_configs.yml")
@@ -109,6 +114,42 @@ class IRPDBase(ABC):
         return getattr(LLMModel, llm).get_llm_instance(
             config=config, print_response=print_response
         )
+    
+    def _update_output(
+        self,
+        config: TestConfig,
+        llm: str,
+        replication: int,
+        sub_path: Path
+    ):
+        exist_stgs = [s for s in config.stages if (sub_path / f"stage_{s}").exists()]
+        if exist_stgs:
+            test_out = {}
+            for s in exist_stgs:
+                stage_out = {}
+                stage_path = sub_path / f"stage_{s}"
+                subsets = [s for s in stage_path.iterdir() if s.is_dir()]
+                for k in subsets:
+                    stage_out[k.name] = []
+                    schema = lazy_import("models.schemas", f"Stage{s}Schema")
+                    if s in {"2", "3"}:
+                        r_dir = k / "responses"
+                    else:
+                        r_dir = k
+                    for r in r_dir.iterdir():
+                        if r.name.endswith("response.txt"):
+                            parsed = validate_json_string(r, schema)
+                            stage_out[k.name].append(RequestOut(
+                                text=file_to_string(r),
+                                parsed=parsed
+                            ))
+                test_out[s] = StageOutput(stage=s, outputs=stage_out)
+            self.output[config.id].append(TestOutput(
+                id=config.id,
+                llm=llm,
+                replication=replication,
+                stage_outputs=test_out
+            ))
     
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
