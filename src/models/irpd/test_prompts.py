@@ -128,7 +128,7 @@ class TestPrompts:
     
     def _construct_user_prompt(self, subset: str = None):
         summary_path = self.data_path / "ra_summaries.csv"
-        if {"0"} not in self.context.stage_outputs.keys():
+        if {"0"} not in self.config.stages:
             df = pd.read_csv(summary_path)
             if self.treatment != "merged":
                 df = df[(df["treatment"] == self.treatment)]
