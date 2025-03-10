@@ -62,17 +62,18 @@ class TestPrompts:
         section_path = self.sections_path / "constraints" / f"stage_{self.stage}.md"
         return self._get_section(section_path, "Constraints")
     
-    def _data_definitions(self):
+    def _data_definitions(self, subset: str):
         section_path = self.sections_path / "data_definitions"
         
         section = file_to_string(section_path / "initial.md")
         
-        if self.stage in {"1", "1c"}:
+        if self.stage in {"1"}:
             section += file_to_string(section_path / "stage_1" / f"{self.ra}.md")
-        if self.stage == "1c":
-            subset_path = section_path / "stage_1" / "subset"
-            section += file_to_string(subset_path / "initial.md")
-            section += file_to_string(subset_path / f"{self.case}.md")
+            if subset == "full":
+                subset_path = section_path / "stage_1" / "subset"
+                section += file_to_string(subset_path / "initial.md")
+                for case in self.case.split("_"):
+                    section += file_to_string(subset_path / f"{case}.md")
         
         section += file_to_string(section_path / "stage_1" / "window_number.md")
         
@@ -110,7 +111,7 @@ class TestPrompts:
             category_texts.append(category_text)
         return "".join(category_texts)
     
-    def _construct_system_prompt(self):
+    def _construct_system_prompt(self, subset: str):
         a = self._task_overview()
         b = self._experimental_context()
         c = self._summary_context()
@@ -119,7 +120,7 @@ class TestPrompts:
         prompt = a + b + c + d + e
         
         if self.stage in {"1"}:
-            prompt += self._data_definitions()
+            prompt += self._data_definitions(subset=subset)
         if self.stage in {"2", "3"}:
             prompt += "\n## Categories"
             context = self.context.stage_outputs.get("1r").outputs
@@ -128,10 +129,12 @@ class TestPrompts:
                 prompt += self._categories_to_txt(categories)
         return prompt
     
-    def _construct_user_prompt(self, subset: str = None):
+    def _construct_user_prompt(self, subset: str, case: str):
         summary_path = self.data_path / "ra_summaries.csv"
         if {"0"} not in self.config.stages:
             df = pd.read_csv(summary_path)
+            cases = [c for c in self.case.split("_")]
+            df = df[(df["case"].isin(cases))]
             if self.treatment != "merged":
                 df = df[(df["treatment"] == self.treatment)]
             if self.ra != "both":
@@ -139,9 +142,10 @@ class TestPrompts:
                 df = df.drop(columns=ra_cols)
             if subset != "full":
                 df = df.drop(columns=["subset"])
-            for case in self.case.split("_"):
-                df = df[(df["case"] == case)]
-            df = df.drop(columns=["case", "treatment"])
+                df = df[(df["instance_type"] == subset)]
+            cases = [c for c in case.split("_")]
+            df = df[(df["case"].isin(cases))]
+            df = df.drop(columns=["case", "treatment", "instance_type"])
         else:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
@@ -172,11 +176,11 @@ class TestPrompts:
                     df["assigned_categories"] = assigned_cats
             return df.to_dict("records")
             
-    def get_prompts(self, subset: str, fixed: bool = False) -> Prompts:
+    def get_prompts(self, subset: str, case: str, fixed: bool = False) -> Prompts:
         if fixed:
             return None
-        system = self._construct_system_prompt()
-        user = self._construct_user_prompt(subset)
+        system = self._construct_system_prompt(subset=subset)
+        user = self._construct_user_prompt(subset=subset, case=case)
         return Prompts(system=system, user=user)
         
         
