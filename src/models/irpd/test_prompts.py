@@ -32,8 +32,8 @@ class TestPrompts:
         
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
         self.prompts_path = str_to_path(prompt_path or get_env_var("PROMPTS_PATH"))
-        self.sections_path = prompt_path / "sections"
-        self.fixed_path = prompt_path / "fixed"
+        self.sections_path = self.prompts_path / "sections"
+        self.fixed_path = self.prompts_path / "fixed"
     
     @staticmethod
     def _get_section(section_path, name):
