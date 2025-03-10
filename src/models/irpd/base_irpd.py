@@ -78,6 +78,10 @@ class IRPDBase(ABC):
             valid_items, invalid_items = self._filter_valid_items(value, valid_values)
 
             if not valid_items:
+                log.error(
+                    f"All provided `{attr}` values are invalid: {value}. "
+                    f"Allowed values: {valid_values}"
+                )
                 raise ValueError(
                     f"All provided `{attr}` values are invalid: {value}. "
                     f"Allowed values: {valid_values}"
