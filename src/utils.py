@@ -48,7 +48,7 @@ def str_to_path(path: Union[str, Path]) -> Path:
     Return Path object for path arg.
     """
     if isinstance(path, str):
-        return Path(str)
+        return Path(path)
     return path
 
 
