@@ -30,18 +30,18 @@ class IRPDBase(ABC):
     
     def __init__(
         self, 
-        case: str,
-        ras: List[str],
-        treatments: List[str],
-        stages: List[str],
-        llms: Optional[List[str]] = None,
-        llm_configs: Optional[List[str]] = None,
+        cases: Union[List[str], str],
+        ras: Union[List[str], str],
+        treatments: Union[List[str], str],
+        stages: Union[List[str], str],
+        llms: Optional[Union[List[str], str]] = None,
+        llm_configs: Optional[Union[List[str], str]] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None
     ):
-        self.case = case
+        self.cases = cases
         self.ras = ras or []
         self.treatments = treatments or []
         self.stages = stages or []
@@ -56,9 +56,14 @@ class IRPDBase(ABC):
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
 
     def _validate_values(self):
-        attributes = ["case", "ras", "treatments", "stages", "llms", "llm_configs"]
+        attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
         for attr in attributes:
             value = getattr(self, attr)
+            if attr == "cases":
+                vals = []
+                for c in value:
+                    vals.extend(c.split("_"))
+                value = list(set(vals))
             default_value = to_list(DEFAULTS.get(attr, ""))
             valid_values = VALID_VALUES.get(attr, [])
 
@@ -77,13 +82,13 @@ class IRPDBase(ABC):
                     f"All provided `{attr}` values are invalid: {value}. "
                     f"Allowed values: {valid_values}"
                 )
-            if invalid_items:
-                log.warning(
-                    f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
-                    f"Allowed values: {valid_values}"
-                )
-            setattr(self, attr, valid_items)
-        self.case = self.case[0] if isinstance(self.case, list) else self.case
+            if attr != "cases":
+                if invalid_items:
+                    log.warning(
+                        f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
+                        f"Allowed values: {valid_values}"
+                    )
+                setattr(self, attr, valid_items)
 
     def _ensure_strings(self, attr: str, values: List[str]):
         if not all(isinstance(item, str) for item in values):
