@@ -58,7 +58,7 @@ class IRPDBase(ABC):
     def _validate_values(self):
         attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
         for attr in attributes:
-            value = getattr(self, attr)
+            value = to_list(getattr(self, attr))
             if attr == "cases":
                 vals = []
                 for c in value:
