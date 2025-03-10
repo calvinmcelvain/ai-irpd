@@ -25,7 +25,7 @@ class TestPrompts:
     ):
         self.stage = stage
         self.case = test_config.case
-        self.treatment = test_config.treatmnet
+        self.treatment = test_config.treatment
         self.ra = test_config.ra
         self.config = test_config
         self.context = context
