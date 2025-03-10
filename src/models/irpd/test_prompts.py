@@ -171,7 +171,7 @@ class TestPrompts:
                     df["assigned_categories"] = assigned_cats
             return df.to_dict("records")
             
-    def get_prompts(self, subset: str = None, fixed: bool = False) -> Prompts:
+    def get_prompts(self, subset: str, fixed: bool = False) -> Prompts:
         if fixed:
             return None
         system = self._construct_system_prompt()
