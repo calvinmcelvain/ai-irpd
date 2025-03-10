@@ -15,8 +15,8 @@ class TestConfig:
     test_type: str
     test_path: Path
     stages: List[str]
-    max_instances: Optional[int]
-    id: Optional[str]
+    max_instances: Optional[int] = None
+    id: Optional[str] = None
     
     def __post_init__(self):
         self.id = uuid4().hex
