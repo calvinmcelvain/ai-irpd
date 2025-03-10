@@ -1,188 +1,47 @@
 import logging
 import pandas as pd
 from pathlib import Path
-from typing import List
 from datetime import datetime
+from itertools import product
 from abc import ABC, abstractmethod
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from irpd.test_config import TestConfig
-from irpd.output_manager import TestRun, StageRun
-from models.llms.base_llm import RequestOut, Base
-from src.models.irpd.schemas import (
-    Stage0Schema, Stage1Schema, Stage1rSchema, Stage2Schema, Stage3Schema
-)
-from utils import (
-    find_named_parent, validate_json_string, txt_to_pdf, write_json, load_json
-)
+
+from models.irpd.test_config import TestConfig
+from models.irpd.test_output import TestOutput
+from models.llms.base_llm import BaseLLM
+from utils import validate_json_string, write_json
+
 
 log = logging.getLogger(__name__)
 
 
+
 class BaseStage(ABC):
-    schemas = {
-        "0": Stage0Schema,
-        "1": Stage1Schema,
-        "1r": Stage1rSchema,
-        "2": Stage2Schema,
-        "3": Stage3Schema
-    }
-    retries = 3
-    
     def __init__(
         self,
         test_config: TestConfig,
         sub_path: Path,
-        context: TestRun,
-        llm: Base,
-        max_instances: int | None,
-        threshold: float
+        context: TestOutput,
+        llm: BaseLLM
     ):
         self.case = test_config.case
-        self.cases = self._get_cases(self.case)
+        self.cases = self.case.split("_")
         self.ra = test_config.ra
         self.treatment = test_config.treatment
         self.llm = llm
-        self.test_type = test_config.test_type
         self.test_path = test_config.test_path
-        self.max_instances = max_instances
-        self.project_path = find_named_parent(self.test_path, "output").parent
-        self.prompt_path = self.project_path / "prompts"
-        self.data_path = self.project_path / "data"
         self.sub_path = sub_path
         self.context = context
-        self.threshold = threshold
-        
-    def _check_completed_requests(self, instance_type, case):
-        if not self.context.has(self.stage, case, instance_type):
-            log.info(
-                f"OUTPUTS: Checking for Stage {self.stage}, {case}, {instance_type} outputs."
-            )
-            name = f"stg_{self.stage}_{instance_type}_response.txt"
-            if self.stage in {"1c"}:
-                path = self.sub_path / f"stage_{self.stage}" /  instance_type / name
-            else:
-                path = self.sub_path / f"stage_{self.stage}" / case /  instance_type / name
-            if path.exists():
-                log.info("OUTPUTS: Outputs found.")
-                response = load_json(path, True)
-                self.output.store(case, instance_type, RequestOut(response=response))
-                return True
-            log.info("OUTPUTS: Outputs not found.")
-            return None
-        return True
-    
-    def _update_context(self, stage, case):
-        instance_types = self._get_instance_types(case)
-        for i in instance_types:
-            if not self.context.has(stage, case, i):
-                log.info(
-                    f"OUTPUTS: Outputs for Stage {stage}, {case}, {i} not found in context."
-                    " Checking test path."
-                )
-        log.info(f"OUTPUTS: Getting outputs for Stage {stage}, case {case}.")
-        stage_run = StageRun(stage)
-        for i in instance_types:
-            path = self.sub_path / f"stage_{stage}" / case / i / f"stg_{stage}_{i}_response.txt"
-            if path.exists():
-                log.info("OUTPUTS: Outputs retreived.")
-                response = load_json(path, True)
-                stage_run.store(case, i, RequestOut(response=response))
-            else:
-                log.warning("OUTPUTS: Outputs not found.")
-        self.context.store(stage_run)
-        log.info(f"OUTPUTS: Stage {stage}, {case} outputs stored in context.")
-        return None
+        self.subsets = self._get_subsets()
     
     @staticmethod
-    def _get_instance_types(case):
-        if case in {'uni', 'uniresp'}:
-            return ['ucoop', 'udef']
-        return ['coop', 'def']
+    def _get_instance_types(case: str):
+        if case in {"uni", "uniresp"}:
+            return ["ucoop", "udef"]
+        return ["coop", "def"]
     
-    @staticmethod
-    def _get_cases(case):
-        if case == 'uni_switch':
-            return ['uni', 'switch']
-        return [case]
-    
-    @staticmethod
-    def _format_categories(categories: List, initial_text: str = ""):
-        category_texts = []
-        for category in categories:
-            examples_text = "\n".join(
-                f"  {idx}. Window number: {example.window_number}, Reasoning: {example.reasoning}"
-                for idx, example in enumerate(category.examples, start=1)
-            )
-            category_text = (
-                f"### {category.category_name}\n\n"
-                f"**Definition**: {category.definition}\n\n"
-                f"**Examples**:\n\n{examples_text}\n\n"
-            )
-            category_texts.append(category_text)
-        return initial_text + "".join(category_texts)
-    
-    def _threshold_similarity(
-        self, categories: Stage1rSchema, unified_categories: Stage1rSchema
-    ):
-        cats = categories.refined_categories
-        ucats = unified_categories.refined_categories
-        all_cat_names = [
-            cat.category_name.replace("_", " ")
-            for cat in cats + ucats
-        ]
-        all_cat_defs = [
-            cat.definition for cat in cats + ucats
-        ]
-        cat_names_w_ids = list(enumerate(all_cat_names[:len(cats)]))
-        
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix_names = vectorizer.fit_transform(all_cat_names)
-        tfidf_matrix_defs = vectorizer.fit_transform(all_cat_defs)
-        
-        num_categories = len(cat_names_w_ids)
-        
-        sim_matrix_names = cosine_similarity(
-            tfidf_matrix_names[:num_categories], 
-            tfidf_matrix_names[num_categories:]
-        )
-        sim_matrix_defs = cosine_similarity(
-            tfidf_matrix_defs[:num_categories], 
-            tfidf_matrix_defs[num_categories:]
-        )
-        sim_matrix = sim_matrix_names + sim_matrix_defs
-        
-        results = []
-        for cat_idx, sim_array in enumerate(sim_matrix):
-            if all(sim_array < self.threshold):
-                results.append(cats[cat_idx])
-        categories.refined_categories = results
-        return categories
-    
-    @staticmethod
-    def _get_category_att(output):
-        if hasattr(output, "categories"):
-            return output.categories
-        if hasattr(output, "refined_categories"):
-            return output.refined_categories
-        if hasattr(output, "assigned_categories"):
-            return output.assigned_categories
-        if hasattr(output, "category_ranking"):
-            return output.category_ranking
-    
-    def _txt_to_pdf(self, txt: str, path: Path):
-        txt_to_pdf(txt, path)
-        return None
-    
-    def _output_to_txt(self, output, output_schema, initial_text = ""):
-        json_output = validate_json_string(output.response, output_schema)
-        if json_output:
-            categories = self._get_category_att(json_output)
-            txt = self._format_categories(categories, initial_text)
-        elif isinstance(output.response, str):
-            txt = initial_text
-            txt += output.response
-        return txt
+    def _get_subsets(self):
+        instance_types = [self._get_instance_types(c) for c in self.cases]
+        return product(self.cases, instance_types)
     
     def _compute_tokens(self):
         tokens = {case: {} for case in self.cases}
@@ -231,8 +90,8 @@ class BaseStage(ABC):
             "tokens": tokens
         }
         
-        write_json(meta_path / f"stg_{self.stage}_test_info.json", json_data)
-        
+        path = meta_path / f"stg_{self.stage}_test_info.json"
+        write_json(path, json_data)
         return None
     
     def _build_data_output(self):
@@ -263,7 +122,6 @@ class BaseStage(ABC):
                 merged_df["case"] = self.cases.index(case)
             dfs.append(merged_df)
         return pd.concat(dfs, ignore_index=True, sort=False)
-                
     
     @abstractmethod
     def _get_system_prompt(self):
@@ -279,5 +137,4 @@ class BaseStage(ABC):
     
     @abstractmethod
     def run(self):
-        self._get_user_prompt()
-        self._get_system_prompt()
+        pass
