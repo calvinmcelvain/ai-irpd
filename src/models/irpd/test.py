@@ -56,7 +56,8 @@ class Test(IRPDBase):
         for case in self.cases:
             test_dir = self.output_path / "base_tests" / case
             current_test = self._get_max_test_number(test_dir)
-            paths = [test_dir / f"test_{test + current_test}" for test, _ in enumerate(self._prod, start=1)]
+            length = int(len(self._prod) / len(self.cases))
+            paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(length)]
             test_paths.extend(paths)
         return test_paths
     
