@@ -133,7 +133,8 @@ class TestPrompts:
             if self.treatment != "merged":
                 df = df[(df["treatment"] == self.treatment)]
             if self.ra != "both":
-                df = df.drop(columns=[f"summary_{self.ra}"])
+                ra_cols = [c for c in df.columns if c.startswith("summary_") and c != f"summary_{self.ra}"]
+                df = df.drop(columns=ra_cols)
             if subset != "full":
                 df = df.drop(columns=["subset"])
             for case in self.case.split("_"):
