@@ -28,7 +28,7 @@ class IRPDTestClass(TestClassContainer, Enum):
     INTRA_MODEL = ("models.irpd.intra_model", "IntraModel")
     SAMPLE_SPLITTING = ("models.irpd.sample_splitting", "SampleSplitting")
     
-    def get_type_instance(
+    def get_irpd_instance(
         self,
         case: Union[List[str], str],
         ras: Union[List[str], str],
