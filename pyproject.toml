@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "irpd-coding"
+version = "0.1.0"
+description = "IRPD AI Coding"
+authors = ["Calvin McElvain <mcelvain@uiowa.edu>"]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = ">=2.2.2"
+numpy = ">=2.0.1"
+scikit-learn = ">=1.5.2"
+openai = ">=1.59.7"
+python-dotenv = ">=1.0.1"
+pydantic = ">=2.7.4"
+markdown-pdf = ">=1.3"
+anthropic = ">=0.42.0"
+google-auth = ">=2.37.0"
+requests = ">=2.32.3"
+boto3 = ">=1.36.0"
+mistralai = ">=1.5.0"
+google-genai = ">=1.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
