@@ -8,7 +8,7 @@ from utils import to_list, create_directory, lazy_import
 from models.irpd.base_irpd import IRPDBase
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
-from models.irpd.stages import *
+#from models.irpd.stages import *
 
 
 log = logging.getLogger(__name__)

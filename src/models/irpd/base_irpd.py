@@ -24,10 +24,7 @@ log = logging.getLogger(__name__)
 
 
 
-class IRPDBase(ABC):    
-    output: Dict[str, List[TestOutput]]
-    configs: Dict[str, TestConfig]
-    
+class IRPDBase(ABC):
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -48,6 +45,9 @@ class IRPDBase(ABC):
         self.llms = llms or []
         self.llm_configs = llm_configs or []
         self.test_paths = test_paths or []
+        
+        self.output = {}
+        self.configs = {}
 
         self._validate_values()
 
