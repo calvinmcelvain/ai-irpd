@@ -30,7 +30,7 @@ class IRPDTestClass(TestClassContainer, Enum):
     
     def get_irpd_instance(
         self,
-        case: Union[List[str], str],
+        cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
@@ -38,7 +38,7 @@ class IRPDTestClass(TestClassContainer, Enum):
     ):
         test_class = self.impl
         return test_class(
-            case=case,
+            cases=cases,
             ras=ras,
             treatments=treatments,
             stages=stages,
