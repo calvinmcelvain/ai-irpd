@@ -141,6 +141,7 @@ class TestPrompts:
                 df = df.drop(columns=["subset"])
             for case in self.case.split("_"):
                 df = df[(df["case"] == case)]
+            df = df.drop(columns=["case", "treatment"])
         else:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
