@@ -18,19 +18,19 @@ log = logging.getLogger(__name__)
 class Test(IRPDBase):
     def __init__(
         self,
-        case: str,
-        ras: List[str],
-        treatments: List[str],
-        stages: List[str] = None,
-        llms: Optional[List[str]] = None,
-        llm_configs: Optional[List[str]] = None,
+        cases: Union[List[str], str],
+        ras: Union[List[str], str],
+        treatments: Union[List[str], str],
+        stages: Union[List[str], str],
+        llms: Optional[Union[List[str], str]] = None,
+        llm_configs: Optional[Union[List[str], str]] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None
     ):
         super().__init__(
-            case,
+            cases,
             ras,
             treatments,
             stages,
@@ -43,7 +43,7 @@ class Test(IRPDBase):
         )
         self.test_type = "test"
         self._prod = list(product(
-            self.llms, self.llm_configs, self.ras, self.treatments
+            self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
         
         self._generate_test_paths()
@@ -52,19 +52,19 @@ class Test(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        test_dir = self.output_path / "base_tests" / self.case
-        current_test = self._get_max_test_number(test_dir)
-        
-        return [
-            test_dir / f"test_{test + current_test}"
-            for test, _ in enumerate(self._prod, start=1)
-        ]
+        test_paths = []
+        for case in self.cases:
+            test_dir = self.output_path / "base_tests" / case
+            current_test = self._get_max_test_number(test_dir)
+            paths = [test_dir / f"test_{test + current_test}" for test, _ in enumerate(self._prod, start=1)]
+            test_paths.extend(paths)
+        return test_paths
     
     def _generate_configs(self):
         for idx, prod in enumerate(self._prod):
-            llm, llm_config, ra, treatment = prod
+            llm, llm_config, case, ra, treatment = prod
             config = TestConfig(
-                case=self.case,
+                case=case,
                 ra=ra,
                 treatment=treatment,
                 llms=to_list(llm),
