@@ -46,7 +46,7 @@ class Test(IRPDBase):
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
         
-        self._generate_test_paths()
+        self.test_paths = self._generate_test_paths()
         self._generate_configs()
     
     def _generate_test_paths(self):
