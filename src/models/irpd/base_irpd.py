@@ -41,7 +41,7 @@ class IRPDBase(ABC):
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None
     ):
-        self.cases = cases
+        self.cases = to_list(cases)
         self.ras = ras or []
         self.treatments = treatments or []
         self.stages = stages or []
@@ -58,7 +58,7 @@ class IRPDBase(ABC):
     def _validate_values(self):
         attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
         for attr in attributes:
-            value = to_list(getattr(self, attr))
+            value = getattr(self, attr)
             if attr == "cases":
                 vals = []
                 for c in value:
