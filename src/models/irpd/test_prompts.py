@@ -40,7 +40,7 @@ class TestPrompts:
         section = file_to_string(section_path)
         if not section:
             log.warning(f"PROMPTS: {name} was empty.")
-        return section
+        return section + "\n"
     
     def _task_overview(self):
         section_path = self.sections_path / "task_overview" / f"stage_{self.stage}.md"
@@ -73,11 +73,13 @@ class TestPrompts:
         section += file_to_string(section_path / "stage_1" / "window_number.md")
         
         if self.stage == "1c":
-            section += file_to_string(section_path / "stage_1" / "subset" / f"{self.case}.md")
+            subset_path = section_path / "stage_1" / "subset"
+            section += file_to_string(subset_path / "initial.md")
+            section += file_to_string(subset_path / f"{self.case}.md")
         if not section:
             log.warning(f"PROMPTS: Data Definitions was empty.")
             return section
-        return section + "\n"
+        return section
     
     @staticmethod
     def _get_att(output):
