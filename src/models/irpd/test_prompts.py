@@ -69,13 +69,13 @@ class TestPrompts:
         
         if self.stage in {"1", "1c"}:
             section += file_to_string(section_path / "stage_1" / f"{self.ra}.md")
-        
-        section += file_to_string(section_path / "stage_1" / "window_number.md")
-        
         if self.stage == "1c":
             subset_path = section_path / "stage_1" / "subset"
             section += file_to_string(subset_path / "initial.md")
             section += file_to_string(subset_path / f"{self.case}.md")
+        
+        section += file_to_string(section_path / "stage_1" / "window_number.md")
+        
         if not section:
             log.warning(f"PROMPTS: Data Definitions was empty.")
             return section
