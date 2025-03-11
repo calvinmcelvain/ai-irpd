@@ -150,23 +150,18 @@ class IRPDBase(ABC):
             test_out = {}
             for s in exist_stgs:
                 log.info(f"OUTPUT: Stage {s} found.")
+                schema = lazy_import("models.schemas", f"Stage{s}Schema")
                 stage_out = {}
-                stage_path = sub_path / f"stage_{s}"
-                subsets = [s for s in stage_path.iterdir() if s.is_dir()]
-                for k in subsets:
-                    stage_out[k.name] = []
-                    schema = lazy_import("models.schemas", f"Stage{s}Schema")
-                    if s in {"2", "3"}:
-                        r_dir = k / "responses"
-                    else:
-                        r_dir = k
-                    for r in r_dir.iterdir():
+                responses_path = sub_path / f"stage_{s}" / "responses"
+                if responses_path.exists():
+                    for r in responses_path.iterdir():
                         if r.name.endswith("response.txt"):
+                            subset = r.name.split("_stg")[0]
                             parsed = validate_json_string(r, schema)
-                            stage_out[k.name].append(RequestOut(
+                            stage_out[subset] += RequestOut(
                                 text=file_to_string(r),
                                 parsed=parsed
-                            ))
+                            )
                 test_out[s] = StageOutput(stage=s, outputs=stage_out)
             self.output[config.id].append(TestOutput(
                 id=config.id,
