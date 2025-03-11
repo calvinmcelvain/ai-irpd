@@ -1,14 +1,17 @@
 import time
 import logging
 import random as r
+from abc import abstractmethod
+from pydantic import BaseModel
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
+
 from openai.types.chat import ChatCompletion
-from pydantic import BaseModel
 from models.llms.base_llm import BaseLLM
-from abc import abstractmethod
+
 
 log = logging.getLogger(__name__)
+
 
 
 class OpenAIToolCall(BaseModel):

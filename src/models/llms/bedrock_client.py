@@ -4,10 +4,13 @@ import random as r
 import json
 import boto3
 from pydantic import BaseModel
-from models.llms.base_llm import BaseLLM
 from abc import abstractmethod
 
+from models.llms.base_llm import BaseLLM
+
+
 log = logging.getLogger(__name__)
+
 
 
 class BedrockToolCall(BaseModel):

@@ -4,13 +4,13 @@ import random as r
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
-from google.api_core.exceptions import (
-    ResourceExhausted,
-    InternalServerError
-)
+from google.api_core.exceptions import ResourceExhausted, InternalServerError
+
 from models.llms.base_llm import BaseLLM
 
+
 log = logging.getLogger(__name__)
+
 
 
 class GeminiConfigs(BaseModel):

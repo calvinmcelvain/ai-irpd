@@ -1,5 +1,7 @@
-from llms.openai_client import OpenAIClient
 from pydantic import BaseModel, Field
+
+from models.llms.openai_client import OpenAIClient
+
 
 
 class GrokConfigs(BaseModel):

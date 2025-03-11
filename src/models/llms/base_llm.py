@@ -1,9 +1,11 @@
 from pydantic import BaseModel
+from abc import ABC, abstractmethod
+
 from models.prompts import Prompts
 from models.request_output import RequestOut
 from models.meta_output import MetaOutput
 from utils import validate_json_string
-from abc import ABC, abstractmethod
+
 
 
 class BaseLLM(ABC):

@@ -4,9 +4,12 @@ import random as r
 import mistralai
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
+
 from models.llms.base_llm import BaseLLM
 
+
 log = logging.getLogger(__name__)
+
 
 
 class MistralConfigs(BaseModel):
