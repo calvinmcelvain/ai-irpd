@@ -42,6 +42,7 @@ class BaseStage(ABC):
         self.subsets = self._get_subsets()
         self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
         self.fixed = kwargs.get("fixed", False)
+        self.retries = kwargs.get("retries", 3)
     
     @staticmethod
     def _get_instance_types(case: str):
