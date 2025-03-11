@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+from pydantic import BaseModel
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -49,6 +50,24 @@ class BaseStage(ABC):
             return output.assigned_categories
         if hasattr(output, "category_ranking"):
             return output.category_ranking
+    
+    @staticmethod
+    def _categories_to_txt(categories: BaseModel):
+        category_texts = []
+        for category in categories:
+            example_texts = []
+            for idx, example in enumerate(category.examples, start=1):
+                example_texts.append(
+                    f"  {idx}. Window number: {example.window_number},"
+                    f" Reasoning: {example.reasoning}"
+                )
+            category_text = (
+                f"### {category.category_name}\n\n"
+                f"**Definition**: {category.definition}\n\n"
+                f"**Examples**:\n\n{"\n".join(example_texts)}\n\n"
+            )
+            category_texts.append(category_text)
+        return "".join(category_texts)
     
     def _get_subsets(self):
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
