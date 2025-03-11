@@ -36,6 +36,7 @@ class BaseStage(ABC):
         self.treatment = test_config.treatment
         self.llm = llm
         self.test_path = test_config.test_path
+        self.test_type = test_config.test_type
         self.sub_path = sub_path
         self.prompts = prompts
         self.context = context
