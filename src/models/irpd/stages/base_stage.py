@@ -40,8 +40,8 @@ class BaseStage(ABC):
         return ["coop", "def"]
     
     def _get_subsets(self):
-        instance_types = [self._get_instance_types(c) for c in self.cases]
-        return product(self.cases, instance_types)
+        subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
+        return subsets + ["full"]
     
     def _compute_tokens(self):
         tokens = {case: {} for case in self.cases}
