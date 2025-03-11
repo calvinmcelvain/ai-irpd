@@ -77,10 +77,11 @@ class BaseStage(ABC):
         return "".join(category_texts)
     
     def _check_context(self, subset: str):
-        if self.stage in self.context.stage_outputs.keys():
-            if subset in self.context.stage_outputs[self.stage].outputs:
-                if isinstance(self.context.stage_outputs[self.stage].outputs[subset], RequestOut):
-                    return True
+        if self.context:
+            if self.stage in self.context.stage_outputs.keys():
+                if subset in self.context.stage_outputs[self.stage].outputs:
+                    if isinstance(self.context.stage_outputs[self.stage].outputs[subset], RequestOut):
+                        return True
         return None
     
     def _get_subsets(self):
