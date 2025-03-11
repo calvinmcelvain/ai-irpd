@@ -39,6 +39,17 @@ class BaseStage(ABC):
             return ["ucoop", "udef"]
         return ["coop", "def"]
     
+    @staticmethod
+    def _get_att(output):
+        if hasattr(output, "categories"):
+            return output.categories
+        if hasattr(output, "refined_categories"):
+            return output.refined_categories
+        if hasattr(output, "assigned_categories"):
+            return output.assigned_categories
+        if hasattr(output, "category_ranking"):
+            return output.category_ranking
+    
     def _get_subsets(self):
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
         return subsets + ["full"]
