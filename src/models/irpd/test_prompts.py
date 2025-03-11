@@ -142,7 +142,7 @@ class TestPrompts:
                 df = df.drop(columns=ra_cols)
             if subset != "full":
                 df = df.drop(columns=["subset"])
-                df = df[(df["instance_type"] == subset)]
+                df = df[(df["instance_type"] == subset.split("_")[1])]
             cases = [c for c in case.split("_")]
             df = df[(df["case"].isin(cases))]
             df = df.drop(columns=["case", "treatment", "instance_type"])

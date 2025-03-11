@@ -47,7 +47,7 @@ class Stage1(BaseStage):
                 pdf += self._categories_to_txt(categories=categories)
                 self._write_prompts(subset)
         pdf_path = self.sub_path / "stage_1_categories.pdf"
-        txt_to_pdf(text=pdf, pdf_path=pdf_path)
+        txt_to_pdf(text=pdf, file_path=pdf_path)
         return None
 
     def run(self):
