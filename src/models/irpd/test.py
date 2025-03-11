@@ -27,7 +27,8 @@ class Test(IRPDBase):
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
-        test_paths: Optional[List[str]] = None
+        test_paths: Optional[List[str]] = None,
+        test_type: str = "test"
     ):
         super().__init__(
             cases,
@@ -41,7 +42,7 @@ class Test(IRPDBase):
             data_path,
             test_paths
         )
-        self.test_type = "test"
+        self.test_type = test_type
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
@@ -83,7 +84,7 @@ class Test(IRPDBase):
         print_response: bool = False
     ):
         test_configs = self._get_test_configs(config_ids=config_ids)
-        for config in test_configs:
+        for config in test_configs.values():
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
             clear_logger(app=False)
@@ -91,8 +92,8 @@ class Test(IRPDBase):
             
             llm_str = config.llms[0]
             llm = self._generate_llm_instance(
-                llm=config.llms,
-                config=llm_str,
+                llm=llm_str,
+                config=config.llm_config,
                 print_response=print_response
             )
             
