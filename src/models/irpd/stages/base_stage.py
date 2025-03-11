@@ -9,7 +9,10 @@ from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
 from models.request_output import RequestOut
-from utils import validate_json_string, write_json, load_json, str_to_path, get_env_var
+from utils import (
+    validate_json_string, write_json, load_json, str_to_path, get_env_var,
+    lazy_import
+)
 
 
 log = logging.getLogger(__name__)
@@ -83,6 +86,9 @@ class BaseStage(ABC):
     def _get_subsets(self):
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
         return subsets + ["full"]
+    
+    def _get_stage_schema(self):
+        return lazy_import("models.irpd.schemas", f"Stage{self.stage}Schema")
     
     def _write_meta(self):
         meta_path = self.sub_path / "_test_meta.json"
