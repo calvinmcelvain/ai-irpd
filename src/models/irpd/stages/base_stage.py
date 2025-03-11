@@ -4,7 +4,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from models.irpd.test_config import TestConfig
-from models.irpd.test_output import TestOutput
+from models.irpd.test_prompts import TestPrompts
 from models.llms.base_llm import BaseLLM
 from utils import validate_json_string, write_json, load_json, str_to_path, get_env_var
 
@@ -18,7 +18,7 @@ class BaseStage(ABC):
         self,
         test_config: TestConfig,
         sub_path: Path,
-        context: TestOutput,
+        prompts: TestPrompts,
         llm: BaseLLM
     ):
         self.config = test_config
@@ -29,7 +29,7 @@ class BaseStage(ABC):
         self.llm = llm
         self.test_path = test_config.test_path
         self.sub_path = sub_path
-        self.context = context
+        self.prompts = prompts
         self.subsets = self._get_subsets()
         self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
     
