@@ -110,7 +110,7 @@ class BaseStage(ABC):
             json_data = {
                 "model_info": {
                     "model": model,
-                    "parameters": parameters.model_dump()
+                    "parameters": parameters
                 },
                 "test_info": {
                     "case": self.case,
