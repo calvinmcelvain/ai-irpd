@@ -48,7 +48,7 @@ class BaseStage(ABC):
         if meta_path.exists():
             json_data = load_json(meta_path)
             for subset in self.subsets:
-                output_meta = self.output[subset].meta
+                output_meta = self.output.outputs[subset].meta
                 json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
                 json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
                 json_data[self.stage][subset]["total_tokens"] += output_meta.total_tokens
