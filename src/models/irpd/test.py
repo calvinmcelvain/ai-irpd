@@ -82,8 +82,8 @@ class Test(IRPDBase):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
-        super().run(max_instances, config_ids, print_response)
-        for config in self._test_configs.values():
+        test_configs = self._get_test_configs(config_ids=config_ids)
+        for config in test_configs:
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
             clear_logger(app=False)
