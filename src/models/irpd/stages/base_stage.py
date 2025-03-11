@@ -6,7 +6,9 @@ from abc import ABC, abstractmethod
 
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
+from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
+from models.request_output import RequestOut
 from utils import validate_json_string, write_json, load_json, str_to_path, get_env_var
 
 
@@ -20,6 +22,7 @@ class BaseStage(ABC):
         test_config: TestConfig,
         sub_path: Path,
         prompts: TestPrompts,
+        context: TestOutput,
         llm: BaseLLM
     ):
         self.config = test_config
@@ -31,6 +34,7 @@ class BaseStage(ABC):
         self.test_path = test_config.test_path
         self.sub_path = sub_path
         self.prompts = prompts
+        self.context = context
         self.subsets = self._get_subsets()
         self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
     
@@ -68,6 +72,13 @@ class BaseStage(ABC):
             )
             category_texts.append(category_text)
         return "".join(category_texts)
+    
+    def _check_context(self, subset: str):
+        if self.stage in self.context.stage_outputs.keys():
+            if subset in self.context.stage_outputs[self.stage].outputs:
+                if isinstance(self.context.stage_outputs[self.stage].outputs[subset], RequestOut):
+                    return True
+        return None
     
     def _get_subsets(self):
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
