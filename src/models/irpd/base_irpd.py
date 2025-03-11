@@ -158,10 +158,13 @@ class IRPDBase(ABC):
                         if r.name.endswith("response.txt"):
                             subset = r.name.split("_stg")[0]
                             parsed = validate_json_string(file_to_string(r), schema)
-                            stage_out[subset] += RequestOut(
+                            if subset not in stage_out.keys():
+                                stage_out[subset] = []
+                            stage_out[subset] += [RequestOut(
                                 text=file_to_string(r),
+                                meta=None,
                                 parsed=parsed
-                            )
+                            )]
                 test_out[s] = StageOutput(stage=s, outputs=stage_out)
             self.output[config.id].append(TestOutput(
                 id=config.id,
@@ -180,7 +183,7 @@ class IRPDBase(ABC):
         replication: int
     ):
         test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
-        if test_idx:
+        if isinstance(test_idx, int):
             return self.output[config.id][test_idx]
         else:
             test_out = TestOutput(

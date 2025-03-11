@@ -8,7 +8,6 @@ from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
-from models.request_output import RequestOut
 from utils import (
     validate_json_string, write_json, load_json, str_to_path, get_env_var,
     lazy_import, write_file
@@ -81,11 +80,16 @@ class BaseStage(ABC):
         return "".join(category_texts)
     
     def _check_context(self, subset: str):
+        log.info(f"OUTPUTS: Checking for {subset} outputs.")
         if self.context:
             if self.stage in self.context.stage_outputs.keys():
-                if subset in self.context.stage_outputs[self.stage].outputs:
-                    if isinstance(self.context.stage_outputs[self.stage].outputs[subset], RequestOut):
+                if subset in self.context.stage_outputs[self.stage].outputs.keys():
+                    output = self.context.stage_outputs[self.stage].outputs[subset]
+                    if output:
+                        log.info(f"OUTPUTS: Outputs found.")
+                        self.output.outputs[subset].extend(output)
                         return True
+        log.info("OUTPUTS: Outputs could not be found.")
         return None
     
     def _get_subsets(self):
@@ -100,10 +104,12 @@ class BaseStage(ABC):
         if meta_path.exists():
             json_data = load_json(meta_path)
             for subset in self.subsets:
-                output_meta = self.output.outputs[subset].meta
-                json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
-                json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
-                json_data[self.stage][subset]["total_tokens"] += output_meta.total_tokens
+                output = self.output.outputs[subset]
+                output_meta = [output[i].meta for i in range(len(output)) if output[i].meta]
+                if output_meta:
+                    json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
+                    json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
+                    json_data[self.stage][subset]["total_tokens"] += output_meta.total_tokens
         else:
             model = self.llm.model
             parameters = self.llm.configs.model_dump()
@@ -140,16 +146,20 @@ class BaseStage(ABC):
         responses_path.mkdir(parents=True, exist_ok=True)
         prompts_path.mkdir(parents=True, exist_ok=True)
         
-        output = self.output.outputs[subset]
-        
-        user_prompt = output.meta.prompt.user
-        system_prompt = output.meta.prompt.system
-        response = output.text
-        
         prefix = f"{subset}_stg_{self.stage}"
-        write_file(responses_path / f"{prefix}_response.txt", response)
-        write_file(prompts_path / f"{prefix}_user_prompt.txt", user_prompt)
-        write_file(prompts_path.parent / f"{prefix}_system_prompt.txt", system_prompt)
+        a = responses_path / f"{prefix}_response.txt"
+        b = prompts_path / f"{prefix}_user_prompt.txt"
+        c = prompts_path.parent / f"{prefix}_system_prompt.txt"
+        
+        if not all(path.exists() for path in [a, b, c]):
+            output = self.output.outputs[subset]
+            user_prompt = output.meta.prompt.user
+            system_prompt = output.meta.prompt.system
+            response = output.text
+            
+            write_file(a, response)
+            write_file(b, user_prompt)
+            write_file(c, system_prompt)
     
     def _build_data_output(self):
         dfs = []

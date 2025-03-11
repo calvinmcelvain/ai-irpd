@@ -37,7 +37,7 @@ class Stage1(BaseStage):
         pdf = "# Stage 1 Categories\n\n"
         for subset in self.subsets:
             if subset in self.output.outputs.keys():
-                output = self.output.outputs[subset]
+                output = self.output.outputs[subset][0]
                 categories = self._get_att(output.parsed)
                 if len(subset.split("_")) == 2:
                     case, sub = subset.split("_")
@@ -52,6 +52,7 @@ class Stage1(BaseStage):
 
     def run(self):
         for subset in self.subsets:
+            self.output.outputs[subset] = []
             retries = 0
             if not self._check_context(subset=subset):
                 prompts = self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed)
@@ -62,7 +63,7 @@ class Stage1(BaseStage):
                             system=str(prompts.system),
                             schema=self.schema
                         )
-                        self.output.outputs[subset] = output
+                        self.output.outputs[subset] += [output]
                         break
                     except Timeout:
                         retries += 1
