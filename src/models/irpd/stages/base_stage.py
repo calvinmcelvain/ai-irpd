@@ -11,7 +11,7 @@ from models.llms.base_llm import BaseLLM
 from models.request_output import RequestOut
 from utils import (
     validate_json_string, write_json, load_json, str_to_path, get_env_var,
-    lazy_import
+    lazy_import, write_file
 )
 
 
@@ -130,6 +130,24 @@ class BaseStage(ABC):
         
         write_json(meta_path, json_data)
         return None
+
+    def _write_prompts(self, subset: str):
+        stage_path = self.sub_path / f"stage_{self.stage}"
+        responses_path = stage_path / "responses"
+        prompts_path = stage_path / "prompts"
+        responses_path.mkdir(parents=True, exist_ok=True)
+        prompts_path.mkdir(parents=True, exist_ok=True)
+        
+        output = self.output.outputs[subset]
+        
+        user_prompt = output.meta.prompt.user
+        system_prompt = output.meta.prompt.system
+        response = output.text
+        
+        prefix = f"{subset}_stg_{self.stage}"
+        write_file(responses_path / f"{prefix}_response.txt", response)
+        write_file(prompts_path / f"{prefix}_user_prompt.txt", user_prompt)
+        write_file(prompts_path / f"{prefix}_system_prompt.txt", system_prompt)
     
     def _build_data_output(self):
         dfs = []

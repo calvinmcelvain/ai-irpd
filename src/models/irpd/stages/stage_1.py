@@ -37,15 +37,15 @@ class Stage1(BaseStage):
         pdf = "# Stage 1 Categories\n\n"
         for subset in self.subsets:
             if subset in self.output.outputs.keys():
+                output = self.output.outputs[subset]
+                categories = self._get_att(output.parsed)
                 if len(subset.split("_")) == 2:
                     case, sub = subset.split("_")
                     pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
-                    categories = self._get_att(self.output.outputs[subset].parsed)
-                    pdf += self._categories_to_txt(categories=categories)
                 else:
                     pdf += f"## Unified Categories\n\n"
-                    categories = self._get_att(self.output.outputs[subset].parsed)
-                    pdf += self._categories_to_txt(categories=categories)
+                pdf += self._categories_to_txt(categories=categories)
+                self._write_prompts(subset)
         pdf_path = self.sub_path / "stage_1_categories.pdf"
         txt_to_pdf(text=pdf, pdf_path=pdf_path)
         return None
