@@ -111,14 +111,6 @@ class BaseStage(ABC):
         return pd.concat(dfs, ignore_index=True, sort=False)
     
     @abstractmethod
-    def _get_system_prompt(self):
-        pass
-    
-    @abstractmethod
-    def _get_user_prompt(self):
-        pass
-    
-    @abstractmethod
     def _process_output(self):
         pass
     
