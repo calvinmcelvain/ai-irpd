@@ -150,7 +150,7 @@ class IRPDBase(ABC):
             test_out = {}
             for s in exist_stgs:
                 log.info(f"OUTPUT: Stage {s} found.")
-                schema = lazy_import("models.schemas", f"Stage{s}Schema")
+                schema = lazy_import("models.irpd.schemas", f"Stage{s}Schema")
                 stage_out = {}
                 responses_path = sub_path / f"stage_{s}" / "responses"
                 if responses_path.exists():
