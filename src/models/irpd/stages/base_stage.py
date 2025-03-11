@@ -26,7 +26,8 @@ class BaseStage(ABC):
         sub_path: Path,
         prompts: TestPrompts,
         context: TestOutput,
-        llm: BaseLLM
+        llm: BaseLLM,
+        **kwargs
     ):
         self.config = test_config
         self.case = test_config.case
@@ -40,6 +41,7 @@ class BaseStage(ABC):
         self.context = context
         self.subsets = self._get_subsets()
         self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
+        self.fixed = kwargs.get("fixed", False)
     
     @staticmethod
     def _get_instance_types(case: str):

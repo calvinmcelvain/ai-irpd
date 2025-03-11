@@ -23,9 +23,10 @@ class Stage1(BaseStage):
         sub_path: Path,
         prompts: TestPrompts,
         context: TestOutput,
-        llm: BaseLLM
+        llm: BaseLLM,
+        **kwargs
     ):
-        super().__init__(test_config, sub_path, prompts, context, llm)
+        super().__init__(test_config, sub_path, prompts, context, llm, **kwargs)
         self.stage = "1"
         self.output = StageOutput(stage=self.stage)
         self.schema = self._get_stage_schema()
