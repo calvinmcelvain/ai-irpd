@@ -157,7 +157,7 @@ class IRPDBase(ABC):
                     for r in responses_path.iterdir():
                         if r.name.endswith("response.txt"):
                             subset = r.name.split("_stg")[0]
-                            parsed = validate_json_string(r, schema)
+                            parsed = validate_json_string(file_to_string(r), schema)
                             stage_out[subset] += RequestOut(
                                 text=file_to_string(r),
                                 parsed=parsed
