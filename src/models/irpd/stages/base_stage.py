@@ -1,14 +1,12 @@
 import logging
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
-from itertools import product
 from abc import ABC, abstractmethod
 
 from models.irpd.test_config import TestConfig
 from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
-from utils import validate_json_string, write_json
+from utils import validate_json_string, write_json, load_json, str_to_path, get_env_var
 
 
 log = logging.getLogger(__name__)
@@ -23,6 +21,7 @@ class BaseStage(ABC):
         context: TestOutput,
         llm: BaseLLM
     ):
+        self.config = test_config
         self.case = test_config.case
         self.cases = self.case.split("_")
         self.ra = test_config.ra
@@ -32,6 +31,7 @@ class BaseStage(ABC):
         self.sub_path = sub_path
         self.context = context
         self.subsets = self._get_subsets()
+        self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
     
     @staticmethod
     def _get_instance_types(case: str):
@@ -43,55 +43,42 @@ class BaseStage(ABC):
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
         return subsets + ["full"]
     
-    def _compute_tokens(self):
-        tokens = {case: {} for case in self.cases}
-        for c in self.cases:
-            for i in self._get_instance_types(c):
-                outputs = self.output.get(c, i)
-                tokens[c][i] = {
-                    "input_tokens": sum(output.meta.usage.prompt_tokens for output in outputs),
-                    "output_tokens": sum(output.meta.usage.completion_tokens for output in outputs),
-                    "total_tokens": sum(output.meta.usage.total_tokens for output in outputs)
-                }
-        tokens["total"] = {
-            "input_tokens": sum(
-                tokens[c][i]["input_tokens"] for c in self.cases for i in self._get_instance_types(c)),
-            "output_tokens": sum(tokens[c][i]["output_tokens"] for c in self.cases for i in self._get_instance_types(c)),
-            "total_tokens": sum(tokens[c][i]["total_tokens"] for c in self.cases for i in self._get_instance_types(c))
-        }
-        return tokens
-    
     def _write_meta(self):
-        model = self.llm.model
-        parameters = self.llm.configs
-        created = str(datetime.now())
-        try:
-            tokens = self._compute_tokens()
-        except AttributeError:
-            tokens = None
+        meta_path = self.sub_path / "_test_meta.json"
+        if meta_path.exists():
+            json_data = load_json(meta_path)
+            for subset in self.subsets:
+                output_meta = self.output[subset].meta
+                json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
+                json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
+                json_data[self.stage][subset]["total_tokens"] += output_meta.total_tokens
+        else:
+            model = self.llm.model
+            parameters = self.llm.configs.model_dump()
+            
+            json_data = {
+                "model_info": {
+                    "model": model,
+                    "parameters": parameters.model_dump()
+                },
+                "test_info": {
+                    "case": self.case,
+                    "ra": self.ra,
+                    "treatment": self.treatment,
+                    "test_type": self.test_type,
+                    "test_path": self.test_path.relative_to(self.output_path).as_posix()
+                },
+                "stages": {}
+            }
+            for stage in self.config.stages:
+                json_data["stages"][stage] = {}
+                for subset in self.subsets:
+                    json_data["stages"][stage][subset] = {}
+                    json_data["stages"][stage][subset]["input_tokens"] = 0
+                    json_data["stages"][stage][subset]["output_tokens"] = 0
+                    json_data["stages"][stage][subset]["total_tokens"] = 0
         
-        meta_path = self.sub_path / "_test_info"
-        meta_path.mkdir(exist_ok=True)
-        
-        json_data = {
-            "created": created,
-            "model_info": {
-                "model": model,
-                "parameters": parameters.model_dump()
-            },
-            "test_info": {
-                "case": self.case,
-                "ra": self.ra,
-                "treatment": self.treatment,
-                "threshold": self.threshold,
-                "test_type": self.test_type,
-                "test_path": self.test_path.relative_to(self.project_path).as_posix()
-            },
-            "tokens": tokens
-        }
-        
-        path = meta_path / f"stg_{self.stage}_test_info.json"
-        write_json(path, json_data)
+        write_json(meta_path, json_data)
         return None
     
     def _build_data_output(self):
