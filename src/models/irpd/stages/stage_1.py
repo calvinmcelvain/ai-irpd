@@ -7,6 +7,7 @@ from utils import txt_to_pdf
 from models.irpd.stages.base_stage import BaseStage
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
+from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
 from models.irpd.stage_output import StageOutput
 
@@ -21,9 +22,10 @@ class Stage1(BaseStage):
         test_config: TestConfig,
         sub_path: Path,
         prompts: TestPrompts,
+        context: TestOutput,
         llm: BaseLLM
     ):
-        super().__init__(test_config, sub_path, prompts, llm)
+        super().__init__(test_config, sub_path, prompts, context, llm)
         self.stage = "1"
         self.output = StageOutput(stage=self.stage)
         self.schema = self._get_stage_schema()

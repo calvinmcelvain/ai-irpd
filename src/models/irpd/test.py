@@ -124,6 +124,7 @@ class Test(IRPDBase):
                     test_config=config,
                     sub_path=config.test_path,
                     llm=llm,
+                    context=context,
                     prompts=prompts
                 )
                 
