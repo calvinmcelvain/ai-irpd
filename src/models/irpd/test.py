@@ -88,7 +88,8 @@ class Test(IRPDBase):
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
             clear_logger(app=False)
-            log.info(f" {self.test_type.upper()}: Running config = {config.id}")
+            test = self.test_type.upper()
+            log.info(f"{test}: Running config = {config.id}.")
             
             llm_str = config.llms[0]
             llm = self._generate_llm_instance(
@@ -103,6 +104,7 @@ class Test(IRPDBase):
             create_directory(config.test_path)
             
             for stage_name in self.stages:
+                log.info(f"{test}: Running Stage {stage_name}.")
                 context = self._get_context(
                     config=config,
                     llm=llm_str,
@@ -129,4 +131,5 @@ class Test(IRPDBase):
                 
                 idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
                 self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
-        log.info(f"TEST: End of {self.test_type.upper()} = {config.id}")
+                log.info(f"{test}: Stage {stage_name} complete.")
+        log.info(f"{test}: End of {self.test_type.upper()} = {config.id}")
