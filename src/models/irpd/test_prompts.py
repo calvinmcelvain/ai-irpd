@@ -141,11 +141,11 @@ class TestPrompts:
                 ra_cols = [c for c in df.columns if c.startswith("summary_") and c != f"summary_{self.ra}"]
                 df = df.drop(columns=ra_cols)
             if subset != "full":
-                df = df.drop(columns=["subset"])
-                df = df[(df["instance_type"] == subset.split("_")[1])]
+                df = df.drop(columns=["instance_type"])
+                df = df[(df["subset"] == subset)]
             cases = [c for c in case.split("_")]
             df = df[(df["case"].isin(cases))]
-            df = df.drop(columns=["case", "treatment", "instance_type"])
+            df = df.drop(columns=["case", "treatment", "subset"])
         else:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
