@@ -99,42 +99,49 @@ class BaseStage(ABC):
     def _get_stage_schema(self):
         return lazy_import("models.irpd.schemas", f"Stage{self.stage}Schema")
     
+    def _initialize_meta_file(self):
+        model = self.llm.model
+        parameters = self.llm.configs.model_dump()
+        
+        json_data = {
+            "model_info": {
+                "model": model,
+                "parameters": parameters
+            },
+            "test_info": {
+                "case": self.case,
+                "ra": self.ra,
+                "treatment": self.treatment,
+                "test_type": self.test_type,
+                "test_path": self.test_path.relative_to(self.output_path).as_posix()
+            },
+            "stages": {}
+        }
+        for stage in self.config.stages:
+            json_data["stages"][stage] = {}
+            for subset in self.subsets:
+                json_data["stages"][stage][subset] = {}
+                json_data["stages"][stage][subset]["input_tokens"] = 0
+                json_data["stages"][stage][subset]["output_tokens"] = 0
+                json_data["stages"][stage][subset]["total_tokens"] = 0
+        return json_data
+    
     def _write_meta(self):
         meta_path = self.sub_path / "_test_meta.json"
         if meta_path.exists():
             json_data = load_json(meta_path)
-            for subset in self.subsets:
-                output = self.output.outputs[subset]
-                output_meta = [output[i].meta for i in range(len(output)) if output[i].meta]
-                if output_meta:
-                    json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
-                    json_data[self.stage][subset]["input_tokens"] += output_meta.input_tokens
-                    json_data[self.stage][subset]["total_tokens"] += output_meta.total_tokens
         else:
-            model = self.llm.model
-            parameters = self.llm.configs.model_dump()
-            
-            json_data = {
-                "model_info": {
-                    "model": model,
-                    "parameters": parameters
-                },
-                "test_info": {
-                    "case": self.case,
-                    "ra": self.ra,
-                    "treatment": self.treatment,
-                    "test_type": self.test_type,
-                    "test_path": self.test_path.relative_to(self.output_path).as_posix()
-                },
-                "stages": {}
-            }
-            for stage in self.config.stages:
-                json_data["stages"][stage] = {}
-                for subset in self.subsets:
-                    json_data["stages"][stage][subset] = {}
-                    json_data["stages"][stage][subset]["input_tokens"] = 0
-                    json_data["stages"][stage][subset]["output_tokens"] = 0
-                    json_data["stages"][stage][subset]["total_tokens"] = 0
+            json_data = self._initialize_meta_file()
+        
+        for subset in self.subsets:
+            output = self.output.outputs[subset]
+            output_meta = [out.meta for out in output if out.meta]
+            if output_meta:
+                for meta in output_meta:
+                    subset_tokens = json_data["stages"][self.stage][subset]
+                    subset_tokens["input_tokens"] += meta.input_tokens
+                    subset_tokens["output_tokens"] += meta.output_tokens
+                    subset_tokens["total_tokens"] += meta.total_tokens
         
         write_json(meta_path, json_data)
         return None
