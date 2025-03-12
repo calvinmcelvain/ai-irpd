@@ -9,6 +9,7 @@ valid_values:
     - "3"
   cases:
     - uni
+    - uni_switch
     - uniresp
     - switch
     - first

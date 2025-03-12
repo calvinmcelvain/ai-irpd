@@ -59,11 +59,6 @@ class IRPDBase(ABC):
         attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
         for attr in attributes:
             value = getattr(self, attr)
-            if attr == "cases":
-                vals = []
-                for c in value:
-                    vals.extend(c.split("_"))
-                value = list(set(vals))
             default_value = to_list(DEFAULTS.get(attr, ""))
             valid_values = VALID_VALUES.get(attr, [])
 
@@ -86,13 +81,12 @@ class IRPDBase(ABC):
                     f"All provided `{attr}` values are invalid: {value}. "
                     f"Allowed values: {valid_values}"
                 )
-            if attr != "cases":
-                if invalid_items:
-                    log.warning(
-                        f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
-                        f"Allowed values: {valid_values}"
-                    )
-                setattr(self, attr, valid_items)
+            if invalid_items:
+                log.warning(
+                    f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
+                    f"Allowed values: {valid_values}"
+                )
+            setattr(self, attr, valid_items)
 
     def _ensure_strings(self, attr: str, values: List[str]):
         if not all(isinstance(item, str) for item in values):
