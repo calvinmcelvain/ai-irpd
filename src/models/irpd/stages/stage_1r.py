@@ -1,100 +1,60 @@
 import logging
+from pathlib import Path
 import time as t
 from requests.exceptions import Timeout
-from irpd.stages.base_stage import BaseStage
-from utils import file_to_string, write_file
-from irpd.output_manager import StageRun
+
+from models.irpd.stages.base_stage import BaseStage
+from models.irpd.test_config import TestConfig
+from models.irpd.test_prompts import TestPrompts
+from models.irpd.test_output import TestOutput
+from models.llms.base_llm import BaseLLM
+
 
 log = logging.getLogger(__name__)
 
 
+
 class Stage1r(BaseStage):
-    def __init__(self, test_config, sub_path, context, llm, max_instances, threshold):
-        super().__init__(test_config, sub_path, context, llm, max_instances, threshold)
+    def __init__(
+        self,
+        test_config: TestConfig,
+        sub_path: Path,
+        prompts: TestPrompts,
+        context: TestOutput,
+        llm: BaseLLM,
+        **kwargs
+    ):
         self.stage = "1r"
-        self.schema = self.schemas[self.stage]
-        self.output = StageRun(self.stage)
-    
-    def _get_system_prompt(self):
-        system_prompts = {case: {} for case in self.cases}
-        for c in self.cases:
-            for i in self._get_instance_types(c):
-                prompt_name = f"stg_1r_{self.treatment}.md"
-                prompt_path = self.prompt_path / c / self.ra / prompt_name
-                system_prompts[c][i] =  file_to_string(prompt_path)
-        self.system_prompts = system_prompts
-        return None
-    
-    def _get_user_prompt(self):
-        user_prompts = {case: {} for case in self.cases}
-        for c in self.cases:
-            for i in self._get_instance_types(c):
-                if not self.context.has("1", c, i):
-                    self._update_context("1", c)
-                output = self.context.get("1", c, i)
-                user_prompts[c][i] = self._output_to_txt(
-                    output[0], self.schemas["1"]
-                )
-        self.user_prompts = user_prompts
-        return None
+        super().__init__(test_config, sub_path, prompts, context, llm, **kwargs)
     
     def _process_output(self):
-        meta_path = self.sub_path / "_test_info" / f"stg_{self.stage}_test_info.json"
-        if not meta_path.exists():
-            self._write_meta()
-        
-        for c in self.cases:
-            pdf = True
-            text = f"# Stage {self.stage} Output Categories\n\n"
-            for i in self._get_instance_types(c):
-                try:
-                    output = self.output.get(c, i)[0]
-                    text += self._output_to_txt(
-                        output, self.schema, f"## {i.upper()} Categories\n\n"
-                    )
-                    
-                    write_path = self.sub_path / f"stage_{self.stage}" / c / i
-                    write_path.mkdir(exist_ok=True, parents=True)
-                    prefix = f"stg_{self.stage}_{i}_"
-                    system_path = write_path / (prefix + "sys_prmpt.txt")
-                    user_path = write_path / (prefix + "user_prmpt.txt")
-                    response_path = write_path / (prefix + "response.txt")
-                    
-                    if not any(path.exists() for path in [system_path, user_path, response_path]):
-                        write_file(system_path, output.system)
-                        write_file(user_path, output.user)
-                        write_file(response_path, output.response)
-                except Exception as e:
-                    pdf = False
-                    log.error(f"Error occured in processing {c}, instance {i}: {e}.")
-                    continue
-            pdf_path = self.sub_path / f"{c}_stg_{self.stage}_categories.pdf"
-            if pdf:
-                self._txt_to_pdf(text, pdf_path)
+        self._write_meta()
+        self._build_categories_pdf()
+        return None
         
     def run(self):
-        super().run()
-        for c in self.cases:
-            for i in self._get_instance_types(c):
-                retries = 0
-                if not self._check_completed_requests(i, c):
-                    while retries < self.retries:
-                        try:
-                            output = self.llm.request(
-                                user=str(self.user_prompts[c][i]),
-                                system=str(self.system_prompts[c][i]),
-                                schema=self.schema
-                            )
-                            self.output.store(c, i, output)
-                            break
-                        except Timeout:
-                            retries += 1
-                            log.warning("HTTP Request Timeout. Retrying...")
-                            t.sleep(3)
-                        except Exception as e:
-                            log.error(f"Stage 1 error: {e}")
-                            self._process_output()
-                            raise Exception
+        for subset in self.subsets:
+            self.output.outputs[subset] = []
+            retries = 0
+            if not self._check_context(subset=subset):
+                prompts = self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed)
+                while retries < self.retries:
+                    try:
+                        output = self.llm.request(
+                            user=str(prompts.user),
+                            system=str(prompts.system),
+                            schema=self.schema
+                        )
+                        self.output.outputs[subset] += [output]
+                        break
+                    except Timeout:
+                        retries += 1
+                        log.warning("HTTP Request Timeout. Retrying...")
+                        t.sleep(3)
+                    except Exception as e:
+                        log.error(f"Stage 1r error: {e}")
+                        self._process_output()
+                        raise Exception
         if retries == self.retries:
             log.error("Max retries for HTTP requests was hit.")
         self._process_output()
