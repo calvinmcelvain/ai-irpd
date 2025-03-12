@@ -176,7 +176,6 @@ class Stage:
             b = prompts_path / f"{prefix}_user_prompt.txt"
             
             if not all(path.exists() for path in [a, b]):
-                output = self.output.outputs[subset]
                 user_prompt = output.meta.prompt.user
                 response = output.text
                 
