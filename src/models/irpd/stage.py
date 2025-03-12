@@ -167,20 +167,21 @@ class Stage:
         for i, output in enumerate(outputs):
             prefix = f"{subset}_stg_{self.stage}"
             if i == 0:
-                system_prompt = output.meta.prompt.system
-                c = prompts_path / f"{prefix}_system_prompt.txt"
-                write_file(c, system_prompt)
+                system_path = prompts_path / f"{prefix}_system_prompt.txt"
+                if system_path.exists():
+                    system_prompt = output.meta.prompt.system
+                    write_file(system_path, system_prompt)
             if self.stage in {"2", "3"}:
                 prefix = f"{subset}_{output.parsed.window_number}"
-            a = responses_path / f"{prefix}_response.txt"
-            b = prompts_path / f"{prefix}_user_prompt.txt"
+            response_path = responses_path / f"{prefix}_response.txt"
+            user_path = prompts_path / f"{prefix}_user_prompt.txt"
             
-            if not all(path.exists() for path in [a, b]):
+            if not all(path.exists() for path in [response_path, user_path]):
                 user_prompt = output.meta.prompt.user
                 response = output.text
                 
-                write_file(a, response)
-                write_file(b, user_prompt)
+                write_file(response_path, response)
+                write_file(user_path, user_prompt)
     
     def _build_categories_pdf(self):
         pdf = f"# Stage {self.stage} Categories\n\n"
