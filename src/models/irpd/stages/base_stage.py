@@ -10,7 +10,7 @@ from models.irpd.test_output import TestOutput
 from models.irpd.stage_output import StageOutput
 from models.llms.base_llm import BaseLLM
 from utils import (
-    validate_json_string, write_json, load_json, str_to_path, get_env_var,
+    write_json, load_json, str_to_path, get_env_var,
     lazy_import, write_file, txt_to_pdf
 )
 
@@ -198,28 +198,27 @@ class BaseStage(ABC):
             raw_df_path = self.data_path / "raw" / f"{case}_{self.treatment}_{self.ra}.csv"
             raw_df = pd.read_csv(raw_df_path)
             df_list = []
-            for i in self._get_instance_types(case):
+            for subset in self.subsets:
                 response_list = []
-                outputs = self.output.get(case, i)
-                for j in outputs:
+                outputs = self.output.outputs[subset]
+                for output in outputs:
                     response = {}
-                    output = validate_json_string(j.response, self.schema)
-                    response["reasoning"] = output.reasoning
-                    response["window_number"] = output.window_number
-                    for l in self._get_category_att(output):
-                        name = f"{i}_{l.category_name}"
-                        response[name] = 1
+                    response["reasoning"] = output.parsed.reasoning
+                    response["window_number"] = output.parsed.window_number
+                    for l in self._get_att(output.parsed):
+                        response[l.category_name] = 1
                         if hasattr(l, "rank"):
-                            response[name] = l.rank
+                            response[l.category_name] = l.rank
                     response_list.append(response)
                 response_df = pd.DataFrame.from_records(response_list)
                 df_list.append(response_df)
             df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
             merged_df = pd.merge(raw_df, df, on='window_number')
-            if len(self.cases) > 1:
-                merged_df["case"] = self.cases.index(case)
+            merged_df["case"] = case
             dfs.append(merged_df)
-        return pd.concat(dfs, ignore_index=True, sort=False)
+        df = pd.concat(dfs, ignore_index=True, sort=False)
+        df.to_csv(self.sub_path / f"stage_{self.stage}_final.csv", index=False)
+        return None
     
     @abstractmethod
     def _process_output(self):
