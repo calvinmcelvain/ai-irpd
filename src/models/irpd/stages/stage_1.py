@@ -3,7 +3,6 @@ from pathlib import Path
 import time as t
 from requests.exceptions import Timeout
 
-from utils import txt_to_pdf
 from models.irpd.stages.base_stage import BaseStage
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
@@ -30,21 +29,7 @@ class Stage1(BaseStage):
     
     def _process_output(self):
         self._write_meta()
-        
-        pdf = "# Stage 1 Categories\n\n"
-        for subset in self.subsets:
-            if subset in self.output.outputs.keys():
-                output = self.output.outputs[subset][0]
-                categories = self._get_att(output.parsed)
-                if subset != "full":
-                    case, sub = subset.split("_")
-                    pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
-                else:
-                    pdf += f"## Unified Categories\n\n"
-                pdf += self._categories_to_txt(categories=categories)
-                self._write_prompts(subset)
-        pdf_path = self.sub_path / "stage_1_categories.pdf"
-        txt_to_pdf(text=pdf, file_path=pdf_path)
+        self._build_categories_pdf()
         return None
 
     def run(self):

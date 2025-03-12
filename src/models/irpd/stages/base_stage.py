@@ -11,7 +11,7 @@ from models.irpd.stage_output import StageOutput
 from models.llms.base_llm import BaseLLM
 from utils import (
     validate_json_string, write_json, load_json, str_to_path, get_env_var,
-    lazy_import, write_file
+    lazy_import, write_file, txt_to_pdf
 )
 
 
@@ -171,6 +171,23 @@ class BaseStage(ABC):
             write_file(a, response)
             write_file(b, user_prompt)
             write_file(c, system_prompt)
+    
+    def _build_categories_pdf(self):
+        pdf = f"# Stage {self.stage} Categories\n\n"
+        for subset in self.subsets:
+            if subset in self.output.outputs.keys():
+                output = self.output.outputs[subset][0]
+                categories = self._get_att(output.parsed)
+                if subset != "full":
+                    case, sub = subset.split("_")
+                    pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
+                else:
+                    pdf += f"## Unified Categories\n\n"
+                pdf += self._categories_to_txt(categories=categories)
+                self._write_prompts(subset)
+        pdf_path = self.sub_path / f"_stage_{self.stage}_categories.pdf"
+        txt_to_pdf(text=pdf, file_path=pdf_path)
+        return None
     
     def _build_data_output(self):
         dfs = []
