@@ -155,7 +155,7 @@ class Stage:
         write_json(meta_path, json_data)
         return None
 
-    def _write_prompts(self, subset: str):
+    def _write_stage(self, subset: str):
         stage_path = self.sub_path / f"stage_{self.stage}"
         responses_path = stage_path / subset / "responses"
         prompts_path = stage_path / subset / "prompts"
@@ -231,8 +231,8 @@ class Stage:
         return None
     
     def _process_output(self):
-        for subset in self.subset:
-            self._write_prompts(subset)
+        for subset in self.subsets:
+            self._write_stage(subset)
         self._write_meta()
         if self.stage in {"2", "3"}:
             self._build_data_output()
