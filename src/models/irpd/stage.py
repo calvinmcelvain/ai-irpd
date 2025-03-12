@@ -129,10 +129,13 @@ class Stage:
         for stage in self.config.stages:
             json_data["stages"][stage] = {}
             for subset in self.subsets:
-                json_data["stages"][stage][subset] = {}
-                json_data["stages"][stage][subset]["input_tokens"] = 0
-                json_data["stages"][stage][subset]["output_tokens"] = 0
-                json_data["stages"][stage][subset]["total_tokens"] = 0
+                    json_data["stages"][self.stage] = {
+                        subset: {
+                            "input_tokens": 0,
+                            "output_tokens": 0,
+                            "total_tokens": 0
+                        }
+                    }
         return json_data
     
     def _write_meta(self):
@@ -147,6 +150,14 @@ class Stage:
             output_meta = [out.meta for out in output if out.meta]
             if output_meta:
                 for meta in output_meta:
+                    if self.stage not in json_data["stages"].keys():
+                        json_data["stages"][self.stage] = {
+                            subset: {
+                                "input_tokens": 0,
+                                "output_tokens": 0,
+                                "total_tokens": 0
+                            }
+                        }
                     subset_tokens = json_data["stages"][self.stage][subset]
                     subset_tokens["input_tokens"] += meta.input_tokens
                     subset_tokens["output_tokens"] += meta.output_tokens
@@ -168,7 +179,7 @@ class Stage:
             prefix = f"{subset}_stg_{self.stage}"
             if i == 0:
                 system_path = prompts_path / f"{prefix}_system_prompt.txt"
-                if system_path.exists():
+                if not system_path.exists():
                     system_prompt = output.meta.prompt.system
                     write_file(system_path, system_prompt)
             if self.stage in {"2", "3"}:
