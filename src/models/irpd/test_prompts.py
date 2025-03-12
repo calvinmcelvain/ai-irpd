@@ -70,7 +70,7 @@ class TestPrompts:
         if self.stage in {"1"}:
             section += file_to_string(section_path / "stage_1" / f"{self.ra}.md")
             if subset == "full":
-                subset_path = section_path / "stage_1" / "instance_types"
+                subset_path = section_path / "stage_1" / "instance_type"
                 section += file_to_string(subset_path / "initial.md")
                 for case in self.case.split("_"):
                     section += file_to_string(subset_path / f"{case}.md")
