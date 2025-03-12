@@ -36,7 +36,7 @@ class Stage1(BaseStage):
             if subset in self.output.outputs.keys():
                 output = self.output.outputs[subset][0]
                 categories = self._get_att(output.parsed)
-                if len(subset.split("_")) == 2:
+                if subset != "full":
                     case, sub = subset.split("_")
                     pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
                 else:
