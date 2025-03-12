@@ -129,13 +129,13 @@ class Stage:
         for stage in self.config.stages:
             json_data["stages"][stage] = {}
             for subset in self.subsets:
-                    json_data["stages"][self.stage] = {
-                        subset: {
-                            "input_tokens": 0,
-                            "output_tokens": 0,
-                            "total_tokens": 0
-                        }
+                json_data["stages"][self.stage].update({
+                    subset: {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "total_tokens": 0
                     }
+                })
         return json_data
     
     def _write_meta(self):
@@ -145,19 +145,22 @@ class Stage:
         else:
             json_data = self._initialize_meta_file()
         
+        if self.stage not in json_data["stages"].keys():
+            json_data["stages"][self.stage] = {}
+            for subset in self.subsets:
+                json_data["stages"][self.stage].update({
+                    subset: {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "total_tokens": 0
+                    }
+                })
+        
         for subset in self.subsets:
             output = self.output.outputs[subset]
             output_meta = [out.meta for out in output if out.meta]
             if output_meta:
                 for meta in output_meta:
-                    if self.stage not in json_data["stages"].keys():
-                        json_data["stages"][self.stage] = {
-                            subset: {
-                                "input_tokens": 0,
-                                "output_tokens": 0,
-                                "total_tokens": 0
-                            }
-                        }
                     subset_tokens = json_data["stages"][self.stage][subset]
                     subset_tokens["input_tokens"] += meta.input_tokens
                     subset_tokens["output_tokens"] += meta.output_tokens
