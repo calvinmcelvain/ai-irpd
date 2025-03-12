@@ -182,7 +182,10 @@ class BaseStage(ABC):
                     case, sub = subset.split("_")
                     pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
                 else:
-                    pdf += f"## Unified Categories\n\n"
+                    if self.stage == "1c":
+                        pdf += f"## Final Category Set"
+                    else:
+                        pdf += f"## Unified Categories\n\n"
                 pdf += self._categories_to_txt(categories=categories)
                 self._write_prompts(subset)
         pdf_path = self.sub_path / f"_stage_{self.stage}_categories.pdf"
