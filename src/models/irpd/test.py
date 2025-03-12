@@ -8,7 +8,7 @@ from utils import to_list, create_directory, lazy_import
 from models.irpd.base_irpd import IRPDBase
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
-#from models.irpd.stages import *
+from models.irpd.stage import Stage
 
 
 log = logging.getLogger(__name__)
@@ -116,11 +116,8 @@ class Test(IRPDBase):
                     data_path=self.data_path
                 )
                 
-                stage_class = lazy_import(
-                    f"models.irpd.stages.stage_{stage_name}",
-                    f"Stage{stage_name}"
-                )
-                stage_instance = stage_class(
+                stage_instance = Stage(
+                    stage=stage_name,
                     test_config=config,
                     sub_path=config.test_path,
                     llm=llm,

@@ -1,8 +1,9 @@
 import logging
 import pandas as pd
+import time as t
 from pydantic import BaseModel
 from pathlib import Path
-from abc import ABC, abstractmethod
+from requests.exceptions import Timeout
 
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
@@ -19,9 +20,10 @@ log = logging.getLogger(__name__)
 
 
 
-class BaseStage(ABC):
+class Stage:
     def __init__(
         self,
+        stage: str,
         test_config: TestConfig,
         sub_path: Path,
         prompts: TestPrompts,
@@ -29,6 +31,7 @@ class BaseStage(ABC):
         llm: BaseLLM,
         **kwargs
     ):
+        self.stage = stage
         self.config = test_config
         self.case = test_config.case
         self.cases = self.case.split("_")
@@ -97,6 +100,8 @@ class BaseStage(ABC):
         return None
     
     def _get_subsets(self):
+        if self.stage in {"2", "3"}:
+            return ["full"]
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
         return subsets + ["full"]
     
@@ -157,20 +162,26 @@ class BaseStage(ABC):
         responses_path.mkdir(parents=True, exist_ok=True)
         prompts_path.mkdir(parents=True, exist_ok=True)
         
-        prefix = f"{subset}_stg_{self.stage}"
-        a = responses_path / f"{prefix}_response.txt"
-        b = prompts_path / f"{prefix}_user_prompt.txt"
-        c = prompts_path / f"{prefix}_system_prompt.txt"
+        outputs = self.output.outputs[subset]
         
-        if not all(path.exists() for path in [a, b, c]):
-            output = self.output.outputs[subset]
-            user_prompt = output.meta.prompt.user
-            system_prompt = output.meta.prompt.system
-            response = output.text
+        for i, output in enumerate(outputs):
+            prefix = f"{subset}_stg_{self.stage}"
+            if i == 0:
+                system_prompt = output.meta.prompt.system
+                c = prompts_path / f"{prefix}_system_prompt.txt"
+                write_file(c, system_prompt)
+            if self.stage in {"2", "3"}:
+                prefix = f"{subset}_{output.parsed.window_number}"
+            a = responses_path / f"{prefix}_response.txt"
+            b = prompts_path / f"{prefix}_user_prompt.txt"
             
-            write_file(a, response)
-            write_file(b, user_prompt)
-            write_file(c, system_prompt)
+            if not all(path.exists() for path in [a, b]):
+                output = self.output.outputs[subset]
+                user_prompt = output.meta.prompt.user
+                response = output.text
+                
+                write_file(a, response)
+                write_file(b, user_prompt)
     
     def _build_categories_pdf(self):
         pdf = f"# Stage {self.stage} Categories\n\n"
@@ -187,7 +198,6 @@ class BaseStage(ABC):
                     else:
                         pdf += f"## Unified Categories\n\n"
                 pdf += self._categories_to_txt(categories=categories)
-                self._write_prompts(subset)
         pdf_path = self.sub_path / f"_stage_{self.stage}_categories.pdf"
         txt_to_pdf(text=pdf, file_path=pdf_path)
         return None
@@ -220,10 +230,41 @@ class BaseStage(ABC):
         df.to_csv(self.sub_path / f"stage_{self.stage}_final.csv", index=False)
         return None
     
-    @abstractmethod
     def _process_output(self):
-        pass
-    
-    @abstractmethod
+        for subset in self.subset:
+            self._write_prompts(subset)
+        self._write_meta()
+        if self.stage in {"2", "3"}:
+            self._build_data_output()
+        else:
+            self._build_categories_pdf()
+        return None
+        
     def run(self):
-        pass
+        for subset in self.subsets:
+            self.output.outputs[subset] = []
+            retries = 0
+            if not self._check_context(subset=subset):
+                prompts = self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed)
+                if prompts.user:
+                    for user in prompts.user:
+                        while retries < self.retries:
+                            try:
+                                output = self.llm.request(
+                                    user=str(user),
+                                    system=str(prompts.system),
+                                    schema=self.schema
+                                )
+                                self.output.outputs[subset] += [output]
+                                break
+                            except Timeout:
+                                retries += 1
+                                log.warning("HTTP Request Timeout. Retrying...")
+                                t.sleep(3)
+                            except Exception as e:
+                                log.error(f"Stage 2 error: {e}")
+                                self._process_output()
+                                raise Exception
+        if retries == self.retries:
+            log.error("Max retries for HTTP requests was hit.")
+        self._process_output()

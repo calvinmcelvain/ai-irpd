@@ -150,18 +150,18 @@ class TestPrompts:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
         if self.stage == "1":
-            return df.to_dict("records")
+            return [df.to_dict("records")]
         if self.stage == "1r":
             context = self.context.stage_outputs
             categories = context.get("1").outputs.get(subset)[0].parsed
-            return self._categories_to_txt(self._get_att(categories))
+            return [self._categories_to_txt(self._get_att(categories))]
         if self.stage == "1c":
             prompt = ""
             context = self.context.stage_outputs.get("1r").outputs
             for k in context.keys():
                 categories = self._get_att(context.get(k)[0].parsed)
                 prompt += self._categories_to_txt(categories)
-            return prompt
+            return [prompt]
         if self.stage in {"2", "3"}:
             if self.config.max_instances:
                 df = df[:self.config.max_instances]
