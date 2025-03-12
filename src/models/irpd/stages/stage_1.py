@@ -9,7 +9,6 @@ from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_output import TestOutput
 from models.llms.base_llm import BaseLLM
-from models.irpd.stage_output import StageOutput
 
 
 log = logging.getLogger(__name__)
@@ -26,10 +25,8 @@ class Stage1(BaseStage):
         llm: BaseLLM,
         **kwargs
     ):
-        super().__init__(test_config, sub_path, prompts, context, llm, **kwargs)
         self.stage = "1"
-        self.output = StageOutput(stage=self.stage)
-        self.schema = self._get_stage_schema()
+        super().__init__(test_config, sub_path, prompts, context, llm, **kwargs)
     
     def _process_output(self):
         self._write_meta()

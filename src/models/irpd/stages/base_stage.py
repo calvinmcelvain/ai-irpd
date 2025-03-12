@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_output import TestOutput
+from models.irpd.stage_output import StageOutput
 from models.llms.base_llm import BaseLLM
 from utils import (
     validate_json_string, write_json, load_json, str_to_path, get_env_var,
@@ -43,6 +44,9 @@ class BaseStage(ABC):
         self.output_path = str_to_path(get_env_var("OUTPUT_PATH"))
         self.fixed = kwargs.get("fixed", False)
         self.retries = kwargs.get("retries", 3)
+        
+        self.output = StageOutput(stage=self.stage)
+        self.schema = self._get_stage_schema()
     
     @staticmethod
     def _get_instance_types(case: str):
