@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from utils import (
     get_env_var, to_list, load_config, str_to_path, validate_json_string,
-    file_to_string, lazy_import
+    file_to_string, lazy_import, load_json
 )
 from models.llm_model import LLMModel
 from models.request_output import RequestOut
@@ -147,24 +147,27 @@ class IRPDBase(ABC):
         log.info("OUTPUT: Checking for output.")
         exist_stgs = [s for s in config.stages if (sub_path / f"stage_{s}").exists()]
         if exist_stgs:
+            meta = load_json(sub_path / "_test_meta.json")
             test_out = {}
             for s in exist_stgs:
                 log.info(f"OUTPUT: Stage {s} found.")
                 schema = lazy_import("models.irpd.schemas", f"Stage{s}Schema")
                 stage_out = {}
-                responses_path = sub_path / f"stage_{s}" / "responses"
-                if responses_path.exists():
-                    for r in responses_path.iterdir():
-                        if r.name.endswith("response.txt"):
-                            subset = r.name.split("_stg")[0]
-                            parsed = validate_json_string(file_to_string(r), schema)
-                            if subset not in stage_out.keys():
-                                stage_out[subset] = []
-                            stage_out[subset] += [RequestOut(
-                                text=file_to_string(r),
-                                meta=None,
-                                parsed=parsed
-                            )]
+                subsets = meta["stages"][s].keys()
+                for subset in subsets:
+                    subset_path = sub_path / f"stage_{s}" / subset
+                    if sub_path.exists():
+                        responses_path = subset_path / "responses"
+                        for r in responses_path.iterdir():
+                            if r.name.endswith("response.txt"):
+                                parsed = validate_json_string(file_to_string(r), schema)
+                                if subset not in stage_out.keys():
+                                    stage_out[subset] = []
+                                stage_out[subset].append(RequestOut(
+                                    text=file_to_string(r),
+                                    meta=None,
+                                    parsed=parsed
+                                ))
                 test_out[s] = StageOutput(stage=s, outputs=stage_out)
             self.output[config.id].append(TestOutput(
                 id=config.id,

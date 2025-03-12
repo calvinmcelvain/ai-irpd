@@ -141,15 +141,15 @@ class BaseStage(ABC):
 
     def _write_prompts(self, subset: str):
         stage_path = self.sub_path / f"stage_{self.stage}"
-        responses_path = stage_path / "responses"
-        prompts_path = stage_path / "prompts" / "user"
+        responses_path = stage_path / subset / "responses"
+        prompts_path = stage_path / subset / "prompts"
         responses_path.mkdir(parents=True, exist_ok=True)
         prompts_path.mkdir(parents=True, exist_ok=True)
         
         prefix = f"{subset}_stg_{self.stage}"
         a = responses_path / f"{prefix}_response.txt"
         b = prompts_path / f"{prefix}_user_prompt.txt"
-        c = prompts_path.parent / f"{prefix}_system_prompt.txt"
+        c = prompts_path / f"{prefix}_system_prompt.txt"
         
         if not all(path.exists() for path in [a, b, c]):
             output = self.output.outputs[subset]
