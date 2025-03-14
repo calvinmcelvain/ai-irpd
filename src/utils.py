@@ -161,15 +161,19 @@ def file_to_string(file_path: Union[str, Path]) -> str:
         raise
 
 
-def write_file(file_path: Union[str, Path], file_write: str) -> None:
+def write_file(file_paths: List[Union[str, Path]], file_writes: List[str]) -> None:
     """
-    Write a string to a file at the given path.
+    Write a list of strings to specified file paths.
     """
-    try:
-        Path(file_path).write_text(file_write)
-    except Exception as e:
-        log.error(f"Error writing to file '{file_path}': {e}")
-        raise
+    file_paths = to_list()
+    assert len(file_paths) == len(file_writes), "`file_paths` and `file_writes` must be same length."
+    for idx, path in enumerate(file_paths):
+        path = Path(path)
+        try:
+            path.write_text(file_writes[idx])
+        except Exception as e:
+            log.error(f"Error writing to file '{path.as_posix()}': {e}")
+            raise
 
 
 def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None:
