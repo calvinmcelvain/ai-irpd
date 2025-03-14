@@ -183,7 +183,7 @@ class Stage:
                 system_path = prompts_path / f"{prefix}_system_prompt.txt"
                 if not system_path.exists():
                     system_prompt = output.meta.prompt.system
-                    write_file(system_path, system_prompt)
+                    write_file(file_paths=system_path, file_writes=system_prompt)
             if self.stage in {"2", "3"}:
                 prefix = f"{subset}_{output.parsed.window_number}"
             response_path = responses_path / f"{prefix}_response.txt"
@@ -193,8 +193,7 @@ class Stage:
                 user_prompt = output.meta.prompt.user
                 response = output.text
                 
-                write_file(response_path, response)
-                write_file(user_path, user_prompt)
+                write_file(file_paths=[response_path, user_path], file_writes=[response, user_prompt])
     
     def _build_categories_pdf(self):
         pdf = f"# Stage {self.stage} Categories\n\n"
