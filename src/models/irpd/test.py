@@ -4,7 +4,7 @@ from typing import Optional, List, Union
 from pathlib import Path
 
 from logger import clear_logger
-from utils import to_list, create_directory, lazy_import
+from utils import to_list, create_directory
 from models.irpd.base_irpd import IRPDBase
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
