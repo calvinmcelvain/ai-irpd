@@ -129,7 +129,7 @@ class Stage:
         for stage in self.config.stages:
             json_data["stages"][stage] = {}
             for subset in self.subsets:
-                json_data["stages"][self.stage].update({
+                json_data["stages"][stage].update({
                     subset: {
                         "input_tokens": 0,
                         "output_tokens": 0,
