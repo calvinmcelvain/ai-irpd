@@ -101,7 +101,7 @@ class Test(IRPDBase):
             self.output[config.id] = []
             self._update_output(config=config, llm=llm_str, replication=1, sub_path=config.test_path)
             
-            create_directory(config.test_path)
+            create_directory(paths=config.test_path)
             
             for stage_name in self.stages:
                 log.info(f"{test}: Running Stage {stage_name}.")
