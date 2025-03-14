@@ -8,7 +8,7 @@ import yaml
 import logging
 import configs
 import importlib.resources as pkg_resources
-from typing import List, Dict, Union, Optional
+from typing import List, Union
 from pathlib import Path
 from dotenv import load_dotenv 
 from json import JSONDecodeError
