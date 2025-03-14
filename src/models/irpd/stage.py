@@ -12,7 +12,7 @@ from models.irpd.stage_output import StageOutput
 from models.llms.base_llm import BaseLLM
 from utils import (
     write_json, load_json, str_to_path, get_env_var,
-    lazy_import, write_file, txt_to_pdf
+    lazy_import, write_file, txt_to_pdf, create_directory
 )
 
 
@@ -173,8 +173,7 @@ class Stage:
         stage_path = self.sub_path / f"stage_{self.stage}"
         responses_path = stage_path / subset / "responses"
         prompts_path = stage_path / subset / "prompts"
-        responses_path.mkdir(parents=True, exist_ok=True)
-        prompts_path.mkdir(parents=True, exist_ok=True)
+        create_directory(paths=[responses_path, prompts_path])
         
         outputs = self.output.outputs[subset]
         
