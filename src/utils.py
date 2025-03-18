@@ -38,11 +38,11 @@ def get_env_var(key: str) -> str:
 
 def to_list(value: Union[str, list]) -> list:
     """
-    Returns list containing string/
+    Returns list containing string.
     """
-    if isinstance(value, str):
-        return [value]
-    return value
+    if isinstance(value, list):
+        return value
+    return [value]
 
 
 def str_to_path(path: Union[str, Path]) -> Path:
