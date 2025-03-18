@@ -83,12 +83,12 @@ class Test(IRPDBase):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
+        test = self.test_type.upper()
         test_configs = self._get_test_configs(config_ids=config_ids)
         for config in test_configs.values():
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
             clear_logger(app=False)
-            test = self.test_type.upper()
             log.info(f"{test}: Running config = {config.id}.")
             
             llm_str = config.llms[0]
@@ -132,4 +132,4 @@ class Test(IRPDBase):
                 idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
                 self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
                 log.info(f"{test}: Stage {stage_name} complete.")
-        log.info(f"{test}: End of {self.test_type.upper()} = {config.id}")
+        log.info(f"{test}: End of config = {config.id}")
