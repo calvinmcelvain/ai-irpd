@@ -206,7 +206,7 @@ class Stage:
                     pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
                 else:
                     if self.stage == "1c":
-                        pdf += f"## Final Category Set"
+                        pdf += f"## Final Category Set\n\n"
                     else:
                         pdf += f"## Unified Categories\n\n"
                 pdf += self._categories_to_txt(categories=categories)
