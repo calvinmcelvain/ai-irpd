@@ -122,7 +122,7 @@ class TestPrompts:
         if self.stage in {"1"}:
             prompt += self._data_definitions(subset=subset)
         if self.stage in {"2", "3"}:
-            prompt += "\n## Categories"
+            prompt += "## Categories\n\n"
             context = self.context.stage_outputs.get("1r").outputs
             for k in context.keys():
                 categories = self._get_att(context.get(k)[0].parsed)
