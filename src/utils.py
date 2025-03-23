@@ -63,7 +63,7 @@ def create_directory(paths: List[Union[str, Path]]) -> None:
         path_c = str_to_path(path)
         try:
             if not path_c.exists():
-                path_c.mkdir(exist_ok=True)
+                path_c.mkdir(exist_ok=True, parents=True)
                 log.info(f"PATH: Created directory: {path_c.as_posix()}")
             else:
                 log.info(f"PATH: Path exists: {path_c.as_posix()}")
