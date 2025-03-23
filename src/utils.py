@@ -165,7 +165,7 @@ def write_file(file_paths: List[Union[str, Path]], file_writes: List[str]) -> No
     """
     Write a list of strings to specified file paths.
     """
-    file_paths = to_list()
+    file_paths = to_list(file_paths)
     assert len(file_paths) == len(file_writes), "`file_paths` and `file_writes` must be same length."
     for idx, path in enumerate(file_paths):
         path = Path(path)
