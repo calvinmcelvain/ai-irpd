@@ -171,11 +171,11 @@ class TestPrompts:
                 context = self.context.stage_outputs.get(self.stage).outputs
                 window_nums = [r.parsed.window_number for r in context.get(subset)]
                 df = df[~df["window_number"].isin(window_nums)]
-            if self.stage == "3":
+            if self.stage in {"3"}:
                 stage_2 = self.context.stage_outputs.get("2").outputs.get(subset)
                 for r in stage_2:
                     assigned_cats = [c.category_name for c in r.parsed.assigned_categories]
-                    df["assigned_categories"] = assigned_cats
+                    df["assigned_categories"] = str(assigned_cats)
             return df.to_dict("records")
             
     def get_prompts(self, subset: str, case: str, fixed: bool = False) -> Prompts:
