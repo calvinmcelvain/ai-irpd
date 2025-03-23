@@ -200,8 +200,8 @@ class IRPDBase(ABC):
         )
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
-        config_ids = to_list(config_ids)
         if config_ids:
+            config_ids = to_list(config_ids)
             return {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
             return self.configs
