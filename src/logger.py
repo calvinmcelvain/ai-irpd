@@ -3,10 +3,12 @@ import logging
 import logging.config
 from pathlib import Path
 
+
 logs_path = Path("src").resolve().parents[1] / "logs"
 app_log_file = logs_path / "app.log"
 debug_log_file = logs_path / "debug.log"
 logs_path.mkdir(exist_ok=True, parents=True)
+
 
 
 def clear_logger(app: bool = True, debug: bool = True):
