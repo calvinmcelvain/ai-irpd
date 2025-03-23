@@ -169,7 +169,7 @@ class TestPrompts:
                 df = df[:self.config.max_instances]
             if self.stage in self.context.stage_outputs.keys():
                 context = self.context.stage_outputs.get(self.stage).outputs
-                window_nums = [r.window_number for r in context.get(subset)]
+                window_nums = [r.parsed.window_number for r in context.get(subset)]
                 df = df[~df["window_number"].isin(window_nums)]
             if self.stage == "3":
                 stage_2 = self.context.stage_outputs.get("2").outputs.get(subset)

@@ -94,10 +94,15 @@ class Stage:
             if self.stage in self.context.stage_outputs.keys():
                 if subset in self.context.stage_outputs[self.stage].outputs.keys():
                     output = self.context.stage_outputs[self.stage].outputs[subset]
+                    prompts = self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed)
                     if output:
-                        log.info(f"OUTPUTS: Outputs found.")
                         self.output.outputs[subset].extend(output)
-                        return True
+                        if len(prompts.user) == len(output) or not prompts.user:
+                            log.info(f"OUTPUTS: All outputs found.")
+                            return True
+                        else:
+                            log.info("OUTPUTS: Some outputs found.")
+                            return False
         log.info("OUTPUTS: Outputs could not be found.")
         return None
     
