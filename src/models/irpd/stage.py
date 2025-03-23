@@ -100,7 +100,7 @@ class Stage:
         return None
     
     def _get_subsets(self):
-        if self.stage in {"2", "3"}:
+        if self.stage in {"1c", "2", "3"}:
             return ["full"]
         subsets = [f"{c}_{i}" for c in self.cases for i in self._get_instance_types(c)]
         return subsets + ["full"]
