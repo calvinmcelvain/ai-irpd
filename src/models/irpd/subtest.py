@@ -41,9 +41,7 @@ class Subtest(Test):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        test_paths = []
         test_dir = self.output_path / "subtests"
         current_test = self._get_max_test_number(test_dir, "")
-        paths = [test_dir / f"{i + 1 + current_test}" for i in range(len(self._prod))]
-        test_paths.extend(paths)
+        test_paths = [test_dir / f"{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths
