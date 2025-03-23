@@ -29,6 +29,7 @@ class Stage:
         prompts: TestPrompts,
         context: TestOutput,
         llm: BaseLLM,
+        data_path: Path,
         **kwargs
     ):
         self.stage = stage
@@ -41,6 +42,7 @@ class Stage:
         self.test_path = test_config.test_path
         self.test_type = test_config.test_type
         self.sub_path = sub_path
+        self.data_path = data_path
         self.prompts = prompts
         self.context = context
         self.subsets = self._get_subsets()

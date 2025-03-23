@@ -124,7 +124,8 @@ class Test(IRPDBase):
                     sub_path=config.test_path,
                     llm=llm,
                     context=context,
-                    prompts=prompts
+                    prompts=prompts,
+                    data_path=self.data_path
                 )
                 
                 stage_instance.run()
