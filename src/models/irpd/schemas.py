@@ -26,6 +26,10 @@ class Stage1rSchema(BaseModel):
     refined_categories: list[Category]
 
 
+class Stage1cSchema(BaseModel):
+    refined_categories: list[Category]
+
+
 class CategoryAssignment(BaseModel):
     category_name: str
 
