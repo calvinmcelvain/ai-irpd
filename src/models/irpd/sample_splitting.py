@@ -1,32 +1,44 @@
 import logging
+from itertools import product
+from typing import Optional, List, Union
+from pathlib import Path
+
+from logger import clear_logger
+from utils import create_directory
 from models.irpd.base_irpd import IRPDBase
-from stages import *
+from models.irpd.test_config import TestConfig
+from models.irpd.test_prompts import TestPrompts
+from models.irpd.stage import Stage
+
 
 log = logging.getLogger(__name__)
+
 
 
 class SampleSplitting(IRPDBase):
     def __init__(
         self,
-        case,
-        ras,
-        treatments,
-        stages,
-        llms = None,
-        llm_configs = None,
-        project_path = None,
-        new_test = True,
-        test_paths = None
+        cases: Union[List[str], str],
+        ras: Union[List[str], str],
+        treatments: Union[List[str], str],
+        stages: Union[List[str], str],
+        llms: Optional[Union[List[str], str]] = None,
+        llm_configs: Optional[Union[List[str], str]] = None,
+        output_path: Optional[Union[str, Path]] = None,
+        prompts_path: Optional[Union[str, Path]] = None,
+        data_path: Optional[Union[str, Path]] = None,
+        test_paths: Optional[List[str]] = None,
     ):
         super().__init__(
-            case,
+            cases,
             ras,
             treatments,
             stages,
             llms,
             llm_configs,
-            project_path,
-            new_test,
+            output_path,
+            prompts_path,
+            data_path,
             test_paths
         )
         self._test_type = "sample_splitting"
@@ -37,5 +49,10 @@ class SampleSplitting(IRPDBase):
     def _generate_test_configs(self):
         pass
     
-    def run(self, max_instances = None, threshold = 0.5, config_ids = None):
-        super().run(max_instances, threshold, config_ids)
+    def run(
+        self,
+        max_instances = None,
+        config_ids = None,
+        print_response = False
+    ):
+        pass
