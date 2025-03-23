@@ -132,4 +132,4 @@ class Test(IRPDBase):
                 idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
                 self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
                 log.info(f"{test}: Stage {stage_name} complete.")
-        log.info(f"{test}: End of config = {config.id}")
+            log.info(f"{test}: End of config = {config.id}")
