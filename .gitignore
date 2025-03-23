@@ -10,14 +10,8 @@
 *.pyo
 __pycache__/
 
-# Ignore configs
-configs.env
-
 # Ignore logs
 *.log
-
-# Ignore jupyter notebooks
-*.ipynb
 
 # Ignore R history
 *.Rhistory
