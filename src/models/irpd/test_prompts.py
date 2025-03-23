@@ -64,18 +64,20 @@ class TestPrompts:
     
     def _data_definitions(self, subset: str):
         section_path = self.sections_path / "data_definitions"
+        stage_path = section_path / f"stage_{self.stage}"
         
         section = file_to_string(section_path / "initial.md")
         
-        if self.stage in {"1"}:
-            section += file_to_string(section_path / "stage_1" / f"{self.ra}.md")
-            if subset == "full":
-                subset_path = section_path / "stage_1" / "instance_type"
-                section += file_to_string(subset_path / "initial.md")
-                for case in self.case.split("_"):
-                    section += file_to_string(subset_path / f"{case}.md")
+        section += file_to_string(stage_path / f"{self.ra}.md")
+        if subset == "full":
+            subset_path = stage_path / "instance_type"
+            section += file_to_string(subset_path / "initial.md")
+            for case in self.case.split("_"):
+                section += file_to_string(subset_path / f"{case}.md")
+        if self.stage in {"3"}:
+            section += file_to_string(stage_path / f"assignment.md")
         
-        section += file_to_string(section_path / "stage_1" / "window_number.md")
+        section += file_to_string(stage_path / "window_number.md")
         
         if not section:
             log.warning(f"PROMPTS: Data Definitions was empty.")
@@ -119,14 +121,14 @@ class TestPrompts:
         e = self._constraints()
         prompt = a + b + c + d + e
         
-        if self.stage in {"1"}:
+        if self.stage in {"1", "2", "3"}:
             prompt += self._data_definitions(subset=subset)
-        if self.stage in {"2", "3"}:
-            prompt += "## Categories\n\n"
-            context = self.context.stage_outputs.get("1r").outputs
-            for k in context.keys():
-                categories = self._get_att(context.get(k)[0].parsed)
-                prompt += self._categories_to_txt(categories)
+            if self.stage in {"2", "3"}:
+                prompt += "\n\n## Categories\n\n"
+                context = self.context.stage_outputs.get("1r").outputs
+                for k in context.keys():
+                    categories = self._get_att(context.get(k)[0].parsed)
+                    prompt += self._categories_to_txt(categories)
         return prompt
     
     def _construct_user_prompt(self, subset: str, case: str):
