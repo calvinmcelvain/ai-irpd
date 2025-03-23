@@ -104,7 +104,7 @@ class Test(IRPDBase):
             create_directory(paths=config.test_path)
             
             for stage_name in self.stages:
-                log.info(f"{test}: Running Stage {stage_name}.")
+                log.info(f"{test}: Running Stage = {stage_name}.")
                 context = self._get_context(
                     config=config,
                     llm=llm_str,
