@@ -139,7 +139,7 @@ class IRPDBase(ABC):
         sub_path: Path
     ):
         log.info("OUTPUT: Checking for output.")
-        exist_stgs = [s for s in config.stages if (sub_path / f"stage_{s}").exists()]
+        exist_stgs = [s for s in VALID_VALUES["stages"] if (sub_path / f"stage_{s}").exists()]
         if exist_stgs:
             meta = load_json(sub_path / "_test_meta.json")
             test_out = {}
