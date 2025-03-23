@@ -246,7 +246,7 @@ class Stage:
             merged_df["case"] = case
             dfs.append(merged_df)
         df = pd.concat(dfs, ignore_index=True, sort=False)
-        df.to_csv(self.sub_path / f"stage_{self.stage}_final.csv", index=False)
+        df.to_csv(self.sub_path / f"_stage_{self.stage}_final.csv", index=False)
         return None
     
     def _process_output(self):
