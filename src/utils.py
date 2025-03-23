@@ -67,10 +67,10 @@ def create_directory(paths: List[Union[str, Path]]) -> None:
                 log.info(f"PATH: Created directory: {path_c.as_posix()}")
             else:
                 log.info(f"PATH: Path exists: {path_c.as_posix()}")
-            return None
         except Exception as e:
             log.error(f"Error creating directory '{path_c}': {e}")
             raise
+    return None
 
 
 def lazy_import(module_name: str, class_name: str) -> object:
