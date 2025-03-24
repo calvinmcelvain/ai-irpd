@@ -75,7 +75,7 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    async def batch_request(self, batch):
+    async def batch_request(self, batch_file: str):
         pass
     
     @abstractmethod
