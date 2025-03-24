@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
@@ -67,6 +68,14 @@ class BaseLLM(ABC):
     
     @abstractmethod
     def create_client(self):
+        pass
+    
+    @abstractmethod
+    def format_batch(self, messages: List[str]):
+        pass
+    
+    @abstractmethod
+    async def batch_request(self, batch):
         pass
     
     @abstractmethod
