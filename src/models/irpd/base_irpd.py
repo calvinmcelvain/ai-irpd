@@ -280,11 +280,3 @@ class IRPDBase(ABC):
         print_response: bool = False
     ):
         pass
-    
-    @abstractmethod
-    def run_batch(
-        self,
-        max_instances: Optional[int] = None,
-        config_ids: Union[str, List[str]] = None
-    ):
-        pass
