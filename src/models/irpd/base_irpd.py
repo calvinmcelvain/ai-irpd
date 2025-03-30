@@ -252,7 +252,7 @@ class IRPDBase(ABC):
         self,
         stage: str,
         llm: str,
-        batch: List[str],
+        batch: List[dict],
         test_path: Path
     ):
         batches_dir = test_path / "_batches"
