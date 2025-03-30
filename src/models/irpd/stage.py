@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pathlib import Path
 from requests.exceptions import Timeout
 
+from models.prompts import Prompts
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_output import TestOutput
@@ -265,7 +266,13 @@ class Stage:
         for subset in self.subsets:
             if not self._check_context(subset=subset):
                 batch_ids.append(f"{replication}-{subset}")
-                batch_prompts.append(self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed))
+                prompts = self.prompts.get_prompts(
+                    subset=subset,
+                    case=self.case,
+                    fixed=self.fixed
+                )
+                for user in prompts.user:
+                    batch_prompts.append(Prompts(system=prompts.system, user=str(user)))
         if batch_prompts:
             return self.llm.format_batch(
                 messages=batch_prompts,
