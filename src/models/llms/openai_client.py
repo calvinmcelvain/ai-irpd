@@ -3,10 +3,12 @@ import logging
 import random as r
 from abc import abstractmethod
 from pydantic import BaseModel
+from typing import List, Optional
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
-
 from openai.types.chat import ChatCompletion
+
+from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -58,14 +60,33 @@ class OpenAIClient(BaseLLM):
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
-    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
-        client = self.create_client()
-        
+    def _request_load(self, user: str, system: str, schema: Optional[BaseModel]):
         request_load = {"model": self.model}
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
         request_load.update({"response_format": schema}) if schema else {}
+        return request_load
+        
+    def format_batch(self, messages: List[Prompts], message_ids: List[str], schema: BaseModel = None):
+        batch = []
+        for idx, message in enumerate(messages):
+            user = message.user
+            system = message.system
+            batch_input = {"custom_id": message_ids[idx], "method": "POST"}
+            request_load = self._request_load(user=user, system=system, schema=schema)
+            batch_input.update({"body": request_load})
+            batch.append(batch_input)
+        return batch
+    
+    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
+        client = self.create_client()
+        
+        request_load = self._request_load(
+            user=user,
+            system=system,
+            schema=schema
+        )
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)
