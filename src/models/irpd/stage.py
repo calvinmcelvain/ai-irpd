@@ -259,13 +259,15 @@ class Stage:
             self._build_categories_pdf()
         return None
     
-    def batch_prompts(self):
+    def batch_prompts(self, replication: int = 1):
         batch_prompts = []
+        batch_ids = []
         for subset in self.subsets:
             if not self._check_context(subset=subset):
+                batch_ids.append(f"{replication}-{subset}")
                 batch_prompts.append(self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed))
         if batch_prompts:
-            return self.llm.format_batch(messages=batch_prompts)
+            return self.llm.format_batch(messages=batch_prompts, message_ids=batch_ids)
         return None
         
     def run(self):

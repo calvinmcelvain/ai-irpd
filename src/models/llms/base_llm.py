@@ -71,7 +71,7 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def format_batch(self, messages: List[Prompts]):
+    def format_batch(self, messages: List[Prompts], message_ids: List[str]):
         pass
     
     @abstractmethod
