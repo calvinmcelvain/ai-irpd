@@ -80,6 +80,7 @@ class CrossModel(IRPDBase):
         self,
         max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
+        batch: bool = False,
         print_response: bool = False
     ):
         test = self.test_type.upper()
@@ -110,7 +111,7 @@ class CrossModel(IRPDBase):
                     create_directory(paths=sub_path)
                     
                     self._update_output(
-                        config=config,
+                        config_id=config.id,
                         llm=llm_str,
                         replication=n,
                         sub_path=sub_path

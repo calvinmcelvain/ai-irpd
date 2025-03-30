@@ -108,7 +108,7 @@ class IntraModel(IRPDBase):
                 create_directory(paths=sub_path)
                 
                 self._update_output(
-                    config=config,
+                    config_id=config.id,
                     llm=llm_str,
                     replication=n,
                     sub_path=sub_path

@@ -75,7 +75,10 @@ class Test(IRPDBase):
                 test_path=self.test_paths[idx],
                 stages=self.stages
             )
-            self.configs[config.id] = config                
+            self.configs[config.id] = config
+    
+    def _generate_batches(self):
+        return super()._generate_batches()
     
     def run(
         self,
@@ -83,6 +86,13 @@ class Test(IRPDBase):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
+        if self.batch_request:
+            self.run_batch(
+                max_instances,
+                config_ids,
+                print_response
+            )
+            return None
         test = self.test_type.upper()
         test_configs = self._get_test_configs(config_ids=config_ids)
         for config in test_configs.values():
@@ -99,7 +109,12 @@ class Test(IRPDBase):
             )
             
             self.output[config.id] = []
-            self._update_output(config=config, llm=llm_str, replication=1, sub_path=config.test_path)
+            self._update_output(
+                config_id=config.id,
+                llm=llm_str,
+                replication=1,
+                sub_path=config.test_path
+            )
             
             create_directory(paths=config.test_path)
             
