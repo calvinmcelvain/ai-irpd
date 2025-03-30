@@ -195,7 +195,7 @@ class IRPDBase(ABC):
                 log.info(f"OUTPUT: Stage {s} batch file found.")
                 log.info(f"OUTPUT: Checking if batch is complete.")
                 stage_out = {}
-                batch_out = llm_instance.retreive_batch(batch_dir_path / f"stage_{s}_{llm}.jsonl")
+                batch_out = llm_instance.retreive_batch(f"stage_{s}_{llm}.jsonl")
                 if isinstance(batch_out, BatchOut):
                     log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
                     for response in batch_out.responses:
