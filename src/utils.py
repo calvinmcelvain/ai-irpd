@@ -163,7 +163,7 @@ def file_to_string(file_path: Union[str, Path]) -> str:
 
 def write_file(
     file_paths: Union[Union[str, Path], List[Union[str, Path]]],
-    file_writes: Union[Union[str, Path], List[str]]
+    file_writes: Union[str, List[str]]
 ) -> None:
     """
     Write a list of strings to specified file paths.
@@ -178,6 +178,20 @@ def write_file(
         except Exception as e:
             log.error(f"Error writing to file '{path.as_posix()}': {e}")
             raise
+        
+
+def write_jsonl(
+    file_path: Union[str, Path],
+    json_obj: Union[dict, List[dict]]
+):
+    """
+    Writes jsonl file from json/dict object.
+    """
+    json_obj = to_list(json)
+    with open(Path(file_path), "w") as f:
+        for line in json_obj:
+            json.dump(line, f)
+            f.write("\n")
 
 
 def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None:
