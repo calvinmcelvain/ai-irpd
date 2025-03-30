@@ -6,9 +6,11 @@ from abc import ABC, abstractmethod
 
 from utils import (
     get_env_var, to_list, load_config, str_to_path, validate_json_string,
-    file_to_string, lazy_import, load_json
+    file_to_string, lazy_import, load_json, check_directories
 )
 from models.llm_model import LLMModel
+from models.batch_out import BatchOut
+from models.llms.base_llm import BaseLLM
 from models.request_output import RequestOut
 from models.irpd.test_output import TestOutput
 from models.irpd.test_config import TestConfig
@@ -136,13 +138,13 @@ class IRPDBase(ABC):
     
     def _update_output(
         self,
-        config: TestConfig,
+        config_id: str,
         llm: str,
         replication: int,
         sub_path: Path
     ):
         log.info("OUTPUT: Checking for output.")
-        exist_stgs = [s for s in VALID_VALUES["stages"] if (sub_path / f"stage_{s}").exists()]
+        exist_stgs = [s for s in VALID_VALUES["stages"] if check_directories(sub_path / f"stage_{s}")]
         if exist_stgs:
             meta = load_json(sub_path / "_test_meta.json")
             test_out = {}
@@ -153,21 +155,20 @@ class IRPDBase(ABC):
                 subsets = meta["stages"][s].keys()
                 for subset in subsets:
                     subset_path = sub_path / f"stage_{s}" / subset
-                    if sub_path.exists():
+                    if check_directories(subset_path):
                         responses_path = subset_path / "responses"
                         for r in responses_path.iterdir():
                             if r.name.endswith("response.txt"):
                                 parsed = validate_json_string(file_to_string(r), schema)
-                                if subset not in stage_out.keys():
-                                    stage_out[subset] = []
+                                if subset not in stage_out.keys(): stage_out[subset] = []
                                 stage_out[subset].append(RequestOut(
                                     text=file_to_string(r),
                                     meta=None,
                                     parsed=parsed
                                 ))
                 test_out[s] = StageOutput(stage=s, outputs=stage_out)
-            self.output[config.id].append(TestOutput(
-                id=config.id,
+            self.output[config_id].append(TestOutput(
+                id=config_id,
                 llm=llm,
                 replication=replication,
                 stage_outputs=test_out
@@ -175,6 +176,43 @@ class IRPDBase(ABC):
         else:
             log.info("OUTPUT: No outputs not found.")
         return None
+    
+    def _update_output_batch(
+        self,
+        config_id: str,
+        llm: str,
+        llm_instance: BaseLLM,
+        sub_path: Path
+    ):
+        batch_dir_path = sub_path / "_batch"
+        if check_directories(batch_dir_path):
+            exist_stgs = [
+                s for s in VALID_VALUES["stages"] 
+                if check_directories(batch_dir_path / f"stage_{s}_{llm}.jsonl")
+            ]
+            test_out = {}
+            for s in exist_stgs:
+                log.info(f"OUTPUT: Stage {s} batch file found.")
+                log.info(f"OUTPUT: Checking if batch is complete.")
+                stage_out = {}
+                batch_out = llm_instance._retreive_batch(batch_dir_path / f"stage_{s}_{llm}.jsonl")
+                if isinstance(batch_out, BatchOut):
+                    log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
+                    for response in batch_out.responses:
+                        subset, replication = response.response_id.split("-")
+                        if subset not in stage_out.keys(): stage_out[subset] = []
+                        stage_out[subset].append(response.response)
+                        if s not in test_out.keys(): test_out[s] = []
+                        test_out[s].append(StageOutput(stage=s, outputs=stage_out))
+                        self.output[config_id].append(TestOutput(
+                            id=config_id,
+                            llm=llm,
+                            replication=replication,
+                            stage_outputs=test_out
+                        ))
+                else:
+                    log.info(f"OUTPUT: Stage {s} batch is {batch_out}.")
+                    break
     
     def _get_context(
         self,
