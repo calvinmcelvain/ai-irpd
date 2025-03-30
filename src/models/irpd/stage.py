@@ -262,10 +262,11 @@ class Stage:
     def batch_prompts(self):
         batch_prompts = []
         for subset in self.subsets:
-            prompts = self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed)
             if not self._check_context(subset=subset):
-                batch_prompts.append(self.llm.format_batch(messages=prompts))
-        return batch_prompts
+                batch_prompts.append(self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed))
+        if batch_prompts:
+            return self.llm.format_batch(messages=batch_prompts)
+        return None
         
     def run(self):
         for subset in self.subsets:
