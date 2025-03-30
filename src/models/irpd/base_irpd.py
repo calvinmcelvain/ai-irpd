@@ -36,15 +36,16 @@ class IRPDBase(ABC):
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
-        test_paths: Optional[List[str]] = None
+        test_paths: Optional[List[str]] = None,
+        batch: bool = False
     ):
         self.cases = to_list(cases)
-        self.ras = ras or []
-        self.treatments = treatments or []
-        self.stages = stages or []
-        self.llms = llms or []
-        self.llm_configs = llm_configs or []
-        self.test_paths = test_paths or []
+        self.ras = ras
+        self.treatments = treatments
+        self.stages = stages
+        self.llms = llms
+        self.llm_configs = llm_configs
+        self.test_paths = test_paths
         
         self.output = {}
         self.configs = {}
@@ -54,6 +55,8 @@ class IRPDBase(ABC):
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
+        
+        self.batch_request = batch
 
     def _validate_values(self):
         attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
