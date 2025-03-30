@@ -166,6 +166,12 @@ class Test(IRPDBase):
                                 stage=stage_name
                             )
                             if batch_complete:
+                                new_context = self._get_context(
+                                    config=config,
+                                    llm=llm_str,
+                                    replication=1
+                                )
+                                stage_instance.context = new_context
                                 stage_instance.batch_prompts()
                         break
                 else:

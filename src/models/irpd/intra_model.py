@@ -168,6 +168,12 @@ class IntraModel(IRPDBase):
                                 stage=stage_name
                             )
                             if batch_complete:
+                                new_context = self._get_context(
+                                    config=config,
+                                    llm=llm_str,
+                                    replication=n
+                                )
+                                stage_instance.context = new_context
                                 stage_instance.batch_prompts()
                     else:
                         stage_instance.run()

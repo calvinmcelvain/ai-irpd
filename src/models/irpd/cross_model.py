@@ -170,6 +170,12 @@ class CrossModel(IRPDBase):
                                     stage=stage_name
                                 )
                                 if batch_complete:
+                                    new_context = context = self._get_context(
+                                        config=config,
+                                        llm=llm_str,
+                                        replication=n
+                                    )
+                                    stage_instance.context = new_context
                                     stage_instance.batch_prompts(replication=n)
                             break
                         else:
