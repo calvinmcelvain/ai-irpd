@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from utils import (
     get_env_var, to_list, load_config, str_to_path, validate_json_string,
-    file_to_string, lazy_import, load_json, check_directories
+    file_to_string, lazy_import, load_json, check_directories, write_file
 )
 from models.llm_model import LLMModel
 from models.batch_out import BatchOut
@@ -246,6 +246,18 @@ class IRPDBase(ABC):
             return {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
             return self.configs
+    
+    def _generate_batch_file(
+        self,
+        stage: str,
+        llm: str,
+        batch: List[str],
+        test_path: Path
+    ):
+        jsonl_file_path = test_path / "_batches" / f"stage_{stage}_{llm}.jsonl"
+        jsonl = "\n".join(batch)
+        write_file(file_paths=jsonl_file_path, file_writes=jsonl)
+        return None
     
     def remove_configs(self, config_ids: Union[str, List[str]]):
         config_ids = to_list(config_ids)
