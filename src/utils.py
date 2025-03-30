@@ -162,8 +162,8 @@ def file_to_string(file_path: Union[str, Path]) -> str:
 
 
 def write_file(
-    file_paths: Union[str, List[Union[str, Path]]],
-    file_writes: Union[str, List[str]]
+    file_paths: Union[Union[str, Path], List[Union[str, Path]]],
+    file_writes: Union[Union[str, Path], List[str]]
 ) -> None:
     """
     Write a list of strings to specified file paths.
@@ -194,11 +194,12 @@ def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None
         raise
 
 
-def check_directories(paths: List[str]) -> bool:
+def check_directories(paths: Union[Union[str, Path], List[Union[str, Path]]]) -> bool:
     """
     Check if all given directories exist.
     """
     try:
+        paths = to_list(paths)
         return all(Path(path).is_dir() for path in paths)
     except Exception as e:
         log.exception(f"Error checking directories: {e}")
