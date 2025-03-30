@@ -79,6 +79,10 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
+    def retreive_batch(self, batch_id: str):
+        pass
+    
+    @abstractmethod
     def request(
         self,
         user: str,
