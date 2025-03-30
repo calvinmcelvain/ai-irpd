@@ -165,6 +165,8 @@ class CrossModel(IRPDBase):
                                 continue
                         else:
                             stage_instance.run()
+                            idx = self._output_indx(id=config.id, llm=llm_str, replication=n)
+                            self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
                             log.info(f"{test}: Stage {stage_name} complete.")
                     if not self.batch_request: log.info(f"{test}: Replication {n} complete.")
                 
