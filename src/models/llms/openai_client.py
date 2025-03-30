@@ -102,7 +102,7 @@ class OpenAIClient(BaseLLM):
         )
         if batch.errors:
             log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
-        return None
+        return batch.id
     
     def retreive_batch(self, batch_id: str):
         client = self.create_client()
