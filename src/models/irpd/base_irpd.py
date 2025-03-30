@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 
 from utils import (
     get_env_var, to_list, load_config, str_to_path, validate_json_string,
-    file_to_string, lazy_import, load_json, check_directories, write_jsonl
+    file_to_string, lazy_import, load_json, check_directories, write_jsonl,
+    create_directory
 )
 from models.llm_model import LLMModel
 from models.batch_out import BatchOut
@@ -254,7 +255,10 @@ class IRPDBase(ABC):
         batch: List[str],
         test_path: Path
     ):
-        jsonl_file_path = test_path / "_batches" / f"stage_{stage}_{llm}.jsonl"
+        batches_dir = test_path / "_batches"
+        create_directory(paths=batches_dir)
+        
+        jsonl_file_path = batches_dir / f"stage_{stage}_{llm}.jsonl"
         write_jsonl(file_path=jsonl_file_path, json_obj=batch)
         return jsonl_file_path
     
