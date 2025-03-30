@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from models.request_output import RequestOut
 
 
+
 class BatchResponse(BaseModel):
     response_id: str
     response: RequestOut
