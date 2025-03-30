@@ -235,6 +235,10 @@ class IRPDBase(ABC):
         pass
     
     @abstractmethod
+    def _generate_batches(self):
+        pass
+    
+    @abstractmethod
     def run(
         self,
         max_instances: Optional[int] = None,
