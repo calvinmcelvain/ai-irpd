@@ -279,6 +279,8 @@ class Stage:
                 message_ids=batch_ids,
                 schema=self.schema
             )
+        else:
+            self._process_output()
         return None
         
     def run(self):
