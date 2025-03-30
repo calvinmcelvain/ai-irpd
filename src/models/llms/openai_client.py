@@ -105,18 +105,23 @@ class OpenAIClient(BaseLLM):
             log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
         return batch.id
     
-    def retreive_batch(self, batch_id: str, batch_prompts: List[dict], schema: BaseModel):
+    def _get_batch_id(self, batch_file: Union[str, Path]):
+        client = self.create_client()
+        files = client.files.list()
+        batches = client.batches.list()
+        file_id = next((f.id for f in files.data if f.filename == batch_file))
+        batch_id = next((b.id for b in batches.data if b.input_file_id == file_id))
+        return batch_id
+    
+    def retreive_batch(self, batch_id: str, schema: BaseModel):
         client = self.create_client()
         
-        batches = client.batches.list()
-        batch = next((batch for batch in batches.data if batch.id == batch_id), None)
-        if not batch:
-            batch = next((batch for batch in batches.data if batch.input_file_id == batch_id), None)
-        
+        batch = client.batches.retrieve(batch_id=batch_id)
         if batch.status != "completed":
             return batch.status
         
         batch_output = client.files.content(file_id=batch.output_file_id)
+        batch_input = client.files.content(file_id=batch.input_file_id)
         
         output = BatchOut(
             batch_id=batch_id,
@@ -126,7 +131,7 @@ class OpenAIClient(BaseLLM):
         for response in batch_output:
             response_id = response["custom_id"]
             
-            prompts = next((p["body"]["messages"] for p in batch_prompts if p["custom_id"] == response_id))
+            prompts = next((p["body"]["messages"] for p in batch_input if p["custom_id"] == response_id))
             system = next((p["content"] for p in prompts if p["role"] != "user"))
             user = next((p["content"] for p in prompts if p["role"] == "user"))
             

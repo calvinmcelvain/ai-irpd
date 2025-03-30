@@ -80,7 +80,11 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def retreive_batch(self, batch_id: str, batch_prompts: List[dict]):
+    def retreive_batch(self, batch_id: str, schema: BaseModel):
+        pass
+    
+    @abstractmethod
+    def _get_batch_id(self, batch_file: Union[str, Path]):
         pass
     
     @abstractmethod

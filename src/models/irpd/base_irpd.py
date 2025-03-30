@@ -192,12 +192,16 @@ class IRPDBase(ABC):
                 if (batch_dir_path / f"stage_{s}_{llm}.jsonl").exists()
             ]
             test_out = {}
-            print(exist_stgs)
             for s in exist_stgs:
                 log.info(f"OUTPUT: Stage {s} batch file found.")
                 log.info(f"OUTPUT: Checking if batch is complete.")
+                schema = lazy_import("models.irpd.schemas", f"Stage{s}Schema")
                 stage_out = {}
-                batch_out = llm_instance.retreive_batch(f"stage_{s}_{llm}.jsonl")
+                batch_id = llm_instance._get_batch_id(batch_file=f"stage_{s}_{llm}.jsonl")
+                batch_out = llm_instance.retreive_batch(
+                    batch_id=batch_id,
+                    schema=schema
+                )
                 if isinstance(batch_out, BatchOut):
                     log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
                     for response in batch_out.responses:
