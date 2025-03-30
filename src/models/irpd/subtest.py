@@ -22,6 +22,7 @@ class Subtest(Test):
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None,
+        batch: bool = False,
         test_type: str = "subtest"
     ):
         super().__init__(
@@ -35,6 +36,7 @@ class Subtest(Test):
             prompts_path,
             data_path,
             test_paths,
+            batch,
             test_type
         )
     
