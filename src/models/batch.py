@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 
-class BatchRequest:
+class Batch:
     def __init__(self, llm: BaseLLM, messages: List[str]):
         self.llm = llm
         self.messages = messages
