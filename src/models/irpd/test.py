@@ -28,6 +28,7 @@ class Test(IRPDBase):
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None,
+        batch: bool = False,
         test_type: str = "test"
     ):
         super().__init__(
@@ -40,7 +41,8 @@ class Test(IRPDBase):
             output_path,
             prompts_path,
             data_path,
-            test_paths
+            test_paths,
+            batch
         )
         self.test_type = test_type
         self._prod = list(product(
@@ -77,15 +79,6 @@ class Test(IRPDBase):
             )
             self.configs[config.id] = config
     
-    def _send_batch(self, config: TestConfig, llm_str: str, llm: BaseLLM, subpath: Path):
-        self._update_output_batch(
-            config_id=config.id,
-            llm=llm_str,
-            llm_instance=llm
-        )
-        for stage in self.stages:
-            if stage in self.output[config.id].
-    
     def run(
         self,
         max_instances: Optional[int] = None,
@@ -94,11 +87,15 @@ class Test(IRPDBase):
     ):
         test = self.test_type.upper()
         test_configs = self._get_test_configs(config_ids=config_ids)
+        
+        if self.batch_request: clear_logger(app=False)
+        
         for config in test_configs.values():
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
-            clear_logger(app=False)
-            log.info(f"{test}: Running config = {config.id}.")
+            if not self.batch_request:
+                clear_logger(app=False)
+                log.info(f"{test}: Running config = {config.id}.")
             
             llm_str = config.llms[0]
             llm = self._generate_llm_instance(
@@ -108,17 +105,26 @@ class Test(IRPDBase):
             )
             
             self.output[config.id] = []
-            self._update_output(
-                config_id=config.id,
-                llm=llm_str,
-                replication=1,
-                sub_path=config.test_path
-            )
+            
+            if self.batch_request:
+                self._update_output_batch(
+                    config_id=config.id,
+                    llm=llm_str,
+                    llm_instance=llm,
+                    test_path=config.test_path
+                )
+            else:
+                self._update_output(
+                    config_id=config.id,
+                    llm=llm_str,
+                    replication=1,
+                    sub_path=config.test_path
+                )
             
             create_directory(paths=config.test_path)
             
             for stage_name in self.stages:
-                log.info(f"{test}: Running Stage = {stage_name}.")
+                if not self.batch_request: log.info(f"{test}: Running Stage = {stage_name}.")
                 context = self._get_context(
                     config=config,
                     llm=llm_str,
@@ -142,9 +148,25 @@ class Test(IRPDBase):
                     data_path=self.data_path
                 )
                 
-                stage_instance.run()
-                
-                idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
-                self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
-                log.info(f"{test}: Stage {stage_name} complete.")
-            log.info(f"{test}: End of config = {config.id}")
+                if self.batch_request:
+                    batch_prompts = stage_instance.batch_prompts()
+                    if batch_prompts:
+                        batch_path = self._generate_batch_file(
+                            stage=stage_name,
+                            llm=llm_str,
+                            batch=batch_prompts,
+                            test_path=config.test_path
+                        )
+                        
+                        log.info(f"{test}: Sending Stage {stage_name} batch.")
+                        llm.batch_request(batch_file=batch_path)
+                        
+                        continue
+                else:
+                    stage_instance.run()
+                    
+                    idx = self._output_indx(id=config.id, llm=llm_str, replication=1)
+                    self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
+                    
+                    log.info(f"{test}: Stage {stage_name} complete.")
+            if not self.batch_request: log.info(f"{test}: End of config = {config.id}")

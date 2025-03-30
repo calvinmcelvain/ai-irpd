@@ -182,9 +182,9 @@ class IRPDBase(ABC):
         config_id: str,
         llm: str,
         llm_instance: BaseLLM,
-        sub_path: Path
+        test_path: Path
     ):
-        batch_dir_path = sub_path / "_batch"
+        batch_dir_path = test_path / "_batches"
         if check_directories(batch_dir_path):
             exist_stgs = [
                 s for s in VALID_VALUES["stages"] 
