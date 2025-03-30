@@ -29,6 +29,7 @@ class CrossModel(IRPDBase):
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None,
+        batch: bool = False
     ):
         super().__init__(
             cases,
@@ -40,7 +41,8 @@ class CrossModel(IRPDBase):
             output_path,
             prompts_path,
             data_path,
-            test_paths
+            test_paths,
+            batch
         )
         assert 0 < N, "`N` must be greater than 0."
         self.replications = N
@@ -80,16 +82,19 @@ class CrossModel(IRPDBase):
         self,
         max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
-        batch: bool = False,
         print_response: bool = False
     ):
         test = self.test_type.upper()
         test_configs = self._get_test_configs(config_ids=config_ids)
+        
+        if self.batch_request: clear_logger(app=False)
+        
         for config in test_configs.values():
             config.max_instances = self.configs[config.id].max_instances = max_instances
             
-            clear_logger(app=False)
-            log.info(f"{test}: Running config = {config.id}.")
+            if not self.batch_request:
+                clear_logger(app=False)
+                log.info(f"{test}: Running config = {config.id}.")
             
             create_directory(paths=config.test_path)
             
@@ -104,21 +109,31 @@ class CrossModel(IRPDBase):
                     print_response=print_response
                 )
                 
+                batch_messages = []
+                
                 for n in self.replications:
-                    log.info(f"{test}: Running replication = {n}.")
+                    if not self.batch_request: log.info(f"{test}: Running replication = {n}.")
                     
                     sub_path = config.test_path / llm_str / f"replication_{n}"
                     create_directory(paths=sub_path)
                     
-                    self._update_output(
-                        config_id=config.id,
-                        llm=llm_str,
-                        replication=n,
-                        sub_path=sub_path
-                    )
+                    if self.batch_request:
+                        self._update_output_batch(
+                            config_id=config.id,
+                            llm=llm_str,
+                            llm_instance=llm,
+                            test_path=config.test_path
+                        )
+                    else:
+                        self._update_output(
+                            config_id=config.id,
+                            llm=llm_str,
+                            replication=n,
+                            sub_path=sub_path
+                        )
                     
                     for stage_name in self.stages:
-                        log.info(f"{test}: Running Stage = {stage_name}.")
+                        if not self.batch_request: log.info(f"{test}: Running Stage = {stage_name}.")
                         
                         context = self._get_context(
                             config=config,
@@ -143,11 +158,25 @@ class CrossModel(IRPDBase):
                             data_path=self.data_path
                         )
                         
-                        stage_instance.run()
-                        
-                        idx = self._output_indx(id=config.id, llm=llm_str, replication=n)
-                        self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
-                        log.info(f"{test}: Stage {stage_name} complete.")
-                    log.info(f"{test}: Replication {n} complete.")
-                log.info(f"{test}: {llm} replications complete.")
-            log.info(f"{test}: End of config = {config.id}")
+                        if self.batch_request:
+                            batch_prompts = stage_instance.batch_prompts(replication=n)
+                            if batch_prompts:
+                                batch_messages.extend(batch_prompts)
+                                continue
+                        else:
+                            stage_instance.run()
+                            log.info(f"{test}: Stage {stage_name} complete.")
+                    if not self.batch_request: log.info(f"{test}: Replication {n} complete.")
+                
+                if batch_messages:
+                    batch_path = self._generate_batch_file(
+                            stage=stage_name,
+                            llm=llm_str,
+                            batch=batch_prompts,
+                            test_path=config.test_path
+                    )
+                    
+                    log.info(f"{test}: Sending {llm_str} batch.")
+                    llm.batch_request(batch_file=batch_path)
+                if not self.batch_request: log.info(f"{test}: {llm} replications complete.")
+            if not self.batch_request: log.info(f"{test}: End of config = {config.id}")
