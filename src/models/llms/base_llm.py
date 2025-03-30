@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Union
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
@@ -75,7 +75,7 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def batch_request(self, batch_file: str):
+    def batch_request(self, batch: Union[str, List]):
         pass
     
     @abstractmethod
