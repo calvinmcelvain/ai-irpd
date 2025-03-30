@@ -61,11 +61,19 @@ class OpenAIClient(BaseLLM):
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
-    def _request_load(self, user: str, system: str, schema: Optional[BaseModel]):
+    def _request_load(
+        self,
+        user: str,
+        system: str,
+        schema: Optional[BaseModel],
+        schema_dumps: bool = False
+    ):
         request_load = {"model": self.model}
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
+        
+        schema = schema.model_json_schema() if schema_dumps else schema
         request_load.update({"response_format": schema}) if schema else {}
         return request_load
         
@@ -75,7 +83,9 @@ class OpenAIClient(BaseLLM):
             user = message.user
             system = message.system
             batch_input = {"custom_id": message_ids[idx], "method": "POST"}
-            request_load = self._request_load(user=user, system=system, schema=schema)
+            request_load = self._request_load(
+                user=user, system=system, schema=schema, schema_dumps=True
+            )
             batch_input.update({"body": request_load})
             batch.append(batch_input)
         return batch
