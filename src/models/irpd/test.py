@@ -161,7 +161,7 @@ class Test(IRPDBase):
                         
                         log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
                         
-                        continue
+                        break
                 else:
                     stage_instance.run()
                     

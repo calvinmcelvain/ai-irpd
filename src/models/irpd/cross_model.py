@@ -162,7 +162,7 @@ class CrossModel(IRPDBase):
                             batch_prompts = stage_instance.batch_prompts(replication=n)
                             if batch_prompts:
                                 batch_messages.extend(batch_prompts)
-                                continue
+                                break
                         else:
                             stage_instance.run()
                             idx = self._output_indx(id=config.id, llm=llm_str, replication=n)
