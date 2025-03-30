@@ -257,7 +257,7 @@ class IRPDBase(ABC):
         jsonl_file_path = test_path / "_batches" / f"stage_{stage}_{llm}.jsonl"
         jsonl = "\n".join(batch)
         write_file(file_paths=jsonl_file_path, file_writes=jsonl)
-        return None
+        return jsonl_file_path
     
     def remove_configs(self, config_ids: Union[str, List[str]]):
         config_ids = to_list(config_ids)
