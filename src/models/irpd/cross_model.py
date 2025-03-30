@@ -80,6 +80,7 @@ class CrossModel(IRPDBase):
         self,
         max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
+        batch: bool = False,
         print_response: bool = False
     ):
         test = self.test_type.upper()
