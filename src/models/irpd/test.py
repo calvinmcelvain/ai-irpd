@@ -77,8 +77,14 @@ class Test(IRPDBase):
             )
             self.configs[config.id] = config
     
-    def _generate_batches(self):
-        return super()._generate_batches()
+    def _send_batch(self, config: TestConfig, llm_str: str, llm: BaseLLM, subpath: Path):
+        self._update_output_batch(
+            config_id=config.id,
+            llm=llm_str,
+            llm_instance=llm
+        )
+        for stage in self.stages:
+            if stage in self.output[config.id].
     
     def run(
         self,
@@ -86,13 +92,6 @@ class Test(IRPDBase):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
-        if self.batch_request:
-            self.run_batch(
-                max_instances,
-                config_ids,
-                print_response
-            )
-            return None
         test = self.test_type.upper()
         test_configs = self._get_test_configs(config_ids=config_ids)
         for config in test_configs.values():

@@ -195,7 +195,7 @@ class IRPDBase(ABC):
                 log.info(f"OUTPUT: Stage {s} batch file found.")
                 log.info(f"OUTPUT: Checking if batch is complete.")
                 stage_out = {}
-                batch_out = llm_instance._retreive_batch(batch_dir_path / f"stage_{s}_{llm}.jsonl")
+                batch_out = llm_instance.retreive_batch(batch_dir_path / f"stage_{s}_{llm}.jsonl")
                 if isinstance(batch_out, BatchOut):
                     log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
                     for response in batch_out.responses:
@@ -273,14 +273,18 @@ class IRPDBase(ABC):
         pass
     
     @abstractmethod
-    def _generate_batches(self):
-        pass
-    
-    @abstractmethod
     def run(
         self,
         max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
+    ):
+        pass
+    
+    @abstractmethod
+    def run_batch(
+        self,
+        max_instances: Optional[int] = None,
+        config_ids: Union[str, List[str]] = None
     ):
         pass
