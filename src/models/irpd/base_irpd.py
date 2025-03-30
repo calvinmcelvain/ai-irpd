@@ -189,7 +189,7 @@ class IRPDBase(ABC):
         if check_directories(batch_dir_path):
             exist_stgs = [
                 s for s in VALID_VALUES["stages"] 
-                if check_directories(batch_dir_path / f"stage_{s}_{llm}.jsonl")
+                if (batch_dir_path / f"stage_{s}_{llm}.jsonl").exists()
             ]
             test_out = {}
             print(exist_stgs)
