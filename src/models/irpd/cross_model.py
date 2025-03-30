@@ -175,8 +175,8 @@ class CrossModel(IRPDBase):
                             batch=batch_prompts,
                             test_path=config.test_path
                     )
+                    log.info(f"{test}: Sending {llm_str} batch. Batch id: {batch_path.as_posix()}")
                     
-                    log.info(f"{test}: Sending {llm_str} batch.")
                     llm.batch_request(batch_file=batch_path)
                 if not self.batch_request: log.info(f"{test}: {llm} replications complete.")
             if not self.batch_request: log.info(f"{test}: End of config = {config.id}")
