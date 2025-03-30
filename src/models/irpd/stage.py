@@ -267,7 +267,11 @@ class Stage:
                 batch_ids.append(f"{replication}-{subset}")
                 batch_prompts.append(self.prompts.get_prompts(subset=subset, case=self.case, fixed=self.fixed))
         if batch_prompts:
-            return self.llm.format_batch(messages=batch_prompts, message_ids=batch_ids)
+            return self.llm.format_batch(
+                messages=batch_prompts,
+                message_ids=batch_ids,
+                schema=self.schema
+            )
         return None
         
     def run(self):
