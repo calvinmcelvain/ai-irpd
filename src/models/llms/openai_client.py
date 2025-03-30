@@ -94,6 +94,20 @@ class OpenAIClient(BaseLLM):
             log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
         return None
     
+    def retreive_batch(self, batch_id: str):
+        client = self.create_client()
+        
+        batches = client.batches.list()
+        batch = next((batch for batch in batches.data if batch.id == batch_id), None)
+        if not batch:
+            batch = next((batch for batch in batches.data if batch.input_file_id == batch_id), None)
+        
+        if batch.status != "completed":
+            return batch.status
+        
+        return client.files.content(file_id=batch.output_file_id)
+        
+    
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
