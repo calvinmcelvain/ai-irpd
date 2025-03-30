@@ -8,6 +8,7 @@ from typing import List, Optional, Union
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
+from openai.lib._parsing._completions import type_to_response_format_param
 
 from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
@@ -66,15 +67,12 @@ class OpenAIClient(BaseLLM):
         self,
         user: str,
         system: str,
-        schema: Optional[BaseModel],
-        schema_dumps: bool = False
+        schema: Optional[BaseModel]
     ):
         request_load = {"model": self.model}
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
-        
-        schema = schema.model_json_schema() if schema_dumps else schema
         request_load.update({"response_format": schema}) if schema else {}
         return request_load
         
@@ -84,9 +82,8 @@ class OpenAIClient(BaseLLM):
             user = message.user
             system = message.system
             batch_input = {"custom_id": message_ids[idx], "method": "POST", "url": "/v1/chat/completions"}
-            request_load = self._request_load(
-                user=user, system=system, schema=schema, schema_dumps=True
-            )
+            schema = type_to_response_format_param(schema)
+            request_load = self._request_load(user=user, system=system, schema=schema)
             batch_input.update({"body": request_load})
             batch.append(batch_input)
         return batch
