@@ -266,13 +266,16 @@ class Stage:
         for subset in self.subsets:
             self.output.outputs[subset] = []
             if not self._check_context(subset=subset):
-                batch_ids.append(f"{replication}-{subset}")
                 prompts = self.prompts.get_prompts(
                     subset=subset,
                     case=self.case,
                     fixed=self.fixed
                 )
                 for user in prompts.user:
+                    batch_id = f"{replication}-{subset}"
+                    if self.stage in {"2", "3"}:
+                        batch_id += f"-{user["window_number"]}"
+                    batch_ids.append(batch_id)
                     batch_prompts.append(Prompts(system=prompts.system, user=str(user)))
         if batch_prompts:
             return self.llm.format_batch(

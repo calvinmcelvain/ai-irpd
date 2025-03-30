@@ -106,20 +106,12 @@ class Test(IRPDBase):
             
             self.output[config.id] = []
             
-            if self.batch_request:
-                self._update_output_batch(
-                    config_id=config.id,
-                    llm=llm_str,
-                    llm_instance=llm,
-                    test_path=config.test_path
-                )
-            else:
-                self._update_output(
-                    config_id=config.id,
-                    llm=llm_str,
-                    replication=1,
-                    sub_path=config.test_path
-                )
+            self._update_output(
+                config_id=config.id,
+                llm=llm_str,
+                replication=1,
+                sub_path=config.test_path
+            )
             
             create_directory(paths=config.test_path)
             
@@ -167,7 +159,14 @@ class Test(IRPDBase):
                             
                             log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
                         else:
-                            log.info(f"{test}: Batch sent already, awaiting response. Try again later.")
+                            batch_complete = self._check_batch(
+                                config_id=config.id,
+                                llm_str=llm_str,
+                                llm_instance=llm,
+                                stage=stage_name
+                            )
+                            if batch_complete:
+                                stage_instance.batch_prompts()
                         break
                 else:
                     stage_instance.run()

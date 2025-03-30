@@ -178,46 +178,44 @@ class IRPDBase(ABC):
             log.info("OUTPUT: No outputs not found.")
         return None
     
-    def _update_output_batch(
+    def _check_batch(
         self,
         config_id: str,
-        llm: str,
+        llm_str: str,
         llm_instance: BaseLLM,
-        test_path: Path
+        stage: str
     ):
-        batch_dir_path = test_path / "_batches"
-        if check_directories(batch_dir_path):
-            exist_stgs = [
-                s for s in VALID_VALUES["stages"] 
-                if (batch_dir_path / f"stage_{s}_{llm}.jsonl").exists()
-            ]
-            test_out = {}
-            for s in exist_stgs:
-                log.info(f"OUTPUT: Stage {s} batch file found.")
-                log.info(f"OUTPUT: Checking if batch is complete.")
-                schema = lazy_import("models.irpd.schemas", f"Stage{s}Schema")
-                stage_out = {}
-                batch_id = llm_instance._get_batch_id(batch_file=f"stage_{s}_{llm}.jsonl")
-                batch_out = llm_instance.retreive_batch(
-                    batch_id=batch_id,
-                    schema=schema
-                )
-                if isinstance(batch_out, BatchOut):
-                    log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
-                    for response in batch_out.responses:
-                        replication, subset = response.response_id.split("-")
-                        if subset not in stage_out.keys(): stage_out[subset] = []
-                        stage_out[subset].append(response.response)
-                    test_out[s] = StageOutput(stage=s, outputs=stage_out)
-                else:
-                    log.info(f"OUTPUT: Stage {s} batch is {batch_out}.")
-                    break
+        log.info(f"OUTPUT: Checking if batch is complete.")
+        schema = lazy_import("models.irpd.schemas", f"Stage{stage}Schema")
+        batch_id = llm_instance._get_batch_id(batch_file=f"stage_{stage}_{llm_str}.jsonl")
+        batch_out = llm_instance.retreive_batch(
+            batch_id=batch_id,
+            schema=schema
+        )
+        stage_out = {}
+        if isinstance(batch_out, BatchOut):
+            log.info(f"OUTPUT: Stage {stage} batch complete, storing outputs.")
+            for response in batch_out.responses:
+                id_list = response.response_id.split("-")
+                replication = id_list[0]
+                subset = id_list[1]
+                if subset not in stage_out.keys(): stage_out[subset] = []
+                stage_out[subset].append(response.response)
+            test_indx = self._output_indx(id=config_id, llm=llm_str, replication=replication)
+            stage_output = StageOutput(stage=stage, outputs=stage_out)
+            if test_indx:
+                self.output[config_id][test_indx].stage_outputs.update({"1": stage_output})
+                return True
             self.output[config_id].append(TestOutput(
                 id=config_id,
-                llm=llm,
-                replication=int(replication),
-                stage_outputs=test_out
+                llm=llm_str,
+                replication=replication,
+                stage_outputs=stage_output
             ))
+            return True
+        else:
+            log.info(f"OUTPUT: Stage {stage} batch is {batch_out}.")
+            return False
     
     def _batch_sent(self, test_path: Path, stage: str, llm_str: str):
         batch_path = test_path / "_batches" / f"stage_{stage}_{llm_str}.jsonl"
