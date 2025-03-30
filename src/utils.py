@@ -108,7 +108,7 @@ def load_config(config: str) -> dict:
         raise
 
 
-def load_json(file_path: Union[str, Path], dumps: bool = False) -> object | str:
+def load_json(file_path: Union[str, Path], dumps: bool = False) -> dict | str:
     """
     Returns the JSON object (or string) from a JSON file.
     """
