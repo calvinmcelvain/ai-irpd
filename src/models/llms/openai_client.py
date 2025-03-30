@@ -129,19 +129,19 @@ class OpenAIClient(BaseLLM):
         )
         
         for response in batch_output:
-            response_id = response["custom_id"]
+            response_id = response.custom_id
             
-            prompts = next((p["body"]["messages"] for p in batch_input if p["custom_id"] == response_id))
-            system = next((p["content"] for p in prompts if p["role"] != "user"))
-            user = next((p["content"] for p in prompts if p["role"] == "user"))
+            prompts = next((p.body.messages for p in batch_input if p.custom_id == response_id))
+            system = next((p.content for p in prompts if p.role != "user"))
+            user = next((p.content for p in prompts if p.role == "user"))
             
             response_data = response["response"]["body"]
             output.responses.append(self._request_out(
-                input_tokens=response_data["usage"]["input_tokens"],
-                output_tokens=response_data["usage"]["completion_tokens"],
+                input_tokens=response_data.usage.prompt_tokens,
+                output_tokens=response_data.usage.completion_tokens,
                 system=system,
                 user=user,
-                content=response_data["message"]["content"],
+                content=response_data.message.content,
                 schema=schema
             ))
         return output
