@@ -2,8 +2,9 @@ import time
 import logging
 import random as r
 from abc import abstractmethod
+from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
@@ -78,6 +79,20 @@ class OpenAIClient(BaseLLM):
             batch_input.update({"body": request_load})
             batch.append(batch_input)
         return batch
+    
+    def batch_request(self, batch_file: Union[str, Path]):
+        client = self.create_client()
+        
+        file = client.files.create(file=open(batch_file, "rb"), purpose="batch")
+        
+        batch = client.batches.create(
+            input_file_id=file.id,
+            endpoint="/v1/chat/completions",
+            completion_window="24h"
+        )
+        if batch.errors:
+            log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
+        return None
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
