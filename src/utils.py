@@ -187,7 +187,7 @@ def write_jsonl(
     """
     Writes jsonl file from json/dict object.
     """
-    json_obj = to_list(json)
+    json_obj = to_list(json_obj)
     write_file(file_paths=file_path, file_writes="")
     with open(Path(file_path), "w") as f:
         for line in json_obj:
