@@ -9,6 +9,7 @@ from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
 
+from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
@@ -82,7 +83,7 @@ class OpenAIClient(BaseLLM):
         for idx, message in enumerate(messages):
             user = message.user
             system = message.system
-            batch_input = {"custom_id": message_ids[idx], "method": "POST"}
+            batch_input = {"custom_id": message_ids[idx], "method": "POST", "url": "/v1/chat/completions"}
             request_load = self._request_load(
                 user=user, system=system, schema=schema, schema_dumps=True
             )
@@ -104,7 +105,7 @@ class OpenAIClient(BaseLLM):
             log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
         return batch.id
     
-    def retreive_batch(self, batch_id: str):
+    def retreive_batch(self, batch_id: str, batch_prompts: List[dict], schema: BaseModel):
         client = self.create_client()
         
         batches = client.batches.list()
@@ -115,8 +116,30 @@ class OpenAIClient(BaseLLM):
         if batch.status != "completed":
             return batch.status
         
-        return client.files.content(file_id=batch.output_file_id)
+        batch_output = client.files.content(file_id=batch.output_file_id)
         
+        output = BatchOut(
+            batch_id=batch_id,
+            responses=[]
+        )
+        
+        for response in batch_output:
+            response_id = response["custom_id"]
+            
+            prompts = next((p["body"]["messages"] for p in batch_prompts if p["custom_id"] == response_id))
+            system = next((p["content"] for p in prompts if p["role"] != "user"))
+            user = next((p["content"] for p in prompts if p["role"] == "user"))
+            
+            response_data = response["response"]["body"]
+            output.responses.append(self._request_out(
+                input_tokens=response_data["usage"]["input_tokens"],
+                output_tokens=response_data["usage"]["completion_tokens"],
+                system=system,
+                user=user,
+                content=response_data["message"]["content"],
+                schema=schema
+            ))
+        return output
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()

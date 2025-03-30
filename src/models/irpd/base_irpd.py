@@ -192,6 +192,7 @@ class IRPDBase(ABC):
                 if check_directories(batch_dir_path / f"stage_{s}_{llm}.jsonl")
             ]
             test_out = {}
+            print(exist_stgs)
             for s in exist_stgs:
                 log.info(f"OUTPUT: Stage {s} batch file found.")
                 log.info(f"OUTPUT: Checking if batch is complete.")
@@ -214,6 +215,10 @@ class IRPDBase(ABC):
                 else:
                     log.info(f"OUTPUT: Stage {s} batch is {batch_out}.")
                     break
+    
+    def _batch_sent(self, test_path: Path, stage: str, llm_str: str):
+        batch_path = test_path / "_batches" / f"stage_{stage}_{llm_str}.jsonl"
+        return batch_path.exists()
     
     def _get_context(
         self,

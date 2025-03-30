@@ -151,16 +151,23 @@ class Test(IRPDBase):
                 if self.batch_request:
                     batch_prompts = stage_instance.batch_prompts()
                     if batch_prompts:
-                        batch_path = self._generate_batch_file(
+                        batch_sent = self._batch_sent(
+                            test_path=config.test_path,
                             stage=stage_name,
-                            llm=llm_str,
-                            batch=batch_prompts,
-                            test_path=config.test_path
+                            llm_str=llm_str
                         )
-                        batch_id = llm.batch_request(batch_file=batch_path)
-                        
-                        log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
-                        
+                        if not batch_sent:
+                            batch_path = self._generate_batch_file(
+                                stage=stage_name,
+                                llm=llm_str,
+                                batch=batch_prompts,
+                                test_path=config.test_path
+                            )
+                            batch_id = llm.batch_request(batch_file=batch_path)
+                            
+                            log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
+                        else:
+                            log.info(f"{test}: Batch sent already, awaiting response. Try again later.")
                         break
                 else:
                     stage_instance.run()

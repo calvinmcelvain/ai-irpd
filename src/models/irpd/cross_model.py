@@ -169,17 +169,23 @@ class CrossModel(IRPDBase):
                             self.output[config.id][idx].stage_outputs[stage_name] = stage_instance.output
                             log.info(f"{test}: Stage {stage_name} complete.")
                     if not self.batch_request: log.info(f"{test}: Replication {n} complete.")
-                
-                if batch_messages:
+                if not self.batch_request: log.info(f"{test}: {llm} replications complete.")
+                batch_sent = self._batch_sent(
+                        test_path=config.test_path,
+                        stage=stage_name,
+                        llm_str=llm_str
+                    )
+                if not batch_sent:
                     batch_path = self._generate_batch_file(
-                            stage=stage_name,
-                            llm=llm_str,
-                            batch=batch_prompts,
-                            test_path=config.test_path
+                        stage=stage_name,
+                        llm=llm_str,
+                        batch=batch_prompts,
+                        test_path=config.test_path
                     )
                     
                     batch_id = llm.batch_request(batch_file=batch_path)
                     
                     log.info(f"{test}: Sending {llm_str} batch. Batch id: {batch_id}")
-                if not self.batch_request: log.info(f"{test}: {llm} replications complete.")
+                else:
+                    log.info(f"{test}: Batch sent already, awaiting response. Try again later.")
             if not self.batch_request: log.info(f"{test}: End of config = {config.id}")

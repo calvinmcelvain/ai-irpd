@@ -168,14 +168,22 @@ class IntraModel(IRPDBase):
                             log.info(f"{test}: Stage {stage_name} complete.")
                 if not self.batch_request: log.info(f"{test}: Replication {n} complete.")
                 if batch_messages:
-                    batch_path = self._generate_batch_file(
+                    batch_sent = self._batch_sent(
+                        test_path=config.test_path,
                         stage=stage_name,
-                        llm=llm_str,
-                        batch=batch_prompts,
-                        test_path=config.test_path
+                        llm_str=llm_str
                     )
-                    
-                    batch_id = llm.batch_request(batch_file=batch_path)
-                    
-                    log.info(f"{test}: Sending {llm_str} batch. Batch id: {batch_id}")
+                    if not batch_sent:
+                        batch_path = self._generate_batch_file(
+                            stage=stage_name,
+                            llm=llm_str,
+                            batch=batch_prompts,
+                            test_path=config.test_path
+                        )
+                        
+                        batch_id = llm.batch_request(batch_file=batch_path)
+                        
+                        log.info(f"{test}: Sending {llm_str} batch. Batch id: {batch_id}")
+                    else:
+                        log.info(f"{test}: Batch sent already, awaiting response. Try again later.")
             if not self.batch_request: log.info(f"{test}: End of config = {config.id}")

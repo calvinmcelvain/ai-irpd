@@ -80,7 +80,7 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def retreive_batch(self, batch_id: str):
+    def retreive_batch(self, batch_id: str, batch_prompts: List[dict]):
         pass
     
     @abstractmethod
