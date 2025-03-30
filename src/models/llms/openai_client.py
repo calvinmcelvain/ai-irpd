@@ -136,13 +136,17 @@ class OpenAIClient(BaseLLM):
             user = next((p.content for p in prompts if p.role == "user"))
             
             response_data = response["response"]["body"]
-            output.responses.append(self._request_out(
+            request_out = self._request_out(
                 input_tokens=response_data.usage.prompt_tokens,
                 output_tokens=response_data.usage.completion_tokens,
                 system=system,
                 user=user,
                 content=response_data.message.content,
                 schema=schema
+            )
+            output.responses.append(BatchResponse(
+                response_id=response_id,
+                response=request_out
             ))
         return output
     
