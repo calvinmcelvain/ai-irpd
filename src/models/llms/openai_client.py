@@ -1,5 +1,6 @@
 import time
 import logging
+import json
 import random as r
 from abc import abstractmethod
 from pathlib import Path
@@ -118,27 +119,30 @@ class OpenAIClient(BaseLLM):
             return batch.status
         
         batch_output = client.files.content(file_id=batch.output_file_id)
-        batch_input = client.files.content(file_id=batch.input_file_id)
+        batch_input = client.files.content(file_id=batch.input_file_id).iter_lines()
         
         output = BatchOut(
             batch_id=batch_id,
             responses=[]
         )
-        
-        for response in batch_output:
-            response_id = response.custom_id
+        for response in batch_output.iter_lines():
+            response_json = json.loads(response)
+            response_id = response_json["custom_id"]
             
-            prompts = next((p.body.messages for p in batch_input if p.custom_id == response_id))
-            system = next((p.content for p in prompts if p.role != "user"))
-            user = next((p.content for p in prompts if p.role == "user"))
+            prompts = next((
+                json.loads(p)["body"]["messages"] 
+                for p in batch_input if json.loads(p)["custom_id"] == response_id
+            ))
+            system = next((p["content"] for p in prompts if p["role"] != "user"))
+            user = next((p["content"] for p in prompts if p["role"] == "user"))
             
-            response_data = response["response"]["body"]
+            response_data = response_json["response"]["body"]
             request_out = self._request_out(
-                input_tokens=response_data.usage.prompt_tokens,
-                output_tokens=response_data.usage.completion_tokens,
+                input_tokens=response_data["usage"]["prompt_tokens"],
+                output_tokens=response_data["usage"]["completion_tokens"],
                 system=system,
                 user=user,
-                content=response_data.message.content,
+                content=response_data["choices"][0]["message"]["content"],
                 schema=schema
             )
             output.responses.append(BatchResponse(

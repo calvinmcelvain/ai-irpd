@@ -264,6 +264,7 @@ class Stage:
         batch_prompts = []
         batch_ids = []
         for subset in self.subsets:
+            self.output.outputs[subset] = []
             if not self._check_context(subset=subset):
                 batch_ids.append(f"{replication}-{subset}")
                 prompts = self.prompts.get_prompts(

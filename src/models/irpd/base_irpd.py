@@ -205,20 +205,19 @@ class IRPDBase(ABC):
                 if isinstance(batch_out, BatchOut):
                     log.info(f"OUTPUT: Stage {s} batch complete, storing outputs.")
                     for response in batch_out.responses:
-                        subset, replication = response.response_id.split("-")
+                        replication, subset = response.response_id.split("-")
                         if subset not in stage_out.keys(): stage_out[subset] = []
                         stage_out[subset].append(response.response)
-                        if s not in test_out.keys(): test_out[s] = []
-                        test_out[s].append(StageOutput(stage=s, outputs=stage_out))
-                        self.output[config_id].append(TestOutput(
-                            id=config_id,
-                            llm=llm,
-                            replication=replication,
-                            stage_outputs=test_out
-                        ))
+                    test_out[s] = StageOutput(stage=s, outputs=stage_out)
                 else:
                     log.info(f"OUTPUT: Stage {s} batch is {batch_out}.")
                     break
+            self.output[config_id].append(TestOutput(
+                id=config_id,
+                llm=llm,
+                replication=int(replication),
+                stage_outputs=test_out
+            ))
     
     def _batch_sent(self, test_path: Path, stage: str, llm_str: str):
         batch_path = test_path / "_batches" / f"stage_{stage}_{llm_str}.jsonl"
