@@ -101,7 +101,7 @@ class OpenAIClient(BaseLLM):
         batch = client.batches.retrieve(batch_id)
         
         if batch.status != "completed":
-            log.info(f"Batch {batch_id} is batch.status.")
+            log.info(f"Batch {batch_id} is {batch.status}.")
             return None
         
         batch_output_file = client.files.content(file_id=batch.output_file_id).iter_lines()
