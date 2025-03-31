@@ -192,19 +192,20 @@ class IRPDBase(ABC):
             batch_id=batch_id,
             schema=schema
         )
-        stage_out = {}
+        
         if isinstance(batch_out, BatchOut):
             log.info(f"OUTPUT: Stage {stage} batch complete, storing outputs.")
+            stage_out = {}
             for response in batch_out.responses:
                 id_list = response.response_id.split("-")
-                replication = id_list[0]
+                replication = int(id_list[0])
                 subset = id_list[1]
                 if subset not in stage_out.keys(): stage_out[subset] = []
                 stage_out[subset].append(response.response)
-            test_indx = self._output_indx(id=config_id, llm=llm_str, replication=replication)
+            test_idx = self._output_indx(id=config_id, llm=llm_str, replication=replication)
             stage_output = StageOutput(stage=stage, outputs=stage_out)
-            if test_indx:
-                self.output[config_id][test_indx].stage_outputs.update({"1": stage_output})
+            if isinstance(test_idx, int):
+                self.output[config_id][test_idx].stage_outputs.update({stage: stage_output})
                 return True
             self.output[config_id].append(TestOutput(
                 id=config_id,
