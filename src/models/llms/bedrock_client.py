@@ -18,27 +18,7 @@ class BedrockToolCall(BaseModel):
     inputSchema: object | None
 
 
-class BedrockClient(BaseLLM):
-    def __init__(
-        self,
-        api_key = None,
-        model = None,
-        configs = None,
-        print_response = False,
-        json_tool = False,
-        region: str = "us-east-1",
-        **kwargs
-    ):
-        super().__init__(
-            api_key,
-            model,
-            configs,
-            print_response,
-            json_tool,
-            **kwargs
-        )
-        self.region = region
-    
+class BedrockClient(BaseLLM):    
     @abstractmethod
     def default_configs(self):
         pass

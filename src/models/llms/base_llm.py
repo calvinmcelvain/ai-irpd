@@ -19,14 +19,16 @@ class BaseLLM(ABC):
         model: str = None,
         configs: BaseModel = None,
         print_response: bool = False,
-        json_tool: bool = False,
         **kwargs
     ):
         self.api_key = api_key
         self.model = model
         self.configs = configs or self.default_configs()
         self.print_response = print_response
-        self.json_tool = json_tool
+        self.json_tool = kwargs.get("json_tool", None)
+        self.batches = kwargs.get("batches", True)
+        self.region = kwargs.get("region", None)
+        self.base_url = kwargs.get("base_url", None)
     
     @staticmethod
     def _prep_system_message(system: str):

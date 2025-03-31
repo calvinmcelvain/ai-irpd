@@ -27,26 +27,6 @@ class OpenAIToolCall(BaseModel):
 
 
 class OpenAIClient(BaseLLM):
-    def __init__(
-        self,
-        api_key = None,
-        model = None,
-        configs = None,
-        print_response = False,
-        json_tool = False,
-        base_url: str = None,
-        **kwargs
-    ):
-        super().__init__(
-            api_key,
-            model,
-            configs,
-            print_response,
-            json_tool,
-            **kwargs
-        )
-        self.base_url = base_url
-    
     def create_client(self):
         return OpenAI(
             api_key=self.api_key,
