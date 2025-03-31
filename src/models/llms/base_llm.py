@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from pathlib import Path
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
@@ -88,7 +89,8 @@ class BaseLLM(ABC):
         self,
         messages: List[Prompts],
         message_ids: List[str],
-        schema: Optional[BaseModel] = None
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
     ):
         pass
     

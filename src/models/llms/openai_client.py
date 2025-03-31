@@ -141,18 +141,20 @@ class OpenAIClient(BaseLLM):
         self,
         messages: List[Prompts],
         message_ids: List[str],
-        schema: Optional[BaseModel] = None
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
     ):
         client = self.create_client()
         
         formatted_batch = self._format_batch(messages, message_ids, schema)
         
-        temp_file_path = Path("/tmp/formatted_batch.jsonl")
-        write_jsonl(temp_file_path, formatted_batch)
+        save_batch = True if batch_file_path else False
         
-        file = client.files.create(file=temp_file_path.open("rb"), purpose="batch")
+        batch_file_path = Path(batch_file_path or "/tmp/formatted_batch.jsonl")
+        write_jsonl(batch_file_path, formatted_batch)
+        file = client.files.create(file=batch_file_path.open("rb"), purpose="batch")
         
-        temp_file_path.unlink()
+        if not save_batch: batch_file_path.unlink()
         
         batch = client.batches.create(
             input_file_id=file.id,
