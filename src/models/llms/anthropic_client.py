@@ -1,12 +1,14 @@
 import logging
 import time
 import random as r
+from typing import List, Optional
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message import Message
 from pydantic import BaseModel
 from abc import abstractmethod
 
+from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -36,6 +38,28 @@ class AnthropicClient(BaseLLM):
         messages = {"messages": [self._prep_user_message(user)]}
         messages.update({"system": system})
         return messages
+    
+    def _format_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
+        pass
+    
+    def batch_status(self, batch_id: str):
+        pass
+    
+    def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
+        pass
+    
+    def request_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
+        pass
         
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
