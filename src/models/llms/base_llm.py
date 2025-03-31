@@ -73,7 +73,6 @@ class BaseLLM(ABC):
     def create_client(self):
         pass
     
-    @abstractmethod
     def _format_batch(
         self,
         messages: List[Prompts],
@@ -82,7 +81,6 @@ class BaseLLM(ABC):
     ):
         pass
     
-    @abstractmethod
     def retreive_batch(
         self,
         batch_id: str,
@@ -91,7 +89,6 @@ class BaseLLM(ABC):
     ):
         pass
     
-    @abstractmethod
     def request_batch(
         self,
         messages: List[Prompts],
