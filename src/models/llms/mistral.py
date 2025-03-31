@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Optional, List
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
+from openai.lib._parsing._completions import type_to_response_format_param
 
+from utils import write_jsonl, load_jsonl
 from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -65,7 +67,16 @@ class Mistral(BaseLLM):
         message_ids: List[str],
         schema: Optional[BaseModel] = None
     ):
-        pass
+        batch = []
+        for idx, message in enumerate(messages):
+            user = message.user
+            system = message.system
+            batch_input = {"custom_id": message_ids[idx]}
+            schema = type_to_response_format_param(schema)
+            request_load = self._request_load(user, system, schema)
+            batch_input.update({"body": request_load})
+            batch.append(batch_input)
+        return batch
     
     def retreive_batch(
         self,
@@ -73,7 +84,49 @@ class Mistral(BaseLLM):
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):
-        pass
+        client = self.create_client()
+        
+        batch = client.batch.jobs.get(batch_id)
+        
+        if batch.status != "SUCCESS":
+            log.info(f"Batch {batch_id} is {batch.status}.")
+            return None
+        
+        batch_output_file = client.files.download(file_id=batch.output_file)
+        batch_input_file = load_jsonl(batch_file_path) if batch_file_path else None
+        
+        batch_output = BatchOut(
+            batch_id=batch_id,
+            responses=[]
+        )
+        for response in batch_output_file:
+            response_json = json.loads(response)
+            response_id = response_json["custom_id"]
+            
+            if batch_input_file:
+                prompts = next((
+                    p["body"]["messages"] 
+                    for p in batch_input_file if p["custom_id"] == response_id
+                ))
+                system = next((p["content"] for p in prompts if p["role"] != "user"))
+                user = next((p["content"] for p in prompts if p["role"] == "user"))
+            else:
+                system, user = "None"
+            
+            response_data = response_json["response"]["body"]
+            request_out = self._request_out(
+                input_tokens=response_data["usage"]["prompt_tokens"],
+                output_tokens=response_data["usage"]["completion_tokens"],
+                system=system,
+                user=user,
+                content=response_data["choices"][0]["message"]["content"],
+                schema=schema
+            )
+            batch_output.responses.append(BatchResponse(
+                response_id=response_id,
+                response=request_out
+            ))
+        return batch_output
     
     def request_batch(
         self,
@@ -82,7 +135,34 @@ class Mistral(BaseLLM):
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):
-        pass
+        client = self.create_client()
+        
+        formatted_batch = self._format_batch(messages, message_ids, schema)
+        
+        save_batch = True if batch_file_path else False
+        
+        batch_file_path = Path(batch_file_path or "/tmp/formatted_batch.jsonl")
+        write_jsonl(batch_file_path, formatted_batch)
+        file = client.files.upload(
+            file={
+                "file_name": batch_file_path.name,
+                "content": batch_file_path.open("rb")
+            },
+            purpose="batch"
+        )
+        
+        if not save_batch: batch_file_path.unlink()
+        
+        batch = client.batch.jobs.create(
+            input_files=[file.id],
+            model=self.model,
+            endpoint="/v1/chat/completions"
+        )
+        
+        if batch.errors:
+            log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
+        
+        return batch.id
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
