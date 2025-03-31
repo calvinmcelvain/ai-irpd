@@ -143,7 +143,8 @@ class Test(IRPDBase):
                 
                 if self.batch_request:
                     batch_complete = False
-                    while not batch_complete:
+                    retries = 0
+                    while not batch_complete and retries <= 6:
                         batch_prompts = stage_instance.batch_prompts()
                         if batch_prompts:
                             batch_sent = self._batch_sent(
@@ -161,8 +162,9 @@ class Test(IRPDBase):
                                 batch_id = llm.batch_request(batch_file=batch_path)
                                 
                                 log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
-                                log.info(f"{test}: Waiting 30 seconds...")
-                                sleep(30)
+                                log.info(f"{test}: Waiting 10 seconds...")
+                                sleep(10)
+                                retries += 1
                             else:
                                 batch_complete = self._check_batch(
                                     config_id=config.id,
@@ -180,8 +182,9 @@ class Test(IRPDBase):
                                     stage_instance.batch_prompts()
                                     batch_complete = True
                                 else:
-                                    log.info(f"{test}: Waiting 30 seconds...")
-                                    sleep(30)
+                                    log.info(f"{test}: Waiting 10 seconds...")
+                                    sleep(10)
+                                    retries += 1
                 else:
                     stage_instance.run()
                     

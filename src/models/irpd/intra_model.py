@@ -110,7 +110,8 @@ class IntraModel(IRPDBase):
             
             batch_messages = []
             batch_complete = False
-            while not batch_complete:
+            retries = 0
+            while not batch_complete and retries <= 6:
                 for n in self.replications:
                     if not self.batch_request: log.info(f"{test}: Running replication = {n}.")
                     
@@ -178,8 +179,9 @@ class IntraModel(IRPDBase):
                                     stage_instance.context = stage_instance.prompts.context = new_context
                                     stage_instance.batch_prompts()
                                 else:
-                                    log.info(f"{test}: Waiting 30 seconds...")
-                                    sleep(30)
+                                    log.info(f"{test}: Waiting 10 seconds...")
+                                    sleep(10)
+                                    retries += 1
                         else:
                             stage_instance.run()
                             idx = self._output_indx(id=config.id, llm=llm_str, replication=n)
@@ -203,8 +205,9 @@ class IntraModel(IRPDBase):
                             batch_id = llm.batch_request(batch_file=batch_path)
                             
                             log.info(f"{test}: Sending {llm_str} batch. Batch id: {batch_id}")
-                            log.info(f"{test}: Waiting 30 seconds...")
-                            sleep(30)
+                            log.info(f"{test}: Waiting 10 seconds...")
+                            sleep(10)
+                            retries += 1
                 if not self.batch_request:
                     batch_complete = True
                     log.info(f"{test}: End of config = {config.id}")
