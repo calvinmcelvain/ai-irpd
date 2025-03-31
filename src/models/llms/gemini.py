@@ -1,6 +1,7 @@
 import logging
 import time
 import random as r
+from typing import Optional
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
@@ -38,9 +39,12 @@ class Gemini(BaseLLM):
     def _prep_user_message(user: str):
         return {"contents": user}
     
-    def request(self, user, system, schema: BaseModel = None, **kwargs):
-        client = self.create_client()
-        
+    def _request_load(
+        self,
+        user: str,
+        system: str,
+        schema: Optional[BaseModel]
+    ):
         configs = self.configs.model_dump(exclude_none=True)
         configs.update(self._prep_system_message(system))
         if schema:
@@ -48,10 +52,16 @@ class Gemini(BaseLLM):
                 "response_mime_type": "application/json",
                 "response_schema": schema
             })
-        
         request_load = {"model": self.model}
         request_load.update(self._prep_user_message(user))
         request_load.update({"config": GenerateContentConfig(**configs)})
+        return request_load
+        
+    
+    def request(self, user, system, schema: BaseModel = None, **kwargs):
+        client = self.create_client()
+        
+        request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)
