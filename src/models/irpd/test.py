@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
@@ -141,39 +142,46 @@ class Test(IRPDBase):
                 )
                 
                 if self.batch_request:
-                    batch_prompts = stage_instance.batch_prompts()
-                    if batch_prompts:
-                        batch_sent = self._batch_sent(
-                            test_path=config.test_path,
-                            stage=stage_name,
-                            llm_str=llm_str
-                        )
-                        if not batch_sent:
-                            batch_path = self._generate_batch_file(
+                    batch_complete = False
+                    while not batch_complete:
+                        batch_prompts = stage_instance.batch_prompts()
+                        if batch_prompts:
+                            batch_sent = self._batch_sent(
+                                test_path=config.test_path,
                                 stage=stage_name,
-                                llm=llm_str,
-                                batch=batch_prompts,
-                                test_path=config.test_path
+                                llm_str=llm_str
                             )
-                            batch_id = llm.batch_request(batch_file=batch_path)
-                            
-                            log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
-                        else:
-                            batch_complete = self._check_batch(
-                                config_id=config.id,
-                                llm_str=llm_str,
-                                llm_instance=llm,
-                                stage=stage_name
-                            )
-                            if batch_complete:
-                                new_context = self._get_context(
-                                    config=config,
+                            if not batch_sent:
+                                batch_path = self._generate_batch_file(
+                                    stage=stage_name,
                                     llm=llm_str,
-                                    replication=1
+                                    batch=batch_prompts,
+                                    test_path=config.test_path
                                 )
-                                stage_instance.context = stage_instance.prompts.context = new_context
-                                stage_instance.batch_prompts()
-                        break
+                                batch_id = llm.batch_request(batch_file=batch_path)
+                                
+                                log.info(f"{test}: Sending Stage {stage_name} batch. Batch id: {batch_id}")
+                                log.info(f"{test}: Waiting 30 seconds...")
+                                sleep(30)
+                            else:
+                                batch_complete = self._check_batch(
+                                    config_id=config.id,
+                                    llm_str=llm_str,
+                                    llm_instance=llm,
+                                    stage=stage_name
+                                )
+                                if batch_complete:
+                                    new_context = self._get_context(
+                                        config=config,
+                                        llm=llm_str,
+                                        replication=1
+                                    )
+                                    stage_instance.context = stage_instance.prompts.context = new_context
+                                    stage_instance.batch_prompts()
+                                    batch_complete = True
+                                else:
+                                    log.info(f"{test}: Waiting 30 seconds...")
+                                    sleep(30)
                 else:
                     stage_instance.run()
                     
