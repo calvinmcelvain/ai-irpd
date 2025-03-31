@@ -80,10 +80,6 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def batch_status(self, batch_id: str):
-        pass
-    
-    @abstractmethod
     def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
         pass
     

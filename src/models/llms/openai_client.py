@@ -98,7 +98,7 @@ class OpenAIClient(BaseLLM):
     def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
         client = self.create_client()
         
-        batch = client.batches.retrieve(batch_id=batch_id)
+        batch = client.batches.retrieve(batch_id)
         
         if batch.status != "completed":
             log.info(f"Batch {batch_id} is batch.status.")
