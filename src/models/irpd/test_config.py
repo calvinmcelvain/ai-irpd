@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Union
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,6 +14,7 @@ class TestConfig:
     llm_config: str
     test_type: str
     test_path: Path
+    test_number: Union[str, int]
     stages: List[str]
     max_instances: Optional[int] = None
     id: Optional[str] = None
