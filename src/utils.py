@@ -120,6 +120,19 @@ def load_json(file_path: Union[str, Path], dumps: bool = False) -> dict | str:
     return json.dumps(json_data) if dumps else json_data
 
 
+def load_jsonl(file_path: Union[str, Path], dumps: bool = False) -> List[dict] | str:
+    """
+    Returns a list of JSON objects (or a JSON string) from a JSONL file.
+    """
+    try:
+        with open(Path(file_path), "r") as f:
+            json_data = [json.loads(line) for line in f if line.strip()]
+    except (JSONDecodeError, FileNotFoundError) as e:
+        log.error(f"Error loading JSONL from {file_path}: {e}")
+        raise
+    return json.dumps(json_data) if dumps else json_data
+
+
 def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.

@@ -11,7 +11,7 @@ from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
 from openai.lib._parsing._completions import type_to_response_format_param
 
-from utils import write_jsonl
+from utils import write_jsonl, load_jsonl
 from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -95,7 +95,12 @@ class OpenAIClient(BaseLLM):
             batch.append(batch_input)
         return batch
     
-    def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
+    def retreive_batch(
+        self,
+        batch_id: str,
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
         client = self.create_client()
         
         batch = client.batches.retrieve(batch_id)
@@ -105,7 +110,7 @@ class OpenAIClient(BaseLLM):
             return None
         
         batch_output_file = client.files.content(file_id=batch.output_file_id).iter_lines()
-        batch_input_file = client.files.content(file_id=batch.input_file_id).iter_lines()
+        batch_input_file = load_jsonl(batch_file_path) if batch_file_path else None
         
         batch_output = BatchOut(
             batch_id=batch_id,
@@ -115,12 +120,15 @@ class OpenAIClient(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
-            prompts = next((
-                json.loads(p)["body"]["messages"] 
-                for p in batch_input_file if json.loads(p)["custom_id"] == response_id
-            ))
-            system = next((p["content"] for p in prompts if p["role"] != "user"))
-            user = next((p["content"] for p in prompts if p["role"] == "user"))
+            if batch_input_file:
+                prompts = next((
+                    p["body"]["messages"] 
+                    for p in batch_input_file if p["custom_id"] == response_id
+                ))
+                system = next((p["content"] for p in prompts if p["role"] != "user"))
+                user = next((p["content"] for p in prompts if p["role"] == "user"))
+            else:
+                system, user = "None"
             
             response_data = response_json["response"]["body"]
             request_out = self._request_out(
