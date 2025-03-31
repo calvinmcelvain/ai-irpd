@@ -171,7 +171,7 @@ class Test(IRPDBase):
                                     llm=llm_str,
                                     replication=1
                                 )
-                                stage_instance.context = new_context
+                                stage_instance.context = stage_instance.prompts.context = new_context
                                 stage_instance.batch_prompts()
                         break
                 else:
