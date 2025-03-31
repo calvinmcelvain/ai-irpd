@@ -1,15 +1,12 @@
 import logging
 import time
 import random as r
-from pathlib import Path
-from typing import Optional, List, Union
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message import Message
 from pydantic import BaseModel
 from abc import abstractmethod
 
-from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -39,42 +36,14 @@ class AnthropicClient(BaseLLM):
         messages = {"messages": [self._prep_user_message(user)]}
         messages.update({"system": system})
         return messages
-    
-    def _request_load(
-        self,
-        user: str,
-        system: str,
-        schema: Optional[BaseModel]
-    ):
-        request_load = {"model": self.model}
-        request_load.update(self.configs.model_dump(exclude_none=True))
-        request_load.update(self._prep_messages(user, system))
-        request_load.update(self._json_tool_call(schema)) if schema else {}
-        return request_load
-    
-    def format_batch(self, messages: List[Prompts], message_ids: List[str], schema: BaseModel = None):
-        batch = []
-        for idx, message in enumerate(messages):
-            user = message.user
-            system = message.system
-            batch_input = {"custom_id": message_ids[idx]}
-            request_load = self._request_load(user=user, system=system, schema=schema)
-            batch_input.update({"params": request_load})
-            batch.append(batch_input)
-        return batch
-    
-    def batch_request(self, batch_file: Union[str, Path]):
-        client = self.create_client()
-        
         
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
-        request_load = self._request_load(
-            user=user,
-            system=system,
-            schema=schema
-        )
+        request_load = {"model": self.model}
+        request_load.update(self.configs.model_dump(exclude_none=True))
+        request_load.update(self._prep_messages(user, system))
+        request_load.update(self._json_tool_call(schema)) if schema else {}
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)
