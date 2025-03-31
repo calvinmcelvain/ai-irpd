@@ -1,10 +1,15 @@
 import logging
+import json
 import time
 import random as r
 import mistralai
+from pathlib import Path
+from typing import Optional, List
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
 
+from models.batch_out import BatchOut, BatchResponse
+from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -41,14 +46,48 @@ class Mistral(BaseLLM):
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
-    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
-        client = self.create_client()
-        
+    def _request_load(
+        self,
+        user: str,
+        system: str,
+        schema: Optional[BaseModel]
+    ):
         request_load = {"model": self.model}
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
-        request_load.update({"response_format": schema}) if schema and not self.json_tool else ()
+        request_load.update({"response_format": schema}) if schema and not self.json_tool else {}
+        return request_load
+    
+    def _format_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
+        pass
+    
+    def retreive_batch(
+        self,
+        batch_id: str,
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
+        pass
+    
+    def request_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
+        pass
+    
+    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
+        client = self.create_client()
+        
+        request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
         
