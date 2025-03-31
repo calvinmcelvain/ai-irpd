@@ -1,6 +1,5 @@
-from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Union
+from typing import List, Optional
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
@@ -72,19 +71,29 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    def format_batch(self, messages: List[Prompts], message_ids: List[str], schema: BaseModel):
+    def _format_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
         pass
     
     @abstractmethod
-    def batch_request(self, batch_file: Union[str, Path]):
+    def batch_status(self, batch_id: str):
         pass
     
     @abstractmethod
-    def retreive_batch(self, batch_id: str, schema: BaseModel):
+    def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
         pass
     
     @abstractmethod
-    def _get_batch_id(self, batch_file: Union[str, Path]):
+    def request_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
         pass
     
     @abstractmethod
@@ -92,7 +101,7 @@ class BaseLLM(ABC):
         self,
         user: str,
         system: str,
-        schema: BaseModel = None,
+        schema: Optional[BaseModel] = None,
         **kwargs
     ):
         pass

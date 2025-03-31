@@ -5,12 +5,13 @@ import random as r
 from abc import abstractmethod
 from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Optional, Union
+from typing import List, Optional
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
 from openai.lib._parsing._completions import type_to_response_format_param
 
+from utils import write_jsonl
 from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -77,7 +78,12 @@ class OpenAIClient(BaseLLM):
         request_load.update({"response_format": schema}) if schema else {}
         return request_load
         
-    def format_batch(self, messages: List[Prompts], message_ids: List[str], schema: BaseModel = None):
+    def _format_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: BaseModel = None
+    ):
         batch = []
         for idx, message in enumerate(messages):
             user = message.user
@@ -89,49 +95,29 @@ class OpenAIClient(BaseLLM):
             batch.append(batch_input)
         return batch
     
-    def batch_request(self, batch_file: Union[str, Path]):
-        client = self.create_client()
-        
-        file = client.files.create(file=open(batch_file, "rb"), purpose="batch")
-        
-        batch = client.batches.create(
-            input_file_id=file.id,
-            endpoint="/v1/chat/completions",
-            completion_window="24h"
-        )
-        if batch.errors:
-            log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
-        return batch.id
-    
-    def _get_batch_id(self, batch_file: Union[str, Path]):
-        client = self.create_client()
-        files = client.files.list()
-        batches = client.batches.list()
-        file_id = next((f.id for f in files.data if f.filename == batch_file))
-        batch_id = next((b.id for b in batches.data if b.input_file_id == file_id))
-        return batch_id
-    
-    def retreive_batch(self, batch_id: str, schema: BaseModel):
+    def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
         client = self.create_client()
         
         batch = client.batches.retrieve(batch_id=batch_id)
+        
         if batch.status != "completed":
-            return batch.status
+            log.info(f"Batch {batch_id} is batch.status.")
+            return None
         
-        batch_output = client.files.content(file_id=batch.output_file_id)
-        batch_input = client.files.content(file_id=batch.input_file_id).iter_lines()
+        batch_output_file = client.files.content(file_id=batch.output_file_id).iter_lines()
+        batch_input_file = client.files.content(file_id=batch.input_file_id).iter_lines()
         
-        output = BatchOut(
+        batch_output = BatchOut(
             batch_id=batch_id,
             responses=[]
         )
-        for response in batch_output.iter_lines():
+        for response in batch_output_file:
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
             prompts = next((
                 json.loads(p)["body"]["messages"] 
-                for p in batch_input if json.loads(p)["custom_id"] == response_id
+                for p in batch_input_file if json.loads(p)["custom_id"] == response_id
             ))
             system = next((p["content"] for p in prompts if p["role"] != "user"))
             user = next((p["content"] for p in prompts if p["role"] == "user"))
@@ -145,11 +131,39 @@ class OpenAIClient(BaseLLM):
                 content=response_data["choices"][0]["message"]["content"],
                 schema=schema
             )
-            output.responses.append(BatchResponse(
+            batch_output.responses.append(BatchResponse(
                 response_id=response_id,
                 response=request_out
             ))
-        return output
+        return batch_output
+    
+    def request_batch(
+        self,
+        messages: List[Prompts],
+        message_ids: List[str],
+        schema: Optional[BaseModel] = None
+    ):
+        client = self.create_client()
+        
+        formatted_batch = self._format_batch(messages, message_ids, schema)
+        
+        temp_file_path = Path("/tmp/formatted_batch.jsonl")
+        write_jsonl(temp_file_path, formatted_batch)
+        
+        file = client.files.create(file=temp_file_path.open("rb"), purpose="batch")
+        
+        temp_file_path.unlink()
+        
+        batch = client.batches.create(
+            input_file_id=file.id,
+            endpoint="/v1/chat/completions",
+            completion_window="24h"
+        )
+        
+        if batch.errors:
+            log.error(f"Error in batch request: {batch.errors.model_dump_json()}")
+        
+        return batch.id
     
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
