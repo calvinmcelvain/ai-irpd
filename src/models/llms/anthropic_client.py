@@ -1,13 +1,19 @@
 import logging
 import time
+import json
 import random as r
+from pathlib import Path
 from typing import List, Optional
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
+from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.messages.batch_create_params import Request
 from anthropic.types.message import Message
 from pydantic import BaseModel
 from abc import abstractmethod
 
+from utils import write_jsonl, load_jsonl
+from models.batch_out import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
@@ -57,21 +63,84 @@ class AnthropicClient(BaseLLM):
         message_ids: List[str],
         schema: Optional[BaseModel] = None
     ):
-        pass
+        batch = {"requests": []}
+        for idx, message in enumerate(messages):
+            user = message.user,
+            system = message.system
+            request_load = self._request_load(user, system, schema)
+            batch["requests"].append(Request(
+                custom_id=message_ids[idx],
+                params=MessageCreateParamsNonStreaming(**request_load)
+            ))
+        return batch
     
-    def batch_status(self, batch_id: str):
-        pass
-    
-    def retreive_batch(self, batch_id: str, schema: Optional[BaseModel]):
-        pass
-    
+    def retreive_batch(
+        self,
+        batch_id: str,
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
+        client = self.create_client()
+        
+        batch = client.messages.batches.retrieve(batch_id)
+        
+        if batch.processing_status != "ended":
+            log.info(f"Batch {batch_id} is {batch.processing_status}")
+            return None
+        
+        batch_output_file = client.messages.batches.results(batch_id)
+        batch_input_file = load_jsonl(batch_file_path) if batch_file_path else None
+        
+        batch_output = BatchOut(
+            batch_id=batch_id,
+            responses=[]
+        )
+        for response in batch_output_file:
+            response_json = json.loads(response)
+            response_id = response_json["custom_id"]
+            
+            if batch_input_file:
+                prompts = next((
+                    p["params"] 
+                    for p in batch_input_file["requests"] if p["custom_id"] == response_id
+                ))
+                system = prompts["system"]
+                user = next((p["content"] for p in prompts["messages"] if p["role"] == "user"))
+            else:
+                system, user = "None"
+            
+            response_data = response_json["result"]["message"]
+            request_out = self._request_out(
+                input_tokens=response_data["usage"]["input_tokens"],
+                output_tokens=response_data["usage"]["output_tokens"],
+                system=system,
+                user=user,
+                content=response_data["content"][0]["text"],
+                schema=schema
+            )
+            batch_output.responses.append(BatchResponse(
+                response_id=response_id,
+                response=request_out
+            ))
+        return batch_output
+        
     def request_batch(
         self,
         messages: List[Prompts],
         message_ids: List[str],
-        schema: Optional[BaseModel] = None
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
     ):
-        pass
+        client = self.create_client()
+        
+        formatted_batch = self._format_batch(messages, message_ids, schema)
+        
+        if batch_file_path:
+            write_jsonl(batch_file_path, formatted_batch)
+        
+        batch = client.messages.batches.create(requests=formatted_batch)
+        
+        return batch.id
         
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
