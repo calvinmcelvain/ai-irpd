@@ -39,6 +39,18 @@ class AnthropicClient(BaseLLM):
         messages.update({"system": system})
         return messages
     
+    def _request_load(
+        self,
+        user: str,
+        system: str,
+        schema: Optional[BaseModel]
+    ):
+        request_load = {"model": self.model}
+        request_load.update(self.configs.model_dump(exclude_none=True))
+        request_load.update(self._prep_messages(user, system))
+        request_load.update(self._json_tool_call(schema)) if schema else {}
+        return request_load
+    
     def _format_batch(
         self,
         messages: List[Prompts],
