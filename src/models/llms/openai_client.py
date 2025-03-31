@@ -90,7 +90,7 @@ class OpenAIClient(BaseLLM):
             system = message.system
             batch_input = {"custom_id": message_ids[idx], "method": "POST", "url": "/v1/chat/completions"}
             schema = type_to_response_format_param(schema)
-            request_load = self._request_load(user=user, system=system, schema=schema)
+            request_load = self._request_load(user, system, schema)
             batch_input.update({"body": request_load})
             batch.append(batch_input)
         return batch
@@ -168,11 +168,7 @@ class OpenAIClient(BaseLLM):
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
-        request_load = self._request_load(
-            user=user,
-            system=system,
-            schema=schema
-        )
+        request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)

@@ -76,10 +76,7 @@ class AnthropicClient(BaseLLM):
     def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
-        request_load = {"model": self.model}
-        request_load.update(self.configs.model_dump(exclude_none=True))
-        request_load.update(self._prep_messages(user, system))
-        request_load.update(self._json_tool_call(schema)) if schema else {}
+        request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)
