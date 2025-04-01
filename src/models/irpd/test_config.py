@@ -15,6 +15,8 @@ class TestConfig:
     test_type: str
     test_path: Path
     stages: List[str]
+    batches: bool
+    total_replications: int
     max_instances: Optional[int] = None
     id: Optional[str] = None
     

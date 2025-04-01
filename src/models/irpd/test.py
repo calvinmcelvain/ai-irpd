@@ -9,6 +9,7 @@ from utils import to_list, create_directory
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
+from models.irpd.outputs import TestOutput
 from models.irpd.stage import Stage
 
 
@@ -18,25 +19,26 @@ log = logging.getLogger(__name__)
 
 class Test(IRPDBase):
     def __init__(
-        self,
+        self, 
         cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
+        N: int = 1,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None,
-        batch: bool = False,
-        test_type: str = "test"
+        batch: bool = False
     ):
         super().__init__(
             cases,
             ras,
             treatments,
             stages,
+            N,
             llms,
             llm_configs,
             output_path,
@@ -45,7 +47,7 @@ class Test(IRPDBase):
             test_paths,
             batch
         )
-        self.test_type = test_type
+        self.test_type = "test"
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
@@ -76,9 +78,15 @@ class Test(IRPDBase):
                 llm_config=llm_config,
                 test_type=self.test_type,
                 test_path=self.test_paths[idx],
-                stages=self.stages
+                stages=self.stages,
+                batches=self.batch_request,
+                total_replications=1
             )
             self.configs[config.id] = config
+            self.output[config.id] = TestOutput(config)
+    
+    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
+        return test_path
     
     def run(
         self,

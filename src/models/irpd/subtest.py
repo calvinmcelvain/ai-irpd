@@ -1,44 +1,55 @@
 import logging
+from itertools import product
 from typing import Union, Optional, List
 from pathlib import Path
 
-from models.irpd.test import Test
+from utils import to_list
+from models.irpd.irpd_base import IRPDBase
+from models.irpd.outputs import TestOutput
+from models.irpd.test_config import TestConfig
 
 
 log = logging.getLogger(__name__)
 
 
 
-class Subtest(Test):
+class Subtest(IRPDBase):
     def __init__(
-        self,
+        self, 
         cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
+        N: int = 1,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
         test_paths: Optional[List[str]] = None,
-        batch: bool = False,
-        test_type: str = "subtest"
+        batch: bool = False
     ):
         super().__init__(
             cases,
             ras,
             treatments,
             stages,
+            N,
             llms,
             llm_configs,
             output_path,
             prompts_path,
             data_path,
             test_paths,
-            batch,
-            test_type
+            batch
         )
+        self.test_type = "test"
+        self._prod = list(product(
+            self.llms, self.llm_configs, self.cases, self.ras, self.treatments
+        ))
+        
+        self.test_paths = self._generate_test_paths()
+        self._generate_configs()
     
     def _generate_test_paths(self):
         if self.test_paths:
@@ -47,3 +58,24 @@ class Subtest(Test):
         current_test = self._get_max_test_number(test_dir, "")
         test_paths = [test_dir / f"{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths
+    
+    def _generate_configs(self):
+        for idx, prod in enumerate(self._prod):
+            llm, llm_config, case, ra, treatment = prod
+            config = TestConfig(
+                case=case,
+                ra=ra,
+                treatment=treatment,
+                llms=to_list(llm),
+                llm_config=llm_config,
+                test_type=self.test_type,
+                test_path=self.test_paths[idx],
+                stages=self.stages,
+                batches=self.batch_request,
+                total_replications=1
+            )
+            self.configs[config.id] = config
+            self.output[config.id] = TestOutput(config)
+    
+    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
+        return test_path

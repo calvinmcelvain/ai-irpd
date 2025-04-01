@@ -1,10 +1,27 @@
 import logging
-from typing import List, Union
+from pathlib import Path
+from typing import List, Union, Literal
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from utils import lazy_import
+from utils import lazy_import, load_config
+
+
+CONFIGS = load_config("irpd_configs.yml")
+DEFAULTS = CONFIGS["defaults"]
+
+CASES = Literal["uni", "switch", "uniresp", "first", "uni_switch"]
+RAS = Literal["ra1", "ra2", "both"]
+TREATMENTS = Literal["imperfect", "perfect", "merged"]
+STAGES = Literal["1", "1r", "1c", "2", "3"]
+LLMS = Literal[
+    "GPT_4O_0806", "GPT_4O_1120", "GPT_4O_MINI_0718", "GPT_O1_1217",
+    "GPT_O1_MINI_0912", "GPT_O3_MINI_0131", "GROK_2_1212", 
+    "CLAUDE_3_5_SONNET", "CLAUDE_3_7_SONNET", "GEMINI_2_FLASH",
+    "GEMINI_1_5_PRO", "NOVA_PRO_V1", "MISTRAL_LARGE_2411"
+]
+LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
 log = logging.getLogger(__name__)
@@ -30,10 +47,14 @@ class IRPDTestClass(TestClassContainer, Enum):
     
     def get_irpd_instance(
         self,
-        cases: Union[List[str], str],
-        ras: Union[List[str], str],
-        treatments: Union[List[str], str],
-        stages: Union[List[str], str],
+        cases: Union[List[CASES], CASES],
+        ras: Union[List[RAS], RAS],
+        treatments: Union[List[TREATMENTS], TREATMENTS],
+        stages: Union[List[STAGES], STAGES],
+        llms: Union[List[LLMS], LLMS] = "GPT_4O_1120",
+        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = "base",
+        batch: bool = False,
+        test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
         **kwargs
     ):
         test_class = self.impl
@@ -42,5 +63,9 @@ class IRPDTestClass(TestClassContainer, Enum):
             ras=ras,
             treatments=treatments,
             stages=stages,
+            llms=llms,
+            llm_configs=llm_configs,
+            batch=batch,
+            test_paths=test_paths,
             **kwargs
         )

@@ -7,7 +7,7 @@ from pathlib import Path
 from utils import get_env_var, file_to_string, str_to_path
 from models.prompts import Prompts
 from models.irpd.test_config import TestConfig
-from models.irpd.test_output import TestOutput
+from models.irpd.outputs import TestOutput
 
 
 log = logging.getLogger(__name__)

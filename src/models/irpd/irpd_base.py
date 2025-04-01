@@ -4,23 +4,9 @@ from typing import List, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from utils import (
-    get_env_var, to_list, load_config, str_to_path, validate_json_string,
-    file_to_string, lazy_import, load_json, check_directories, write_jsonl,
-    create_directory
-)
+from utils import get_env_var, to_list, str_to_path
 from models.llm_model import LLMModel
-from models.batch_out import BatchOut
-from models.llms.base_llm import BaseLLM
-from models.request_output import RequestOut
-from models.irpd.test_output import TestOutput
 from models.irpd.test_config import TestConfig
-from models.irpd.stage_output import StageOutput
-
-
-CONFIGS = load_config("irpd_configs.yml")
-DEFAULTS = CONFIGS["defaults"]
-VALID_VALUES = CONFIGS["valid_values"]
 
 
 log = logging.getLogger(__name__)
@@ -34,6 +20,7 @@ class IRPDBase(ABC):
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
+        N: int,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         output_path: Optional[Union[str, Path]] = None,
@@ -43,69 +30,26 @@ class IRPDBase(ABC):
         batch: bool = False
     ):
         self.cases = to_list(cases)
-        self.ras = ras
-        self.treatments = treatments
-        self.stages = stages
-        self.llms = llms
-        self.llm_configs = llm_configs
-        self.test_paths = test_paths
+        self.ras = to_list(ras)
+        self.treatments = to_list(treatments)
+        self.stages = to_list(stages)
+        self.llms = to_list(llms)
+        self.llm_configs = to_list(llm_configs)
+        self.test_paths = to_list(test_paths)
+        self.batch_request = batch
         
-        self.output = {}
-        self.configs = {}
-
-        self._validate_values()
+        assert N >= 1
+        self.replications = N
 
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
         
-        self.batch_request = batch
-
-    def _validate_values(self):
-        attributes = ["cases", "ras", "treatments", "stages", "llms", "llm_configs"]
-        for attr in attributes:
-            value = getattr(self, attr)
-            default_value = to_list(DEFAULTS.get(attr, ""))
-            valid_values = VALID_VALUES.get(attr, [])
-
-            if not valid_values:
-                log.warning(f"No valid values found for `{attr}` in irpd configs.")
-            if not value:
-                setattr(self, attr, default_value)
-                continue
-
-            value = to_list(value)
-            self._ensure_strings(attr, value)
-            valid_items, invalid_items = self._filter_valid_items(value, valid_values)
-
-            if not valid_items:
-                log.error(
-                    f"All provided `{attr}` values are invalid: {value}. "
-                    f"Allowed values: {valid_values}"
-                )
-                raise ValueError(
-                    f"All provided `{attr}` values are invalid: {value}. "
-                    f"Allowed values: {valid_values}"
-                )
-            if invalid_items:
-                log.warning(
-                    f"Some `{attr}` values were ignored as invalid: {invalid_items}. "
-                    f"Allowed values: {valid_values}"
-                )
-            setattr(self, attr, valid_items)
-
-    def _ensure_strings(self, attr: str, values: List[str]):
-        if not all(isinstance(item, str) for item in values):
-            log.error(f"Argument `{attr}` must contain only string values.")
-            raise TypeError(f"Argument `{attr}` must contain only string values.")
-
-    def _filter_valid_items(self, values: List[str], valid_values: List[str]):
-        valid_items = [item for item in values if item in valid_values]
-        invalid_items = [item for item in values if item not in valid_values]
-        return valid_items, invalid_items
+        self.output = {}
+        self.configs = {}
     
     def _validate_test_paths(self):
-        test_paths = [Path(path) for path in to_list(self.test_paths)]
+        test_paths = [Path(path) for path in self.test_paths]
         if not len(self.test_paths) == len(self._prod):
             log.error(
                 "test_paths must be the same length as the number of test configs."
@@ -121,132 +65,16 @@ class IRPDBase(ABC):
         config: str,
         print_response: bool = False
     ):
-        return getattr(LLMModel, llm).get_llm_instance(
-            config=config, print_response=print_response
-        )
-    
-    def _output_indx(
-        self,
-        id: str,
-        llm: str,
-        replication: int
-    ):
-        test = self.output[id]
-        test_out = next((c for c in test if c.llm == llm and c.replication == replication), None)
-        if test_out:
-            return test.index(test_out)
-        return None
-    
-    def _update_output(
-        self,
-        config_id: str,
-        llm: str,
-        replication: int,
-        sub_path: Path
-    ):
-        log.info("OUTPUT: Checking for output.")
-        exist_stgs = [s for s in VALID_VALUES["stages"] if check_directories(sub_path / f"stage_{s}")]
-        if exist_stgs:
-            meta = load_json(sub_path / "_test_meta.json")
-            test_out = {}
-            for s in exist_stgs:
-                log.info(f"OUTPUT: Stage {s} found.")
-                schema = lazy_import("models.irpd.schemas", f"Stage{s}Schema")
-                stage_out = {}
-                subsets = meta["stages"][s].keys()
-                for subset in subsets:
-                    subset_path = sub_path / f"stage_{s}" / subset
-                    if check_directories(subset_path):
-                        responses_path = subset_path / "responses"
-                        for r in responses_path.iterdir():
-                            if r.name.endswith("response.txt"):
-                                parsed = validate_json_string(file_to_string(r), schema)
-                                if subset not in stage_out.keys(): stage_out[subset] = []
-                                stage_out[subset].append(RequestOut(
-                                    text=file_to_string(r),
-                                    meta=None,
-                                    parsed=parsed
-                                ))
-                test_out[s] = StageOutput(stage=s, outputs=stage_out)
-            self.output[config_id].append(TestOutput(
-                id=config_id,
-                llm=llm,
-                replication=replication,
-                stage_outputs=test_out
-            ))
-        else:
-            log.info("OUTPUT: No outputs not found.")
-        return None
-    
-    def _check_batch(
-        self,
-        config_id: str,
-        llm_str: str,
-        llm_instance: BaseLLM,
-        stage: str
-    ):
-        log.info(f"OUTPUT: Checking if batch is complete.")
-        schema = lazy_import("models.irpd.schemas", f"Stage{stage}Schema")
-        batch_id = llm_instance._get_batch_id(batch_file=f"stage_{stage}_{llm_str}.jsonl")
-        batch_out = llm_instance.retreive_batch(
-            batch_id=batch_id,
-            schema=schema
-        )
-        
-        if isinstance(batch_out, BatchOut):
-            log.info(f"OUTPUT: Stage {stage} batch complete, storing outputs.")
-            stage_out = {}
-            for response in batch_out.responses:
-                id_list = response.response_id.split("-")
-                replication = int(id_list[0])
-                subset = id_list[1]
-                if subset not in stage_out.keys(): stage_out[subset] = []
-                stage_out[subset].append(response.response)
-            test_idx = self._output_indx(id=config_id, llm=llm_str, replication=replication)
-            stage_output = StageOutput(stage=stage, outputs=stage_out)
-            if isinstance(test_idx, int):
-                self.output[config_id][test_idx].stage_outputs.update({stage: stage_output})
-                return True
-            self.output[config_id].append(TestOutput(
-                id=config_id,
-                llm=llm_str,
-                replication=replication,
-                stage_outputs=stage_output
-            ))
-            return True
-        else:
-            log.info(f"OUTPUT: Stage {stage} batch is {batch_out}.")
-            return False
-    
-    def _batch_sent(self, test_path: Path, stage: str, llm_str: str):
-        batch_path = test_path / "_batches" / f"stage_{stage}_{llm_str}.jsonl"
-        return batch_path.exists()
-    
-    def _get_context(
-        self,
-        config: TestConfig,
-        llm: str,
-        replication: int
-    ):
-        test_idx = self._output_indx(id=config.id, llm=llm, replication=replication)
-        if isinstance(test_idx, int):
-            return self.output[config.id][test_idx]
-        else:
-            test_out = TestOutput(
-                id=config.id,
-                llm=llm,
-                replication=replication
-            )
-            self.output[config.id].append(test_out)
-        return None
+        return getattr(LLMModel, llm).get_llm_instance(config, print_response)
 
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
         pattern = re.compile(rf"{re.escape(prefix)}(\d+)")
-        return max(
-            map(int, (match.group(1) for p in directory.iterdir() if (match := pattern.match(p.name)))),
-            default=0
+        matches = (
+            match.group(1) for p in directory.iterdir()
+            if (match := pattern.match(p.name))
         )
+        return max(map(int, matches), default=0)
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
         if config_ids:
@@ -254,20 +82,6 @@ class IRPDBase(ABC):
             return {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
             return self.configs
-    
-    def _generate_batch_file(
-        self,
-        stage: str,
-        llm: str,
-        batch: List[dict],
-        test_path: Path
-    ):
-        batches_dir = test_path / "_batches"
-        create_directory(paths=batches_dir)
-        
-        jsonl_file_path = batches_dir / f"stage_{stage}_{llm}.jsonl"
-        write_jsonl(file_path=jsonl_file_path, json_obj=batch)
-        return jsonl_file_path
     
     def remove_configs(self, config_ids: Union[str, List[str]]):
         config_ids = to_list(config_ids)
@@ -292,6 +106,10 @@ class IRPDBase(ABC):
     
     @abstractmethod
     def _generate_configs(self):
+        pass
+    
+    @abstractmethod
+    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
         pass
     
     @abstractmethod

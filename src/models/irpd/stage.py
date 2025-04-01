@@ -8,8 +8,8 @@ from requests.exceptions import Timeout
 from models.prompts import Prompts
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
-from models.irpd.test_output import TestOutput
-from models.irpd.stage_output import StageOutput
+from models.irpd.outputs import TestOutput
+from models.irpd.outputs import StageOutput
 from models.llms.base_llm import BaseLLM
 from utils import (
     write_json, load_json, str_to_path, get_env_var,
