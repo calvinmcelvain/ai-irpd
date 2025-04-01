@@ -35,7 +35,7 @@ class IRPDBase(ABC):
         self.stages = to_list(stages)
         self.llms = to_list(llms)
         self.llm_configs = to_list(llm_configs)
-        self.test_paths = to_list(test_paths)
+        self.test_paths = to_list(test_paths or [])
         self.batch_request = batch
         
         assert N >= 1, "`N` must be greater than 0."
