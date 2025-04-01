@@ -38,7 +38,7 @@ class IRPDBase(ABC):
         self.test_paths = to_list(test_paths)
         self.batch_request = batch
         
-        assert N >= 1
+        assert N >= 1, "`N` must be greater than 0."
         self.replications = N
 
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
