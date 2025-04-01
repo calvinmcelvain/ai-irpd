@@ -51,6 +51,7 @@ class TestOutput:
         self.test_path = self.config.test_path
         self.llms = self.config.llms
         self.llm_config = self.config.llm_config
+        self.stages = self.config.stages
         self.total_replications = self.config.total_replications
         self.stage_outputs = {stage: [] for stage in self.config.stages}
     
@@ -62,7 +63,8 @@ class TestOutput:
         stage_output = self.stage_outputs[stage_name]
         for llm in self.llms:
             llm_outputs = [output for output in stage_output if output.llm_str == llm]
-            if len(llm_outputs) == self.total_replications:
+            total_outputs = len(llm_outputs) * len(self.stages)
+            if total_outputs == self.total_replications:
                 outputs_valid = all(output.output_validation(subsets) for output in llm_outputs)
                 if outputs_valid:
                     continue
