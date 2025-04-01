@@ -5,7 +5,6 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from utils import get_env_var, to_list, str_to_path
-from models.llm_model import LLMModel
 from models.irpd.test_config import TestConfig
 
 
@@ -58,14 +57,6 @@ class IRPDBase(ABC):
                 "test_paths must be the same length as the number of test configs."
             )
         return test_paths
-    
-    def _generate_llm_instance(
-        self,
-        llm: str,
-        config: str,
-        print_response: bool = False
-    ):
-        return getattr(LLMModel, llm).get_llm_instance(config, print_response)
 
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
