@@ -93,10 +93,16 @@ class IRPDBase(ABC):
         configs = to_list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
-                log.error(f"Test config {config} was not a TestConfig instance. Did not add.")
+                log.error(
+                    f"Test config {config} was not a TestConfig instance."
+                    " Did not add."
+                )
                 continue
             if config.test_type not in self._test_type:
-                log.error(f"Test config {config.test_id} was not correct test type. Did not add.")
+                log.error(
+                    f"Test config {config.test_id} was not correct test type."
+                    " Did not add."
+                )
                 continue
             self.configs[config.test_id] = config
 
