@@ -51,8 +51,8 @@ class IRPDTestClass(TestClassContainer, Enum):
         ras: Union[List[RAS], RAS],
         treatments: Union[List[TREATMENTS], TREATMENTS],
         stages: Union[List[STAGES], STAGES],
-        llms: Union[List[LLMS], LLMS] = "GPT_4O_1120",
-        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = "base",
+        llms: Union[List[LLMS], LLMS] = DEFAULTS["llms"],
+        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = DEFAULTS["llm_configs"],
         batch: bool = False,
         test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
         **kwargs
