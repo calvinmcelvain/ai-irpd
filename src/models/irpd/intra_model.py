@@ -8,6 +8,7 @@ from logger import clear_logger
 from utils import create_directory
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.test_config import TestConfig
+from models.irpd.outputs import TestOutput
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.stage import Stage
 
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class IntraModel(IRPDBase):
     def __init__(
-        self,
+        self, 
         cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
@@ -37,6 +38,7 @@ class IntraModel(IRPDBase):
             ras,
             treatments,
             stages,
+            N,
             llms,
             llm_configs,
             output_path,
@@ -45,9 +47,6 @@ class IntraModel(IRPDBase):
             test_paths,
             batch
         )
-        assert 0 < N, "`N` must be greater than 0."
-        self.replications = N
-        
         self.test_type = "cross_model"
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
@@ -78,6 +77,10 @@ class IntraModel(IRPDBase):
                 stages=self.stages
             )
             self.configs[config.id] = config
+            self.configs[config.id] = TestOutput(config)
+    
+    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
+        return Path(test_path / f"replication_{replication}")
     
     def run(
         self,
