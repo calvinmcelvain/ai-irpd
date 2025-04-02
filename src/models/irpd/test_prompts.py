@@ -30,6 +30,8 @@ class TestPrompts:
         self.config = test_config
         self.context = context
         
+        self.fixed = test_config.test_type in {"cross_model", "intra_model"}
+        
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
         self.prompts_path = str_to_path(prompt_path or get_env_var("PROMPTS_PATH"))
         self.sections_path = self.prompts_path / "sections"
@@ -178,8 +180,8 @@ class TestPrompts:
                     df["assigned_categories"] = str(assigned_cats)
             return df.to_dict("records")
             
-    def get_prompts(self, subset: str, case: str, fixed: bool = False) -> Prompts:
-        if fixed:
+    def get_prompts(self, subset: str, case: str) -> Prompts:
+        if self.fixed:
             return None
         system = self._construct_system_prompt(subset=subset)
         user = self._construct_user_prompt(subset=subset, case=case)
