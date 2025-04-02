@@ -76,6 +76,3 @@ class Subtest(IRPDBase):
             )
             self.configs[config.id] = config
             self.output[config.id] = TestOutput(config)
-    
-    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
-        return test_path

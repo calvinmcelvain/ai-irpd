@@ -80,9 +80,6 @@ class CrossModel(IRPDBase):
             self.configs[config.id] = TestOutput(config)
         return None
     
-    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
-        return Path(test_path / llm_str / f"replication_{replication}")
-    
     def run(
         self,
         max_instances: Optional[int] = None,

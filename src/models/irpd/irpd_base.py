@@ -107,10 +107,6 @@ class IRPDBase(ABC):
     def _generate_configs(self):
         pass
     
-    @abstractmethod
-    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
-        pass
-    
     def run(
         self,
         max_instances: Optional[int] = None,

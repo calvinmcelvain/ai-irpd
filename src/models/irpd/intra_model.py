@@ -79,9 +79,6 @@ class IntraModel(IRPDBase):
             self.configs[config.id] = config
             self.configs[config.id] = TestOutput(config)
     
-    def _generate_subpaths(self, test_path: Path, replication: int, llm_str: str):
-        return Path(test_path / f"replication_{replication}")
-    
     def run(
         self,
         max_instances: Optional[int] = None,
