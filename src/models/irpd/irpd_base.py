@@ -5,7 +5,9 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from utils import get_env_var, to_list, str_to_path
+from logger import clear_logger
 from models.irpd.test_config import TestConfig
+from models.irpd.test_runner import TestRunner
 
 
 log = logging.getLogger(__name__)
@@ -115,4 +117,9 @@ class IRPDBase(ABC):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
-        pass
+        clear_logger(app=False)
+        test_configs = self._get_test_configs(config_ids=config_ids)
+        
+        for config in test_configs.values():
+            self.configs[config.id].max_instances = config.max_instances = max_instances
+            test_runner = TestRunner(config, self._generate_subpaths, print_response)
