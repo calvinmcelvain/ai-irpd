@@ -1,13 +1,13 @@
 import logging
 import pandas as pd
 from pydantic import BaseModel
-from typing import Union, Optional
+from typing import Union
 from pathlib import Path
 
 from utils import get_env_var, file_to_string, str_to_path
 from models.prompts import Prompts
 from models.irpd.test_config import TestConfig
-from models.irpd.outputs import TestOutput
+from models.irpd.context import Context
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class TestPrompts:
         self,
         stage: str,
         test_config: TestConfig,
-        context: Optional[TestOutput],
+        context: Context,
         prompt_path: Union[str, Path] = None,
         data_path: Union[str, Path] = None
     ):
