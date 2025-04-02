@@ -29,7 +29,6 @@ class TestRunner:
         if len(self.llms) > 1: subpath = subpath / llm_str
         if self.total_replications > 1: subpath = subpath / f"replication_{N}"
         return subpath
-        
     
     def _generate_llm_instance(self, llm: str):
         return getattr(LLMModel, llm).get_llm_instance(
