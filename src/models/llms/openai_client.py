@@ -5,7 +5,7 @@ import random as r
 from abc import abstractmethod
 from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from openai import OpenAI
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletion
@@ -60,15 +60,14 @@ class OpenAIClient(BaseLLM):
         
     def _format_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
+        messages: List[Tuple[str, Prompts]],
         schema: BaseModel = None
     ):
         batch = []
-        for idx, message in enumerate(messages):
+        for message_id, message in messages:
             user = message.user
             system = message.system
-            batch_input = {"custom_id": message_ids[idx], "method": "POST", "url": "/v1/chat/completions"}
+            batch_input = {"custom_id": message_id, "method": "POST", "url": "/v1/chat/completions"}
             schema = type_to_response_format_param(schema)
             request_load = self._request_load(user, system, schema)
             batch_input.update({"body": request_load})
@@ -127,14 +126,13 @@ class OpenAIClient(BaseLLM):
     
     def request_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
+        messages: List[Tuple[str, Prompts]],
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):
         client = self.create_client()
         
-        formatted_batch = self._format_batch(messages, message_ids, schema)
+        formatted_batch = self._format_batch(messages, schema)
         
         save_batch = True if batch_file_path else False
         

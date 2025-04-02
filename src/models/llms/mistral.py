@@ -4,7 +4,7 @@ import time
 import random as r
 import mistralai
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from mistralai import ChatCompletionResponse
 from pydantic import BaseModel, Field
 from openai.lib._parsing._completions import type_to_response_format_param
@@ -63,15 +63,14 @@ class Mistral(BaseLLM):
     
     def _format_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
-        schema: Optional[BaseModel] = None
+        messages: List[Tuple[str, Prompts]],
+        schema: BaseModel = None
     ):
         batch = []
-        for idx, message in enumerate(messages):
+        for message_id, message in messages:
             user = message.user
             system = message.system
-            batch_input = {"custom_id": message_ids[idx]}
+            batch_input = {"custom_id": message_id}
             schema = type_to_response_format_param(schema)
             request_load = self._request_load(user, system, schema)
             batch_input.update({"body": request_load})
@@ -130,14 +129,13 @@ class Mistral(BaseLLM):
     
     def request_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
+        messages: List[Tuple[str, Prompts]],
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):
         client = self.create_client()
         
-        formatted_batch = self._format_batch(messages, message_ids, schema)
+        formatted_batch = self._format_batch(messages, schema)
         
         save_batch = True if batch_file_path else False
         

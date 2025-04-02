@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -75,9 +75,8 @@ class BaseLLM(ABC):
     
     def _format_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
-        schema: Optional[BaseModel] = None
+        messages: List[Tuple[str, Prompts]],
+        schema: BaseModel = None
     ):
         pass
     
@@ -91,8 +90,7 @@ class BaseLLM(ABC):
     
     def request_batch(
         self,
-        messages: List[Prompts],
-        message_ids: List[str],
+        messages: List[Tuple[str, Prompts]],
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):

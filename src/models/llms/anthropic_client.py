@@ -3,7 +3,7 @@ import time
 import json
 import random as r
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
@@ -60,16 +60,15 @@ class AnthropicClient(BaseLLM):
     def _format_batch(
         self,
         messages: List[Prompts],
-        message_ids: List[str],
         schema: Optional[BaseModel] = None
     ):
         batch = {"requests": []}
-        for idx, message in enumerate(messages):
+        for message_id, message in messages:
             user = message.user,
             system = message.system
             request_load = self._request_load(user, system, schema)
             batch["requests"].append(Request(
-                custom_id=message_ids[idx],
+                custom_id=message_id,
                 params=MessageCreateParamsNonStreaming(**request_load)
             ))
         return batch
@@ -127,13 +126,12 @@ class AnthropicClient(BaseLLM):
     def request_batch(
         self,
         messages: List[Prompts],
-        message_ids: List[str],
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
     ):
         client = self.create_client()
         
-        formatted_batch = self._format_batch(messages, message_ids, schema)
+        formatted_batch = self._format_batch(messages, schema)
         
         if batch_file_path:
             write_jsonl(batch_file_path, formatted_batch)
