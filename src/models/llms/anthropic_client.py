@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from abc import abstractmethod
 
 from utils import write_jsonl, load_jsonl
-from models.batch_out import BatchOut, BatchResponse
+from models.batch_output import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
