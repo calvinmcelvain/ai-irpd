@@ -36,10 +36,18 @@ class TestRunner:
         )
     
     def _run_batch(self):
+        # Need to be dynamic to some requests failing. Send new batch for failed
+        # requests. 
         pass
     
     def _run_completions(self):
-        pass
+        # this function should be be dynamic to the replications and/or llms
+        # that have already been run. check-in w/ the TestPrompts model &
+        # either the TestOutput or Context models.
+        return None
     
     def run(self):
-        pass
+        if self.batch_request:
+            self._run_batch()
+        else:
+            self._run_completions()
