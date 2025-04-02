@@ -58,7 +58,7 @@ class IntraModel(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        test_dir = self.output_path / "cross_model"
+        test_dir = self.output_path / self.test_type
         current_test = self._get_max_test_number(test_dir)
         test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths
