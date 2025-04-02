@@ -48,6 +48,8 @@ class Subtest(IRPDBase):
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
         
+        assert self.N == 1, "For test type 'test' or 'subtest', replications `N` must be equal to 1"
+        
         self.test_paths = self._generate_test_paths()
         self._generate_configs()
     
