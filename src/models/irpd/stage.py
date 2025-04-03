@@ -6,7 +6,7 @@ from pathlib import Path
 from requests.exceptions import Timeout
 
 from models.prompts import Prompts
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput
 from models.irpd.outputs import StageOutput

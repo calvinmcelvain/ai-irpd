@@ -6,7 +6,7 @@ from pathlib import Path
 from utils import to_list
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.outputs import TestOutput
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 
 
 log = logging.getLogger(__name__)

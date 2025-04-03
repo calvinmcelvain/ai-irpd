@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 
 
 

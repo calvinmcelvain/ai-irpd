@@ -5,7 +5,7 @@ from time import sleep
 from pathlib import Path
 
 from utils import lazy_import
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput
 from models.batch_output import BatchOut

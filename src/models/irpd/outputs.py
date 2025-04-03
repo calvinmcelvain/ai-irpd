@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from dataclasses import dataclass, field
 
 from utils import lazy_import, check_directories, validate_json, load_json, to_list
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 from models.request_output import RequestOut
 from models.irpd.test_meta import TestMeta
 from models.llm_model import LLMModel

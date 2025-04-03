@@ -6,7 +6,7 @@ from pathlib import Path
 from logger import clear_logger
 from utils import create_directory
 from models.irpd.irpd_base import IRPDBase
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.stage import Stage
 

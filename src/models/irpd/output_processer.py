@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from utils import txt_to_pdf
 from models.irpd.test_meta import TestMeta
 from models.irpd.outputs import TestOutput
-from models.irpd.test_config import TestConfig
+from models.irpd.test_configs import TestConfig
 
 
 log = logging.getLogger(__name__)
