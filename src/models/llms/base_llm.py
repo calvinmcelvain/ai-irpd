@@ -99,8 +99,7 @@ class BaseLLM(ABC):
     @abstractmethod
     def request(
         self,
-        user: str,
-        system: str,
+        prompts: Prompts,
         schema: Optional[BaseModel] = None,
         **kwargs
     ):

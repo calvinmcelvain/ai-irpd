@@ -153,9 +153,11 @@ class OpenAIClient(BaseLLM):
         
         return batch.id
     
-    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
+    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
+        user = prompts.user
+        system = prompts.system
         request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
