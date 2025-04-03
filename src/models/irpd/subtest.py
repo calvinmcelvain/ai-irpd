@@ -7,6 +7,7 @@ from utils import to_list
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.outputs import TestOutput
 from models.irpd.test_configs import TestConfig
+from models.irpd.managers import ConfigManager
 
 
 log = logging.getLogger(__name__)
@@ -62,6 +63,7 @@ class Subtest(IRPDBase):
         return test_paths
     
     def _generate_configs(self):
+        test_configs = {}
         for idx, prod in enumerate(self._prod):
             llm, llm_config, case, ra, treatment = prod
             config = TestConfig(
@@ -76,5 +78,6 @@ class Subtest(IRPDBase):
                 batches=self.batch_request,
                 total_replications=1
             )
-            self.configs[config.id] = config
-            self.output[config.id] = TestOutput(config)
+            test_configs[config.id] = config
+        self.configs = ConfigManager(test_configs)
+        return None

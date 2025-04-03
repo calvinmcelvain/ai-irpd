@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 
 from utils import get_env_var, to_list, str_to_path
 from logger import clear_logger
+from models.irpd.managers import ConfigManager, OutputManager
 from models.irpd.test_configs import TestConfig
 from models.irpd.test_runner import TestRunner
 
@@ -16,6 +17,9 @@ log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
+    configs: ConfigManager
+    outputs: OutputManager
+    
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -46,9 +50,6 @@ class IRPDBase(ABC):
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
-        
-        self.output = {}
-        self.configs = {}
     
     def _validate_test_paths(self):
         test_paths = [Path(path) for path in self.test_paths]
@@ -70,18 +71,15 @@ class IRPDBase(ABC):
         )
         return max(map(int, matches), default=0)
     
-    def _get_test_configs(self, config_ids: Union[str, List[str]]):
+    def _get_test_config_ids(self, config_ids: Union[str, List[str]]):
         if config_ids:
             config_ids = to_list(config_ids)
-            return {k: self.configs[k] for k in config_ids if k in self.configs}
+            return [
+                config_id for config_id in config_ids
+                if config_id in self.configs.test_configs.keys()
+            ]
         else:
-            return self.configs
-    
-    def remove_configs(self, config_ids: Union[str, List[str]]):
-        config_ids = to_list(config_ids)
-        for id in config_ids:
-            del self.configs[id]
-        return None
+            return self.configs.test_configs.keys()
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
         configs = to_list(configs)
@@ -98,7 +96,7 @@ class IRPDBase(ABC):
                     " Did not add."
                 )
                 continue
-            self.configs[config.test_id] = config
+            self.configs.add(config)
 
     @abstractmethod
     def _generate_test_paths(self):
@@ -115,9 +113,9 @@ class IRPDBase(ABC):
         print_response: bool = False
     ):
         clear_logger(app=False)
-        test_configs = self._get_test_configs(config_ids=config_ids)
+        test_config_ids = self._get_test_config_ids(config_ids=config_ids)
         
-        for config in test_configs.values():
-            self.configs[config.id].max_instances = config.max_instances = max_instances
-            test_runner = TestRunner(config, self._generate_subpaths, print_response)
-            self.output[config.id] = await test_runner.run()
+        for config_id in test_config_ids:
+            configs = self.configs.retrieve(config_id)
+            test_runner = TestRunner(configs, max_instances, print_response)
+            await test_runner.run()

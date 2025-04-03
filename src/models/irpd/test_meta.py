@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 
-from models.irpd.test_configs import TestConfig
+from models.irpd.test_configs import SubConfig
 
 
 
@@ -25,5 +25,5 @@ class StageInfo(BaseModel):
 
 class TestMeta(BaseModel):
     model_info: ModelInfo
-    test_info: TestConfig
+    sub_config: SubConfig
     stages: Dict[str, StageInfo]

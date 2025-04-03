@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from itertools import product
 from typing import List, Optional
 from pathlib import Path
 from uuid import uuid4
+
+from models.llms.base_llm import BaseLLM
 
 
 
@@ -15,30 +18,49 @@ class TestConfig:
     test_type: str
     test_path: Path
     stages: List[str]
+    batches: bool
+    total_replications: int
+    cases: List[str] = None
+    instance_types: List[str] = None
     max_instances: Optional[int] = None
     id: Optional[str] = None
     
     def __post_init__(self):
         self.id = uuid4().hex
-
+        self.cases = self.case.split("_")
+        
+        if self.case in {"uni", "uniresp"}:
+            self.instance_types = ["ucoop", "udef"]
+        else:
+            self.instance_types =["coop", "def"]
+    
 
 @dataclass
 class SubConfig(TestConfig):
     sub_path: Path
     llm: str
-    batches: bool
-    total_replications: int
+    llm_instance: BaseLLM
+    replication: int
     
+    def __post_init__(self):
+        self.batches = self.llm_instance.batches
+
     
 @dataclass
 class StageConfig(SubConfig):
     stage_name: str
+    subsets: List[str] = None
+    stage_path: Path = None
     prompts_path: Path = None
     responses_path: Path = None
     
     def __post_init__(self):
-        stage_path = self.sub_path / f"stage_{self.stage_name}"
-        self.prompts_path = stage_path / "prompts"
-        self.responses_path = stage_path / "responses"
+        self.stage_path = self.sub_path / f"stage_{self.stage_name}"
+        self.prompts_path = self.stage_path / "prompts"
+        self.responses_path = self.stage_path / "responses"
+        self.subsets = ["full"]
+        
+        if self.stage_name in {"1", "1r"}:
+            self.subsets += [f"{c}_{i}" for c, i in product(self.cases, self.instance_types)]
     
     

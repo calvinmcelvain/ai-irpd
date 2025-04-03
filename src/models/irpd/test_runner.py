@@ -1,11 +1,12 @@
 import logging
 import asyncio
+from typing import List, Optional
 from itertools import product
 from time import sleep
 from pathlib import Path
 
 from utils import lazy_import
-from models.irpd.test_configs import TestConfig
+from models.irpd.test_configs import StageConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput
 from models.batch_output import BatchOut
@@ -22,53 +23,19 @@ log = logging.getLogger(__name__)
 class TestRunner:
     def __init__(
         self,
-        config: TestConfig,
+        configs: List[StageConfig],
         output: TestOutput,
+        max_instances: Optional[int] = None,
         print_response: bool = False
     ):
-        self.config = config
-        self.case = config.case
-        self.cases = config.case.split("_")
-        self.stages = config.stages
-        self.batch_request = config.batches
-        self.llm_config = config.llm_config
-        self.test_path = config.test_path
-        self.total_replications = config.total_replications
-        self.replications = config.total_replications
-        self.llms = config.llms
+        self.configs = configs
         self.output = output
-        self.output_processor = OutputProcesser(config)
+        self.max_instances = max_instances
         self.print_response = print_response
-    
-    @staticmethod
-    def _get_instance_types(case: str):
-        if case in {"uni", "uniresp"}:
-            return ["ucoop", "udef"]
-        return ["coop", "def"]
     
     @staticmethod
     def _get_stage_schema(stage: str):
         return lazy_import("models.irpd.schemas", f"Stage{stage}Schema")
-    
-    def _get_subsets(self, stage: str):
-        if stage in {"1c", "2", "3"}:
-            return ["full"]
-        subsets = [
-            f"{c}_{i}" for c in self.cases
-            for i in self._get_instance_types(c)
-        ]
-        return subsets + ["full"]
-        
-    def _generate_subpath(self, N: int, llm_str: str):
-        subpath = self.test_path
-        if len(self.llms) > 1: subpath = subpath / llm_str
-        if self.total_replications > 1: subpath = subpath / f"replication_{N}"
-        return Path(subpath)
-    
-    def _generate_llm_instance(self, llm: str):
-        return getattr(LLMModel, llm).get_llm_instance(
-            self.llm_config, self.print_response
-        )
     
     def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         prompt_id = f"{n}-{subset}"
