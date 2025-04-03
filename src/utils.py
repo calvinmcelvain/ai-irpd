@@ -36,7 +36,7 @@ def get_env_var(key: str) -> str:
     return value
 
 
-def to_list(value: Union[str, list]) -> list:
+def to_list(value: Union[object, list]) -> list:
     """
     Returns list containing string.
     """
