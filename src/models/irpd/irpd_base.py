@@ -1,5 +1,6 @@
 import re
 import logging
+import asyncio
 from typing import List, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
@@ -107,7 +108,7 @@ class IRPDBase(ABC):
     def _generate_configs(self):
         pass
     
-    def run(
+    async def run(
         self,
         max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
@@ -119,3 +120,4 @@ class IRPDBase(ABC):
         for config in test_configs.values():
             self.configs[config.id].max_instances = config.max_instances = max_instances
             test_runner = TestRunner(config, self._generate_subpaths, print_response)
+            await test_runner.run()

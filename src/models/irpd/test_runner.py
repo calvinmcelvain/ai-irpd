@@ -1,10 +1,16 @@
 import logging
+import asyncio
+from itertools import product
+from time import sleep
 from pathlib import Path
 
+from utils import lazy_import
 from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput
+from models.batch_output import BatchOut
 from models.llm_model import LLMModel
+from models.llms.base_llm import BaseLLM
 
 
 log = logging.getLogger(__name__)
@@ -37,6 +43,10 @@ class TestRunner:
             return ["ucoop", "udef"]
         return ["coop", "def"]
     
+    @staticmethod
+    def _get_stage_schema(stage: str):
+        return lazy_import("models.irpd.schemas", f"Stage{stage}Schema")
+    
     def _get_subsets(self, stage: str):
         if stage in {"1c", "2", "3"}:
             return ["full"]
@@ -56,39 +66,80 @@ class TestRunner:
         return getattr(LLMModel, llm).get_llm_instance(
             self.llm_config, self.print_response
         )
+    
+    def _prompt_id(self, stage: str, subset: str, n: int):
+        prompt_id = f"{n}-{subset}"
+        if stage in {"2", "3"}:
+            prompt_id += f"-{self.user["window_number"]}"
+        return prompt_id
         
-    def _generate_prompts(self, stage: str, llm: str):
+    def _compose_prompts(self, stage: str, llm: str):
         subsets = self._get_subsets(stage)
         prompts = []
-        prompt_ids = []
-        for n in range(1, self.total_replications + 1):
-            for subset in subsets:
-                subpath = self._generate_subpath(n, llm)
-                complete = self.output.check_output(subpath, llm, n, stage)
-                if not complete:
-                    context = self.output.retrieve(stage, llm, n, subset)
-                    test_prompts = TestPrompts(stage, self.config, context)
-                    # Need to fix TestPrompts so that the fixed argument is
-                    # determined by the test type from the config passed on 
-                    # initialization. Also, it should return a list already.
-                    # A list for each user prompt. Zip list by id.
-                    prompts.append(test_prompts.get_prompts(subset, self.case))
-                    prompt_ids.append()
-        return
+        for n, subset in product(range(1, self.total_replications + 1), subsets):
+            subpath = self._generate_subpath(n, llm)
+            complete = self.output.check_output(subpath, llm, n, stage)
+            if not complete:
+                context = self.output.retrieve(stage, llm, n, subset)
+                test_prompts = TestPrompts(stage, self.config, context)
+                prompts.append((
+                    self._prompt_id(stage, subset, n),
+                    test_prompts.get_prompts(subset, self.case)
+                ))
+        return prompts
     
-    def _run_batch(self):
-        # Need to be dynamic to some requests failing. Send new batch for failed
-        # requests. 
-        pass
-    
-    def _run_completions(self):
-        # this function should be be dynamic to the replications and/or llms
-        # that have already been run. check-in w/ the TestPrompts model &
-        # either the TestOutput or Context models.
+    async def _run_batch(self, stage: str, llm: str):
+        llm_instance: BaseLLM = self._generate_llm_instance(llm)
+        prompts = self._compose_prompts(stage, llm)
+        schema = self._get_stage_schema(stage)
+        
+        if prompts:
+            batch_file_path = self.test_path / "_batches" / f"stage_1_{llm}.jsonl"
+            batch_id = llm_instance.request_batch(prompts, schema, batch_file_path)
+            
+            batch_complete = False
+            while not batch_complete:
+                batch_response = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
+                if batch_response:
+                    batch_response: BatchOut
+                    batch_complete = True
+                    for r in batch_response.responses:
+                        response_id  = r.response_id
+                        response = r.response
+                
+                        id_split = response_id.split("-")
+                        replication = id_split[0]
+                        subset = id_split[1]
+                        
+                        self.output.store(stage, llm, replication, subset, response)
+                else:
+                    sleep(10)
         return None
     
-    def run(self):
-        if self.batch_request:
-            self._run_batch()
-        else:
-            self._run_completions()
+    async def _run_completions(self, stage: str, llm: str):
+        llm_instance: BaseLLM = self._generate_llm_instance(llm)
+        prompts = self._compose_prompts(stage, llm)
+        schema = self._get_stage_schema(stage)
+        
+        if prompts:
+            for i in prompts:
+                prompt_id, prompt = i
+                
+                id_split = prompt_id.split("-")
+                replication = id_split[0]
+                subset = id_split[1]
+                
+                output = llm_instance.request(prompt, schema)
+                
+                self.output.store(stage, llm, replication, subset, output)
+        return None
+    
+    async def run(self):
+        for stage in self.stages:
+            tasks = []
+            for llm in self.llms:
+                if self.batch_request:
+                    tasks.append(self._run_batch(stage, llm))
+                else:
+                    tasks.append(self._run_completions(stage, llm))
+            await asyncio.gather(*tasks)

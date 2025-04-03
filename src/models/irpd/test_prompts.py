@@ -131,7 +131,8 @@ class TestPrompts:
                 for k in context.keys():
                     categories = self._get_att(context.get(k)[0].parsed)
                     prompt += self._categories_to_txt(categories)
-        return prompt
+        self.user = prompt
+        return None
     
     def _construct_user_prompt(self, subset: str, case: str):
         summary_path = self.data_path / "ra_summaries.csv"
@@ -154,18 +155,18 @@ class TestPrompts:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
         if self.stage == "1":
-            return [df.to_dict("records")]
+            self.user = [df.to_dict("records")]
         if self.stage == "1r":
             context = self.context.stage_outputs
             categories = context.get("1").outputs.get(subset)[0].parsed
-            return [self._categories_to_txt(self._get_att(categories))]
+            self.user = [self._categories_to_txt(self._get_att(categories))]
         if self.stage == "1c":
             prompt = ""
             context = self.context.stage_outputs.get("1r").outputs
             for k in context.keys():
                 categories = self._get_att(context.get(k)[0].parsed)
                 prompt += self._categories_to_txt(categories)
-            return [prompt]
+            self.user = [prompt]
         if self.stage in {"2", "3"}:
             if self.config.max_instances:
                 df = df[:self.config.max_instances]
@@ -178,13 +179,12 @@ class TestPrompts:
                 for r in stage_2:
                     assigned_cats = [c.category_name for c in r.parsed.assigned_categories]
                     df["assigned_categories"] = str(assigned_cats)
-            return df.to_dict("records")
+            self.user = df.to_dict("records")
+        return None
             
     def get_prompts(self, subset: str, case: str) -> Prompts:
         if self.fixed:
             return None
-        system = self._construct_system_prompt(subset=subset)
-        user = self._construct_user_prompt(subset=subset, case=case)
-        return Prompts(system=system, user=user)
-        
-        
+        self._construct_system_prompt(subset=subset)
+        self._construct_user_prompt(subset=subset, case=case)
+        return [Prompts(system=self.system, user=user) for user in self.user]
