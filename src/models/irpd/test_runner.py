@@ -9,8 +9,10 @@ from models.irpd.test_config import TestConfig
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput
 from models.batch_output import BatchOut
+from models.request_output import RequestOut
 from models.llm_model import LLMModel
 from models.llms.base_llm import BaseLLM
+from models.irpd.output_processer import OutputProcesser
 
 
 log = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ class TestRunner:
         self.replications = config.total_replications
         self.llms = config.llms
         self.output = output
+        self.output_processor = OutputProcesser(config)
         self.print_response = print_response
     
     @staticmethod
@@ -67,26 +70,26 @@ class TestRunner:
             self.llm_config, self.print_response
         )
     
-    def _prompt_id(self, stage: str, subset: str, n: int):
+    def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         prompt_id = f"{n}-{subset}"
         if stage in {"2", "3"}:
-            prompt_id += f"-{self.user["window_number"]}"
+            prompt_id += f"-{user["window_number"]}"
         return prompt_id
         
     def _compose_prompts(self, stage: str, llm: str):
         subsets = self._get_subsets(stage)
-        prompts = []
+        aggregated_prompts = []
         for n, subset in product(range(1, self.total_replications + 1), subsets):
             subpath = self._generate_subpath(n, llm)
             complete = self.output.check_output(subpath, llm, n, stage)
             if not complete:
-                context = self.output.retrieve(stage, llm, n, subset)
-                test_prompts = TestPrompts(stage, self.config, context)
-                prompts.append((
-                    self._prompt_id(stage, subset, n),
-                    test_prompts.get_prompts(subset, self.case)
-                ))
-        return prompts
+                test_prompts = TestPrompts(stage, n, subset, llm, self.config, self.output)
+                prompts = [
+                    (self._prompt_id(stage, subset, n, prompt.user), prompt)
+                    for prompt in test_prompts.get_prompts()
+                ]
+                aggregated_prompts.extend(prompts)
+        return aggregated_prompts
     
     async def _run_batch(self, stage: str, llm: str):
         llm_instance: BaseLLM = self._generate_llm_instance(llm)
@@ -100,8 +103,7 @@ class TestRunner:
             batch_complete = False
             while not batch_complete:
                 batch_response = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
-                if batch_response:
-                    batch_response: BatchOut
+                if isinstance(batch_response, BatchOut):
                     batch_complete = True
                     for r in batch_response.responses:
                         response_id  = r.response_id
@@ -129,7 +131,7 @@ class TestRunner:
                 replication = id_split[0]
                 subset = id_split[1]
                 
-                output = llm_instance.request(prompt, schema)
+                output: RequestOut = llm_instance.request(prompt, schema)
                 
                 self.output.store(stage, llm, replication, subset, output)
         return None
@@ -143,3 +145,4 @@ class TestRunner:
                 else:
                     tasks.append(self._run_completions(stage, llm))
             await asyncio.gather(*tasks)
+        return self.output

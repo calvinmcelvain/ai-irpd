@@ -120,4 +120,4 @@ class IRPDBase(ABC):
         for config in test_configs.values():
             self.configs[config.id].max_instances = config.max_instances = max_instances
             test_runner = TestRunner(config, self._generate_subpaths, print_response)
-            await test_runner.run()
+            self.output[config.id] = await test_runner.run()

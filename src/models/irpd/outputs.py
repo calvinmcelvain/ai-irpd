@@ -22,9 +22,6 @@ class StageOutput:
     replication: int
     outputs: Dict[str, List[RequestOut]] = field(default_factory=dict)
     
-    def output_validation(self, subsets: List[str]):
-        return all(subset in self.outputs and self.outputs[subset] for subset in subsets)
-    
     def store(self, subset: str, outputs: Union[RequestOut, List[RequestOut]]):
         if self.outputs[subset]:
             self.outputs[subset].extend(to_list(outputs))
@@ -71,32 +68,6 @@ class TestOutput:
             stage_output.store(subset, outputs)
             self.stage_outputs[stage_name].append(stage_output)
         return None
-    
-    def output_validation(
-        self,
-        stage_name: str,
-        llm: str,
-        subsets: List[str]
-    ):
-        stage_output = self.stage_outputs[stage_name]
-        llm_outputs = [output for output in stage_output if output.llm_str == llm]
-        total_outputs = len(llm_outputs) * len(self.stages)
-        if total_outputs == self.total_replications:
-            outputs_valid = all(output.output_validation(subsets) for output in llm_outputs)
-            if outputs_valid:
-                return True
-            log.warning(
-                "OUTPUT: Not all subsets for some replications in"
-                f"{llm} test config {self.id} are complete."
-                "Output validation failed."
-            )
-            return False
-        else:
-            log.warning(
-                f"OUTPUT: Replications for {llm} in test config {self.id}"
-                f" are not complete. Output validation failed."
-            )
-            return False
     
     def retrieve(
         self,
