@@ -37,7 +37,7 @@ class TestConfig:
 @dataclass
 class SubConfig(TestConfig):
     sub_path: Path
-    llm: str
+    llm_str: str
     llm_instance: BaseLLM
     replication: int
     

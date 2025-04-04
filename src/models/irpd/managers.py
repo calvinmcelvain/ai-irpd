@@ -21,7 +21,7 @@ class ConfigManager:
             SubConfig(
                 **vars(self.test_config),
                 sub_path=self._generate_subpath(n, llm_str),
-                llm=llm_str,
+                llm_str=llm_str,
                 llm_instance=self._generate_llm_instance(llm_str),
                 replication=n
             ) for llm_str, n in prod
@@ -64,7 +64,7 @@ class ConfigManager:
     ):
         configs = self.stage_configs
         if llm_str:
-            configs = filter(lambda config: config.llm == llm_str, configs)
+            configs = filter(lambda config: config.llm_str == llm_str, configs)
         if N is not None:
             configs = filter(lambda config: config.replication == N, configs)
         if stage_name:
@@ -78,6 +78,13 @@ class ConfigManager:
 class OutputManager:
     def __init__(self, test_config: TestConfig):
         self.test_output = TestOutput(test_config)
+        self.config_manager = ConfigManager(test_config)
+        self.sub_outputs = None
+        
+    def _initialize_sub_outputs(self):
+        sub_outputs = [
+            SubOutput(sub_config=sub_config, llm_str=sub_config.llm)
+        ]
     
     def store(
         self,
