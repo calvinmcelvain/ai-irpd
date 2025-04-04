@@ -15,7 +15,7 @@ class StageOutput:
     stage_config: StageConfig
     stage_name: str
     subset: str
-    stage_outputs: List[RequestOut] = field(default_factory=list)
+    outputs: List[RequestOut] = field(default_factory=list)
     complete: bool = False
 
 
@@ -24,7 +24,7 @@ class SubOutput:
     sub_config: SubConfig
     llm_str: str
     replication: int
-    sub_outputs: List[StageOutput] = field(default_factory=list)
+    stage_outputs: List[StageOutput] = field(default_factory=list)
     complete: bool = False
 
 
