@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import List
 from dataclasses import dataclass, field
 
 from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
