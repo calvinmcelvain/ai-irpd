@@ -2,10 +2,10 @@ import logging
 import pandas as pd
 from pydantic import BaseModel
 
-from utils import get_env_var, file_to_string, str_to_path
+from utils import file_to_string
 from models.prompts import Prompts
-from models.irpd.test_configs import TestConfig
-from models.irpd.outputs import TestOutput
+from models.irpd.test_configs import StageConfig
+from models.irpd.managers import OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -15,29 +15,31 @@ log = logging.getLogger(__name__)
 class TestPrompts:
     def __init__(
         self,
-        stage: str,
-        replication: int,
-        subset: str,
-        llm: str,
-        test_config: TestConfig,
-        context: TestOutput
+        stage_config: StageConfig,
+        output_manager: OutputManager
     ):
-        self.stage = stage
-        self.replication = replication
-        self.subset = subset
-        self.llm = llm
-        self.case = test_config.case
-        self.treatment = test_config.treatment
-        self.ra = test_config.ra
-        self.config = test_config
-        self.context = context
+        self.stage = stage_config.stage_name
+        self.replication = stage_config.replication
+        self.subset = stage_config.subset
+        self.llm_str = stage_config.llm_str
+        self.case = stage_config.case
+        self.cases = stage_config.cases
+        self.treatment = stage_config.treatment
+        self.ra = stage_config.ra
+        self.stage_config = stage_config
+        self.output_manager = output_manager
         
-        self.fixed = test_config.test_type in {"cross_model", "intra_model"}
+        self.fixed = stage_config.test_type in {"cross_model", "intra_model"}
         
-        self.data_path = str_to_path(get_env_var("DATA_PATH"))
-        self.prompts_path = str_to_path(get_env_var("PROMPTS_PATH"))
+        self.data_path = stage_config.data_path
+        self.prompts_path = stage_config.prompts_path
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
+        
+        self._construct_system_prompt()
+        self._construct_user_prompt()
+        
+        self.expected_outputs = len(self.user)
     
     @staticmethod
     def _get_section(section_path, name):
@@ -76,7 +78,7 @@ class TestPrompts:
         if self.subset == "full":
             subset_path = stage_path / "instance_type"
             section += file_to_string(subset_path / "initial.md")
-            for case in self.case.split("_"):
+            for case in self.cases:
                 section += file_to_string(subset_path / f"{case}.md")
         if self.stage in {"3"}:
             section += file_to_string(stage_path / f"assignment.md")
@@ -129,33 +131,37 @@ class TestPrompts:
             prompt += self._data_definitions()
             if self.stage in {"2", "3"}:
                 prompt += "\n\n## Categories\n\n"
-                context = self.context.retrieve("1c", self.llm, self.replication, "full")
-                if context:
-                    categories = self._get_att(context[0].parsed)
-                    prompt += self._categories_to_txt(categories)
+                if "1c" in self.stage_config.stages:
+                    context = self.output_manager.retrieve(
+                        self.llm_str, self.replication, "1c", "full"
+                    )
                 else:
-                    context = self.context.retrieve("1r", self.llm, self.replication)
-                    for k in context.keys():
-                        categories = self._get_att(context[k][0].parsed)
-                        prompt += self._categories_to_txt(categories)
+                    context = self.output_manager.retrieve(
+                        self.llm_str, self.replication, "1r"
+                    )
+                for output in context:
+                    categories = self._get_att(output.outputs[0].parsed)
+                    prompt += self._categories_to_txt(categories)
         self.user = prompt
         return None
     
     def _construct_user_prompt(self):
         summary_path = self.data_path / "ra_summaries.csv"
-        cases = [c for c in self.case.split("_")]
-        if {"0"} not in self.config.stages:
+        if "0" not in self.stage_config.stages:
             df = pd.read_csv(summary_path)
-            df = df[(df["case"].isin(cases))]
+            df = df[(df["case"].isin(self.cases))]
             if self.treatment != "merged":
                 df = df[(df["treatment"] == self.treatment)]
             if self.ra != "both":
-                ra_cols = [c for c in df.columns if c.startswith("summary_") and c != f"summary_{self.ra}"]
+                ra_cols = [
+                    c for c in df.columns
+                    if c.startswith("summary_") and c != f"summary_{self.ra}"
+                ]
                 df = df.drop(columns=ra_cols)
             if self.subset != "full":
                 df = df.drop(columns=["instance_type"])
                 df = df[(df["subset"] == self.subset)]
-            df = df[(df["case"].isin(cases))]
+            df = df[(df["case"].isin(self.cases))]
             df = df.drop(columns=["case", "treatment", "subset"])
         else:
             log.error("Stage 0 has not been setup yet for prompts.")
@@ -163,32 +169,38 @@ class TestPrompts:
         if self.stage == "1":
             self.user = [df.to_dict("records")]
         if self.stage == "1r":
-            context = self.context.retrieve("1", self.llm, self.replication, self.subset)
-            categories = context[0].parsed
+            context = self.output_manager.retrieve(
+                self.llm_str, self.replication, "1", self.subset
+            )
+            categories = context[0].outputs[0].parsed
             self.user = [self._categories_to_txt(self._get_att(categories))]
         if self.stage == "1c":
             prompt = ""
-            context = self.context.retrieve("1r", self.llm, self.replication)
-            for k in context.keys():
-                categories = self._get_att(context[k][0].parsed)
+            context = self.output_manager.retrieve(self.llm, self.replication, "1r")
+            for output in context:
+                categories = self._get_att(output.outputs[0].parsed)
                 prompt += self._categories_to_txt(categories)
             self.user = [prompt]
         if self.stage in {"2", "3"}:
-            if self.config.max_instances:
-                df = df[:self.config.max_instances]
-            if self.stage in self.context.stage_outputs.keys():
-                context = self.context.retrieve(self.stage, self.llm, self.replication, self.subset)
-                window_nums = [r.parsed.window_number for r in context]
+            current_outputs = self.output_manager.retrieve(
+                self.llm_str, self.replication, self.stage, self.subset
+            )
+            if self.stage_config.max_instances:
+                df = df[:self.stage_config.max_instances]
+            if self.stage in current_outputs.outputs:
+                window_nums = [output.parsed.window_number for output in current_outputs.outputs]
                 df = df[~df["window_number"].isin(window_nums)]
             if self.stage in {"3"}:
-                stage_2 = self.context.retrieve("2", self.llm, self.replication, self.subset)
-                for r in stage_2:
-                    assigned_cats = [c.category_name for c in r.parsed.assigned_categories]
+                stage_2 = self.output_manager.retrieve(
+                    self.llm_str, self.replication, "2", self.subset
+                )
+                for output in stage_2.outputs:
+                    assigned_cats = [cat.category_name for cat in output.parsed.assigned_categories]
                     df["assigned_categories"] = str(assigned_cats)
             self.user = df.to_dict("records")
         return None
-            
-    def get_prompts(self) -> Prompts:
+    
+    def get_prompts(self):
         if self.fixed:
             return None
         self._construct_system_prompt()
