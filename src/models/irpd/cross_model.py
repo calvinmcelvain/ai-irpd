@@ -1,17 +1,11 @@
 import logging
-from time import sleep
 from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
 
-from logger import clear_logger
-from utils import create_directory
 from models.irpd.irpd_base import IRPDBase
-from models.irpd.outputs import TestOutput
 from models.irpd.test_configs import TestConfig
-from models.irpd.test_prompts import TestPrompts
-from models.irpd.managers import ConfigManager
-from models.irpd.stage import Stage
+from models.irpd.managers import ConfigManager, OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -78,5 +72,6 @@ class CrossModel(IRPDBase):
                 stages=self.stages
             )
             self.configs[config.id] = ConfigManager(config)
+            self.outputs[config.id] = OutputManager(config)
         return None
     

@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -8,6 +8,7 @@ from utils import get_env_var, to_list, str_to_path
 from logger import clear_logger
 from models.irpd.test_configs import TestConfig
 from models.irpd.test_runner import TestRunner
+from models.irpd.managers import ConfigManager, OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -15,6 +16,9 @@ log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
+    configs: Dict[str, ConfigManager]
+    outputs: Dict[str, OutputManager]
+    
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -45,9 +49,6 @@ class IRPDBase(ABC):
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
-        
-        self.configs = {}
-        self.outputs = {}
     
     def _validate_test_paths(self):
         test_paths = [Path(path) for path in self.test_paths]

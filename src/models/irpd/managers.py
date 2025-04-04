@@ -76,8 +76,8 @@ class ConfigManager:
 
 
 class OutputManager:
-    def __init__(self):
-        pass
+    def __init__(self, test_config: TestConfig):
+        self.test_output = TestOutput(test_config)
     
     def store(
         self,
