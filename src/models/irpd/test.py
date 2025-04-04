@@ -76,6 +76,8 @@ class Test(IRPDBase):
                 llm_config=llm_config,
                 test_type=self.test_type,
                 test_path=self.test_paths[idx],
+                data_path=self.data_path,
+                prompts_path=self.prompts_path,
                 stages=self.stages,
                 batches=self.batch_request,
                 total_replications=1

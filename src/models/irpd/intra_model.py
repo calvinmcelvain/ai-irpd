@@ -68,7 +68,10 @@ class IntraModel(IRPDBase):
                 llms=llm,
                 llm_config=llm_config,
                 test_type=self.test_type,
+                data_path=self.data_path,
+                prompts_path=self.prompts_path,
                 test_path=self.test_paths[idx],
+                batches=self.batch_request,
                 stages=self.stages
             )
             self.configs[config.id] = ConfigManager(config)
