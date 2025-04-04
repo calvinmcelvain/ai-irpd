@@ -3,7 +3,6 @@ from itertools import product
 from typing import Union, Optional, List
 from pathlib import Path
 
-from utils import to_list
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.test_configs import TestConfig
 from models.irpd.managers import ConfigManager, OutputManager
@@ -70,7 +69,7 @@ class Subtest(IRPDBase):
                 case=case,
                 ra=ra,
                 treatment=treatment,
-                llms=to_list(llm),
+                llms=list(llm),
                 llm_config=llm_config,
                 test_type=self.test_type,
                 max_instances=self.max_instances,

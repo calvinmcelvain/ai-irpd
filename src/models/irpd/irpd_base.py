@@ -4,7 +4,7 @@ from typing import List, Optional, Union, Dict
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from utils import get_env_var, to_list, str_to_path
+from utils import get_env_var
 from logger import clear_logger
 from models.irpd.test_configs import TestConfig
 from models.irpd.test_runner import TestRunner
@@ -35,13 +35,13 @@ class IRPDBase(ABC):
         test_paths: Optional[List[str]] = None,
         batch: bool = False
     ):
-        self.cases = to_list(cases)
-        self.ras = to_list(ras)
-        self.treatments = to_list(treatments)
-        self.stages = to_list(stages)
-        self.llms = to_list(llms)
-        self.llm_configs = to_list(llm_configs)
-        self.test_paths = to_list(test_paths or [])
+        self.cases = list(cases)
+        self.ras = list(ras)
+        self.treatments = list(treatments)
+        self.stages = list(stages)
+        self.llms = list(llms)
+        self.llm_configs = list(llm_configs)
+        self.test_paths = list(test_paths or [])
         self.batch_request = batch
         
         if max_instances:
@@ -51,9 +51,9 @@ class IRPDBase(ABC):
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
 
-        self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
-        self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
-        self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
+        self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
+        self.prompts_path = Path(prompts_path or get_env_var("PROMPTS_PATH"))
+        self.data_path = Path(data_path or get_env_var("DATA_PATH"))
     
     def _validate_test_paths(self):
         test_paths = [Path(path) for path in self.test_paths]
@@ -77,12 +77,12 @@ class IRPDBase(ABC):
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
         if config_ids:
-            config_ids = set(to_list(config_ids))
-            return to_list(filter(lambda config: config.test_id in config_ids, self.configs.values()))
-        return to_list(self.configs.values())
+            config_ids = set(list(config_ids))
+            return list(filter(lambda config: config.test_id in config_ids, self.configs.values()))
+        return list(self.configs.values())
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
-        configs = to_list(configs)
+        configs = list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
                 log.error(
