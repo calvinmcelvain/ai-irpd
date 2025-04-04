@@ -1,13 +1,11 @@
 import re
 import logging
-import asyncio
 from typing import List, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 
 from utils import get_env_var, to_list, str_to_path
 from logger import clear_logger
-from models.irpd.managers import ConfigManager, OutputManager
 from models.irpd.test_configs import TestConfig
 from models.irpd.test_runner import TestRunner
 
