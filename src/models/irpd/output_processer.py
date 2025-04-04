@@ -4,9 +4,9 @@ from typing import List
 from pathlib import Path
 from pydantic import BaseModel
 
-from utils import txt_to_pdf
+from utils import txt_to_pdf, loade_json_n_validate, write_json
 from tools.functions import categories_to_txt, instance_types, output_attrb
-from models.irpd.test_meta import TestMeta
+from models.irpd.test_meta import TestMeta, ModelInfo, StageTokens, StageInfo
 from models.irpd.outputs import SubOutput, StageOutput
 
 
@@ -25,7 +25,8 @@ class OutputProcesser:
         self.data_path = sub_output.sub_config.data_path
         self.stages = sub_output.sub_config.stages
         self.llm_instance = sub_output.sub_config.llm_instance
-        self.batch_id = sub
+        self.batch_id = sub_output.batch_id
+        self.subsets = list(set(output.subset for output in sub_output.stage_outputs))
     
     def _build_categories_pdf(self, stage_name: str, stage_outputs: List[StageOutput]):
         pdf = f"# Stage {stage_name} Categories\n\n"
@@ -75,57 +76,59 @@ class OutputProcesser:
         df.to_csv(self.sub_path / f"_stage_{stage_name}_final.csv", index=False)
         return None
     
-    def _stage_info(self, stage_name: str, stage_outputs: List[StageOutput]):
+    def _stage_info(
+        self,
+        stage_outputs: List[StageOutput], 
+        stage_name: str,
+        meta: TestMeta
+    ):
         last_subset = stage_outputs[len(stage_outputs) - 1].outputs
-        last_output = last_subset[len(last_subset)].meta
+        last_time_stamp = last_subset[len(last_subset)].meta.created
         
-        stage_tokens = {}
+        stage_info = meta.stages[stage_name]
+        stage_info.created = last_time_stamp
+        stage_info.subsets = self.subsets
+        stage_info.batch_id = self.batch_id
         
-        subsets = list(set(output.subset for output in stage_outputs))
-        for subset in subsets:
-            subset_outputs: List[StageOutput] = list(
-                filter(lambda output: output.subset == subset, stage_outputs)
-            )
+        for output in stage_outputs:
+            input_tokens = sum([t.meta.input_tokens for t in output.outputs])
+            output_tokens = sum([t.meta.output_tokens for t in output.outputs])
+            total_tokens = input_tokens + output_tokens
             
-            outputs = []
-            for output in subset_outputs:
-                outputs.extend(output.outputs)
+            stage_info_tokens = stage_info.tokens[output.subset]
+            stage_info_tokens.input_tokens += input_tokens
+            stage_info_tokens.output_tokens += output_tokens
+            stage_info_tokens.total_tokens += total_tokens
+        return meta
             
-            input_tokens = sum(
-                [output.meta.input_tokens for output in outputs if output.meta]
-            )
-            output_tokens = sum(
-                [output.meta.output_tokens for output in outputs if output.meta]
-            )
-            
-            stage_tokens[subset] = {
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": input_tokens + output_tokens
-            }
+    def _write_meta(self, stage_name: str, stage_outputs: List[StageOutput]):
+        meta_path = self.sub_path / "_test_meta.json"
         
-        stage_info = {
-            "created": last_output.created,
-            "subsets": subsets,
-            "tokens": stage_tokens,
-            "batch_id": 
-        }
-    
-    def _write_meta(self):
-        model_info = {
-            "model": self.llm_instance.model,
-            "parameters": self.llm_instance.configs.model_dump()
-        }
-        
-        stage_tokens
-    
-    
-    def process(self):
-        for stage in self.stages:
-            stage_outputs: List[StageOutput] = list(
-                filter(lambda output: output.stage_name == stage, self.output)
+        if meta_path.exists():
+            meta = loade_json_n_validate(meta_path, stage_name, TestMeta)
+        else:
+            model_info = ModelInfo(
+                model=self.llm_instance.model,
+                parameters=self.llm_instance.configs.model_dump_json()
             )
-            if stage in {"1", "1r", "1c"}:
-                self._build_categories_pdf(stage, stage_outputs)
-            else:
-                self._build_data_output(stage, stage_outputs)
+            tokens = {subset: StageTokens() for subset in self.subsets}
+            meta = TestMeta(
+                model_info=model_info,
+                sub_config=self.configs,
+                stages={stage_name: StageInfo(tokens=tokens)}
+            )
+        
+        meta = self._stage_info(stage_outputs, meta)
+        write_json(meta_path, meta)
+        return None
+    
+    def process(self, stage_name: str):
+        stage_outputs: List[StageOutput] = list(
+            filter(lambda output: output.stage_name == stage_name, self.output)
+        )
+        if stage_name in {"1", "1r", "1c"}:
+            self._build_categories_pdf(stage_name, stage_outputs)
+        else:
+            self._build_data_output(stage_name, stage_outputs)
+        self._write_meta(stage_name, stage_outputs)
+        return None
