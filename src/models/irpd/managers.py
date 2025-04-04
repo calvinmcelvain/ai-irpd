@@ -97,7 +97,7 @@ class OutputManager:
                 sub_config=sub_config,
                 llm_str=sub_config.llm_str,
                 replication=sub_config.replication,
-                sub_outputs=[
+                stage_outputs=[
                     StageOutput(
                         stage_config=stage_config,
                         stage_name=stage_config.stage_name,
@@ -119,7 +119,7 @@ class OutputManager:
             N=output.stage_config.replication
         )
         sub_output_idx = self.test_outputs.test_outputs.index(sub_output)
-        stage_output_idx = sub_output.sub_outputs.index(output)
+        stage_output_idx = sub_output.stage_outputs.index(output)
         return sub_output_idx, stage_output_idx
     
     def retreive(
@@ -129,16 +129,16 @@ class OutputManager:
         stage_name: Optional[str] = None,
         subset: Optional[str] = None
     ):
-        outputs = self.test_outputs.test_outputs
+        outputs: List[SubOutput] = self.test_outputs.test_outputs
         if llm_str:
-            outputs = filter(lambda output: output.llm_str == llm_str, outputs)
+            outputs: List[SubOutput] = filter(lambda output: output.llm_str == llm_str, outputs)
             if N is not None:
-                outputs = filter(lambda output: output.replication == N, outputs)
+                outputs: SubOutput = filter(lambda output: output.replication == N, outputs)
                 if stage_name:
-                    outputs = filter(lambda output: output.stage_name == stage_name, outputs.sub_outputs)
+                    outputs: List[StageOutput] = filter(lambda output: output.stage_name == stage_name, outputs.stage_outputs)
                     if subset:
-                        outputs = filter(lambda output: output.subset == subset, outputs)
-        if not outputs:
+                        outputs: StageOutput = filter(lambda output: output.subset == subset, outputs)
+        if outputs is None:
             log.warning(
                 "\nOutputs not found for:"
                 f"\n\t llm: {llm_str}"
@@ -161,11 +161,11 @@ class OutputManager:
         output = self.retreive(llm_str, N, stage_name, subset)[0]
         assert isinstance(output, StageOutput), "Output could not be stored."
         
-        output.stage_outputs = to_list(outputs)
+        output.outputs = to_list(outputs)
         output.complete = len(to_list(outputs)) == expected_outputs
         
         idx_1, idx_2 = self._get_output_index(output)
-        self.test_outputs.test_outputs[idx_1].sub_outputs[idx_2] = output
+        self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
         log.info(
             "\nOutputs stored successfully for:"
             f"\n\t llm: {llm_str}"
