@@ -26,6 +26,7 @@ class SubOutput:
     replication: int
     stage_outputs: List[StageOutput] = field(default_factory=list)
     complete: bool = False
+    batch_id: str = None
 
 
 @dataclass
