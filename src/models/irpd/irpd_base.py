@@ -72,13 +72,9 @@ class IRPDBase(ABC):
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
         if config_ids:
-            config_ids = to_list(config_ids)
-            return [
-                self.configs[config_id] for config_id in config_ids
-                if config_id in self.configs.test_configs.keys()
-            ]
-        else:
-            return self.configs.values()
+            config_ids = set(to_list(config_ids))
+            return to_list(filter(lambda config: config.test_id in config_ids, self.configs.values()))
+        return to_list(self.configs.values())
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
         configs = to_list(configs)
@@ -95,7 +91,7 @@ class IRPDBase(ABC):
                     " Did not add."
                 )
                 continue
-            self.configs.add(config)
+            self.configs[config.id] = ConfigManager(config)
 
     @abstractmethod
     def _generate_test_paths(self):
