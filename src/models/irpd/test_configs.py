@@ -44,7 +44,8 @@ class SubConfig(TestConfig):
     replication: int
     
     def __post_init__(self):
-        self.batches = self.llm_instance.batches
+        if self.batches:
+            self.batches = self.llm_instance.batches
 
     
 @dataclass
