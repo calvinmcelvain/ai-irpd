@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from itertools import product
 from typing import List, Optional
 from pathlib import Path
 from uuid import uuid4
