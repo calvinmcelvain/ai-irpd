@@ -11,14 +11,14 @@ class ModelInfo(BaseModel):
 
 
 class StageTokens(BaseModel):
-    input_tokens: int
-    output_tokens: int
-    total_tokens: int
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
 
 
 class StageInfo(BaseModel):
-    created: str
-    subsets: List[str]
+    created: str = None
+    subsets: List[str] = []
     tokens: Dict[str, StageTokens]
     batch_id: Optional[str] = None
 
