@@ -15,18 +15,17 @@ log = logging.getLogger(__name__)
 
 
 class OutputProcesser:
-    def __init__(self, sub_output: SubOutput):
-        self.output = sub_output
-        self.configs = sub_output.sub_config
-        self.sub_path = sub_output.sub_config.sub_path
-        self.cases = sub_output.sub_config.cases
-        self.treatment = sub_output.sub_config.treatment
-        self.ra = sub_output.sub_config.ra
-        self.data_path = sub_output.sub_config.data_path
-        self.stages = sub_output.sub_config.stages
-        self.llm_instance = sub_output.sub_config.llm_instance
-        self.batch_id = sub_output.batch_id
-        self.subsets = list(set(output.subset for output in sub_output.stage_outputs))
+    def __init__(self, stage_outputs: List[StageOutput]):
+        self.configs = stage_outputs[0].stage_config
+        self.stage = self.configs.stage_name
+        self.sub_path = self.configs.sub_path
+        self.cases = self.configs.cases
+        self.treatment = self.configs.treatment
+        self.ra = self.configs.ra
+        self.data_path = self.configs.data_path
+        self.llm_instance = self.configs.llm_instance
+        self.batch_id = self.configs.batch_id
+        self.subsets = list(set(output.subset for output in stage_outputs))
     
     def _build_categories_pdf(self, stage_name: str, stage_outputs: List[StageOutput]):
         pdf = f"# Stage {stage_name} Categories\n\n"

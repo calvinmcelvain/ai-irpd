@@ -130,7 +130,7 @@ def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
         return None
 
 
-def loade_json_n_validate(
+def load_json_n_validate(
     file_path: Union[str, Path],
     schema: BaseModel
 ) -> BaseModel | None:
