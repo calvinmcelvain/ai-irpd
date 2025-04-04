@@ -10,6 +10,7 @@ from models.batch_output import BatchOut
 from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 from models.irpd.outputs import TestOutput, SubOutput, StageOutput
 from models.irpd.output_processer import OutputProcesser
+from models.irpd.test_prompts import TestPrompts
 
 
 log = logging.getLogger(__name__)
@@ -155,8 +156,39 @@ class OutputManager:
         N: int,
         stage_name: str,
         subset: str,
-        outputs: Union[RequestOut, List[RequestOut]],
-        expected_outputs: int
+        outputs: Union[RequestOut, List[RequestOut]]
+    ):
+        output = self.retrieve(llm_str, N, stage_name, subset)[0]
+        assert isinstance(output, StageOutput), "Output could not be stored."
+        
+        output.outputs = to_list(outputs)
+        
+        stage_config = self.config_manager.retrieve(
+            llm_str, N, stage_name, subset
+        )
+        
+        expected_outputs = TestPrompts(stage_config, self).expected_outputs
+        output.complete = len(to_list(outputs)) == expected_outputs
+        
+        idx_1, idx_2 = self._get_output_index(output)
+        self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
+        log.info(
+            "\nOutputs stored successfully for:"
+            f"\n\t llm: {llm_str}"
+            f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
+            f"\n\t stage: {stage_name}"
+            f"\n\t subset: {subset}"
+            f"\n\t COMPLETE: {output.complete}"
+        )
+        
+        # self.processor(output).process()
+        return None
+    
+    def store_batch(
+        self,
+        llm_str: str,
+        stage_name: str,
+        outputs: BatchOut
     ):
         output = self.retrieve(llm_str, N, stage_name, subset)[0]
         assert isinstance(output, StageOutput), "Output could not be stored."
