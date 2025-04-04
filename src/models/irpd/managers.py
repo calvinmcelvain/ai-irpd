@@ -3,7 +3,6 @@ from pathlib import Path
 from itertools import product
 from typing import List, Optional, Union
 
-from utils import to_list
 from models.llm_model import LLMModel
 from models.request_output import RequestOut
 from models.batch_output import BatchOut
@@ -79,7 +78,7 @@ class ConfigManager:
             configs = filter(lambda config: config.stage_name == stage_name, configs)
         if subset:
             configs = filter(lambda config: config.subset == subset, configs)
-        return to_list(configs)
+        return list(configs)
         
 
 
@@ -123,6 +122,17 @@ class OutputManager:
         stage_output_idx = sub_output.stage_outputs.index(output)
         return sub_output_idx, stage_output_idx
     
+    def _check_stage_completion(self, stage_name: str, stage_outputs: List[SubOutput]):
+        stage_complete = all(
+            output.complete for output in stage_outputs
+            if output.stage_name == stage_name
+        )
+        if stage_complete:
+            log.info(f"All stage {stage_name} complete. Writing final outputs...")
+            output_processor = self.processor(stage_outputs)
+            output_processor.process_final()
+        return None
+    
     def retrieve(
         self,
         llm_str: Optional[str] = None,
@@ -148,7 +158,7 @@ class OutputManager:
                 f"\n\t subset: {subset}"
             )
             return None
-        return to_list(outputs)
+        return list(outputs)
     
     def store_completion(
         self,
@@ -161,7 +171,7 @@ class OutputManager:
         output = self.retrieve(llm_str, N, stage_name, subset)[0]
         assert isinstance(output, StageOutput), "Output could not be stored."
         
-        output.outputs = to_list(outputs)
+        output.outputs = list(outputs)
         
         stage_config = self.config_manager.retrieve(
             llm_str, N, stage_name, subset
@@ -181,7 +191,10 @@ class OutputManager:
             f"\n\t COMPLETE: {output.complete}"
         )
         
-        # self.processor(output).process()
+        self.processor(list(output)).process_intermediate()
+        
+        stage_outputs = self.retrieve(llm_str, N, stage_name)
+        self._check_stage_completion(stage_name, stage_outputs)
         return None
     
     def store_batch(
@@ -218,50 +231,10 @@ class OutputManager:
                 f"\n\t COMPLETE: {output.complete}"
             )
             
-            # self.processor(output).process()
-            return None
-        
-    def retrieves(
-        self,
-        stage_name: str = None,
-        llm_str: str = None,
-        replication: int = None,
-        subset: str = None
-    ):
-        if stage_name:
-            stage_outputs = self.stage_outputs[stage_name]
-            if llm_str and replication:
-                output_indx = self._output_index(llm_str, replication, stage_name)
-                if isinstance(output_indx, int):
-                    output = stage_outputs[output_indx]
-                    if subset:
-                        return output.retreive(subset)
-                    return output
-                return None
-            return stage_outputs
-        return self.stage_outputs
-    
-    def check_output(
-        self,
-        sub_path: Path,
-        llm_str: str,
-        replication: int,
-        stage_name: str
-    ):
-        schema = lazy_import("models.irpd.schemas", f"Stage{stage_name}Schema")
-        found_all = self._check_directory(sub_path, llm_str, replication, stage_name, schema)
-        if found_all:
-            return True
-        elif self.batch_request:
-            return self._check_batch(sub_path, stage_name, llm_str, schema)
-        else:
-            return False
-    
-    def _output_index(self, llm_str: str, replication: int, stage_name: str):
-        stage_outputs = self.outputs[stage_name]
-        output = next((c for c in stage_outputs if c.llm_str == llm_str and c.replication == replication), None)
-        if output:
-            return stage_outputs.index(output)
+            self.processor(list(output)).process_intermediate()
+            
+            stage_outputs = self.retrieve(llm_str, replication, stage_name)
+            self._check_stage_completion(stage_name, stage_outputs)
         return None
     
     def _check_directory(
