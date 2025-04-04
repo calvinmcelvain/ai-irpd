@@ -122,7 +122,7 @@ class OutputManager:
         stage_output_idx = sub_output.stage_outputs.index(output)
         return sub_output_idx, stage_output_idx
     
-    def retreive(
+    def retrieve(
         self,
         llm_str: Optional[str] = None,
         N: Optional[int] = None,
@@ -158,7 +158,7 @@ class OutputManager:
         outputs: Union[RequestOut, List[RequestOut]],
         expected_outputs: int
     ):
-        output = self.retreive(llm_str, N, stage_name, subset)[0]
+        output = self.retrieve(llm_str, N, stage_name, subset)[0]
         assert isinstance(output, StageOutput), "Output could not be stored."
         
         output.outputs = to_list(outputs)
