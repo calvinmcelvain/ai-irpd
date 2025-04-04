@@ -1,11 +1,16 @@
+import logging
 from pathlib import Path
 from itertools import product
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from utils import to_list
+from models.llm_model import LLMModel
 from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 from models.irpd.outputs import TestOutput, SubOutput, StageOutput
-from models.llm_model import LLMModel
+from models.irpd.output_processer import OutputProcesser
+
+
+log = logging.getLogger(__name__)
 
 
 
@@ -77,14 +82,34 @@ class ConfigManager:
 
 class OutputManager:
     def __init__(self, test_config: TestConfig):
-        self.test_output = TestOutput(test_config)
         self.config_manager = ConfigManager(test_config)
-        self.sub_outputs = None
+        self.test_outputs = TestOutput(
+            config=test_config,
+            test_outputs=self._initialize_sub_outputs()
+        )
+        self.processor = OutputProcesser
         
     def _initialize_sub_outputs(self):
         sub_outputs = [
-            SubOutput(sub_config=sub_config, llm_str=sub_config.llm)
+            SubOutput(
+                sub_config=sub_config,
+                llm_str=sub_config.llm_str,
+                replication=sub_config.replication,
+                sub_outputs=[
+                    StageOutput(
+                        stage_config=stage_config,
+                        stage=stage_config.stage_name,
+                        subset=stage_config.subset
+                    )
+                    for stage_config in self.config_manager.retrieve(
+                        llm_str=sub_config.llm_str,
+                        N=sub_config.replication
+                    )
+                ]
+            )
+            for sub_config in self.config_manager.sub_configs
         ]
+        return sub_outputs
     
     def store(
         self,
