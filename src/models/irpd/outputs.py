@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class StageOutput:
     stage_config: StageConfig
-    stage: str
+    stage_name: str
     subset: str
     stage_outputs: List[RequestOut] = field(default_factory=list)
 
