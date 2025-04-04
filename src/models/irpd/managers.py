@@ -150,7 +150,7 @@ class OutputManager:
             return None
         return to_list(outputs)
     
-    def store_completions(
+    def store_completion(
         self,
         llm_str: str,
         N: int,
@@ -168,7 +168,7 @@ class OutputManager:
         )
         
         expected_outputs = TestPrompts(stage_config, self).expected_outputs
-        output.complete = len(to_list(outputs)) == expected_outputs
+        output.complete = len(output.outputs) == expected_outputs
         
         idx_1, idx_2 = self._get_output_index(output)
         self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
@@ -188,27 +188,38 @@ class OutputManager:
         self,
         llm_str: str,
         stage_name: str,
-        outputs: BatchOut
+        batch: BatchOut
     ):
-        output = self.retrieve(llm_str, N, stage_name, subset)[0]
-        assert isinstance(output, StageOutput), "Output could not be stored."
-        
-        output.outputs = to_list(outputs)
-        output.complete = len(to_list(outputs)) == expected_outputs
-        
-        idx_1, idx_2 = self._get_output_index(output)
-        self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
-        log.info(
-            "\nOutputs stored successfully for:"
-            f"\n\t llm: {llm_str}"
-            f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
-            f"\n\t stage: {stage_name}"
-            f"\n\t subset: {subset}"
-            f"\n\t COMPLETE: {output.complete}"
-        )
-        
-        # self.processor(output).process()
-        return None
+        outputs = batch.responses
+        stage_configs: List[StageConfig] = self.config_manager.retrieve(llm_str)
+        for stage_config in stage_configs:
+            replication  = stage_config.replication
+            subset = stage_config.subset
+            
+            output = self.retrieve(llm_str, replication, stage_name, subset)
+            assert isinstance(output, StageOutput), "Output could not be stored."
+            
+            output.outputs = next((
+                response.response for response in outputs
+                if response.response_id == f"{replication}-{subset}"
+            ))
+            
+            expected_outputs = TestPrompts(stage_config, self).expected_outputs
+            output.complete = len(output.outputs) == expected_outputs
+            
+            idx_1, idx_2 = self._get_output_index(output)
+            self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
+            log.info(
+                "\nOutputs stored successfully for:"
+                f"\n\t llm: {llm_str}"
+                f"\n\t replicate: {replication} / {stage_config.total_replications}"
+                f"\n\t stage: {stage_name}"
+                f"\n\t subset: {subset}"
+                f"\n\t COMPLETE: {output.complete}"
+            )
+            
+            # self.processor(output).process()
+            return None
         
     def retrieves(
         self,
