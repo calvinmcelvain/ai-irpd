@@ -1,12 +1,13 @@
 import logging
 import pandas as pd
+from typing import List
 from pathlib import Path
 from pydantic import BaseModel
 
 from utils import txt_to_pdf
+from tools.functions import categories_to_txt, instance_types, output_attrb
 from models.irpd.test_meta import TestMeta
-from models.irpd.outputs import TestOutput
-from models.irpd.test_configs import TestConfig
+from models.irpd.outputs import SubOutput, StageOutput
 
 
 log = logging.getLogger(__name__)
@@ -14,102 +15,117 @@ log = logging.getLogger(__name__)
 
 
 class OutputProcesser:
-    def __init__(self, test_config: TestConfig):
-        self.case = test_config.case
-        self.cases = test_config.case.split("_")
-        self.stages = test_config.stages
-        self.test_path = test_config.test_path
-        self.total_replications = test_config.total_replications
-        self.llms = test_config.llms
-        self.llm_config = test_config.llm_config
+    def __init__(self, sub_output: SubOutput):
+        self.output = sub_output
+        self.configs = sub_output.sub_config
+        self.sub_path = sub_output.sub_config.sub_path
+        self.cases = sub_output.sub_config.cases
+        self.treatment = sub_output.sub_config.treatment
+        self.ra = sub_output.sub_config.ra
+        self.data_path = sub_output.sub_config.data_path
+        self.stages = sub_output.sub_config.stages
+        self.llm_instance = sub_output.sub_config.llm_instance
+        self.batch_id = sub
     
-    @staticmethod
-    def _get_instance_types(case: str):
-        if case in {"uni", "uniresp"}:
-            return ["ucoop", "udef"]
-        return ["coop", "def"]
-    
-    @staticmethod
-    def _get_att(output):
-        if hasattr(output, "categories"):
-            return output.categories
-        if hasattr(output, "refined_categories"):
-            return output.refined_categories
-        if hasattr(output, "assigned_categories"):
-            return output.assigned_categories
-        if hasattr(output, "category_ranking"):
-            return output.category_ranking
-    
-    @staticmethod
-    def _categories_to_txt(categories: BaseModel):
-        category_texts = []
-        for category in categories:
-            example_texts = []
-            for idx, example in enumerate(category.examples, start=1):
-                example_texts.append(
-                    f"  {idx}. Window number: {example.window_number},"
-                    f" Reasoning: {example.reasoning}"
-                )
-            category_text = (
-                f"### {category.category_name}\n\n"
-                f"**Definition**: {category.definition}\n\n"
-                f"**Examples**:\n\n{"\n".join(example_texts)}\n\n"
-            )
-            category_texts.append(category_text)
-        return "".join(category_texts)
-    
-    def _generate_subpath(self, N: int, llm_str: str):
-        subpath = self.test_path
-        if len(self.llms) > 1: subpath = subpath / llm_str
-        if self.total_replications > 1: subpath = subpath / f"replication_{N}"
-        return Path(subpath)
-    
-    def _build_categories_pdf(self, stage: str):
-        pdf = f"# Stage {stage} Categories\n\n"
-        for subset in self.subsets:
-            if subset in self.output.outputs.keys():
-                output = self.output.outputs[subset][0]
-                categories = self._get_att(output.parsed)
-                if subset != "full":
-                    case, sub = subset.split("_")
-                    pdf += f"## {case.capitalize()}; {sub.upper()} Categories\n\n"
+    def _build_categories_pdf(self, stage_name: str, stage_outputs: List[StageOutput]):
+        pdf = f"# Stage {stage_name} Categories\n\n"
+        for output in stage_outputs:
+            categories = output_attrb(output.outputs[0].parsed)
+            
+            subset = output.stage_config.subset
+            
+            if subset != "full":
+                case, instance_type = subset.split("_")
+                pdf += f"## {case.capitalize()} - {instance_type.upper()} Categories\n\n"
+            else:
+                if stage_name == "1c":
+                    pdf += f"## Final Category Set\n\n"
                 else:
-                    if stage == "1c":
-                        pdf += f"## Final Category Set\n\n"
-                    else:
-                        pdf += f"## Unified Categories\n\n"
-                pdf += self._categories_to_txt(categories=categories)
-        pdf_path = self.sub_path / f"_stage_{stage}_categories.pdf"
-        txt_to_pdf(text=pdf, file_path=pdf_path)
+                    pdf += f"## Unified Categories\n\n"
+            pdf += categories_to_txt(categories)
+        pdf_path = self.sub_path / f"_stage_{stage_name}_categories.pdf"
+        txt_to_pdf(pdf, pdf_path)
         return None
     
-    def _build_data_output(self, stage: str):
+    def _build_data_output(self, stage_name: str, stage_outputs: List[StageOutput]):
         dfs = []
-        for case in self.cases:
-            raw_df_path = self.data_path / "raw" / f"{case}_{self.treatment}_{self.ra}.csv"
+        for case in self.configs.cases:
+            raw_path = self.data_path / "raw"
+            raw_df_path = raw_path / f"{case}_{self.treatment}_{self.ra}.csv"
             raw_df = pd.read_csv(raw_df_path)
             df_list = []
-            for subset in self.subsets:
+            
+            for outputs in stage_outputs:
                 response_list = []
-                outputs = self.output.outputs[subset]
-                for output in outputs:
-                    response = {}
-                    response["reasoning"] = output.parsed.reasoning
+                for output in outputs.outputs:
+                    response = {"reasoning": output.parsed.reasoning}
                     response["window_number"] = output.parsed.window_number
-                    for l in self._get_att(output.parsed):
-                        response[l.category_name] = 1
-                        if hasattr(l, "rank"):
-                            response[l.category_name] = l.rank
+                    for cat in output_attrb(output):
+                        response[cat.category_name] = 1
+                        if hasattr(cat, "rank"):
+                            response[cat.category_name] = cat.rank
                     response_list.append(response)
-                response_df = pd.DataFrame.from_records(response_list)
-                df_list.append(response_df)
+                    response_df = pd.DataFrame.from_records(response_list)
+                    df_list.append(response_df)
             df = pd.concat(df_list, ignore_index=True, sort=False).fillna(0)
             merged_df = pd.merge(raw_df, df, on='window_number')
             merged_df["case"] = case
             dfs.append(merged_df)
         df = pd.concat(dfs, ignore_index=True, sort=False)
-        df.to_csv(self.sub_path / f"_stage_{self.stage}_final.csv", index=False)
+        df.to_csv(self.sub_path / f"_stage_{stage_name}_final.csv", index=False)
         return None
     
-    def process(self, output: TestOutput):
-        pass
+    def _stage_info(self, stage_name: str, stage_outputs: List[StageOutput]):
+        last_subset = stage_outputs[len(stage_outputs) - 1].outputs
+        last_output = last_subset[len(last_subset)].meta
+        
+        stage_tokens = {}
+        
+        subsets = list(set(output.subset for output in stage_outputs))
+        for subset in subsets:
+            subset_outputs: List[StageOutput] = list(
+                filter(lambda output: output.subset == subset, stage_outputs)
+            )
+            
+            outputs = []
+            for output in subset_outputs:
+                outputs.extend(output.outputs)
+            
+            input_tokens = sum(
+                [output.meta.input_tokens for output in outputs if output.meta]
+            )
+            output_tokens = sum(
+                [output.meta.output_tokens for output in outputs if output.meta]
+            )
+            
+            stage_tokens[subset] = {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens
+            }
+        
+        stage_info = {
+            "created": last_output.created,
+            "subsets": subsets,
+            "tokens": stage_tokens,
+            "batch_id": 
+        }
+    
+    def _write_meta(self):
+        model_info = {
+            "model": self.llm_instance.model,
+            "parameters": self.llm_instance.configs.model_dump()
+        }
+        
+        stage_tokens
+    
+    
+    def process(self):
+        for stage in self.stages:
+            stage_outputs: List[StageOutput] = list(
+                filter(lambda output: output.stage_name == stage, self.output)
+            )
+            if stage in {"1", "1r", "1c"}:
+                self._build_categories_pdf(stage, stage_outputs)
+            else:
+                self._build_data_output(stage, stage_outputs)
