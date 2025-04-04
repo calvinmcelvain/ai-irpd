@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Union, Literal
+from typing import List, Union, Literal, Optional
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -54,6 +54,7 @@ class IRPDTestClass(TestClassContainer, Enum):
         N: int = 1,
         llms: Union[List[LLMS], LLMS] = DEFAULTS["llms"],
         llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = DEFAULTS["llm_configs"],
+        max_instances: Optional[int] = None,
         batch: bool = False,
         test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
         **kwargs
@@ -67,6 +68,7 @@ class IRPDTestClass(TestClassContainer, Enum):
             N=N,
             llms=llms,
             llm_configs=llm_configs,
+            max_instances=max_instances,
             batch=batch,
             test_paths=test_paths,
             **kwargs

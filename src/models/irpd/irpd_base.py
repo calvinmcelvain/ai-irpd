@@ -28,6 +28,7 @@ class IRPDBase(ABC):
         N: int,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
+        max_instances: Optional[int] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
@@ -42,6 +43,10 @@ class IRPDBase(ABC):
         self.llm_configs = to_list(llm_configs)
         self.test_paths = to_list(test_paths or [])
         self.batch_request = batch
+        
+        if max_instances:
+            assert max_instances >= 1, "`max_instances` must be greater than 0."
+        self.max_instances = max_instances
         
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
@@ -103,7 +108,6 @@ class IRPDBase(ABC):
     
     async def run(
         self,
-        max_instances: Optional[int] = None,
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
@@ -111,5 +115,5 @@ class IRPDBase(ABC):
         test_configs = self._get_test_configs(config_ids=config_ids)
         
         for config in test_configs:
-            test_runner = TestRunner(config, max_instances, print_response)
+            test_runner = TestRunner(config, print_response)
             await test_runner.run()
