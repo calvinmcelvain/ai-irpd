@@ -9,32 +9,30 @@ from models.llm_model import LLMModel
 
 
 class ConfigManager:
-    def __init__(self, test_configs: Dict[str, TestConfig]):
-        self.test_configs = test_configs
-        self.sub_configs = self._generate_sub_configs(self.test_configs)
-        self.stage_configs = self._generate_stage_configs(self.sub_configs)
+    def __init__(self, test_config: TestConfig):
+        self.config = test_config
+        self.sub_configs = self._generate_sub_configs()
+        self.stage_configs = self._generate_stage_configs()
         
-    def _generate_sub_configs(self, configs: Dict[str, TestConfig]):
-        sub_configs = {}
-        for key, value in configs:
-            sub_configs[key] = [SubConfig(
-                **vars(value),
+    def _generate_sub_configs(self):
+        prod = product(self.config.llms, range(1, self.config.total_replications + 1))
+        sub_configs = [
+            SubConfig(
+                **vars(self.test_config),
                 sub_path=self._generate_subpath(n, llm_str),
                 llm=llm_str,
                 llm_instance=self._generate_llm_instance(llm_str),
                 replication=n
-            ) 
-            for llm_str, n in product(value.llms, range(1, value.total_replications + 1))
-            ]
+            ) for llm_str, n in prod
+        ]
         return sub_configs
     
-    def _generate_stage_configs(self, configs: Dict[str, List[SubConfig]]):
-        stage_configs = {}
-        for key, _, value in configs:
-            stage_configs[key] = [
-                StageConfig(**vars(value),stage_name=stage)
-                for stage in value.stages
-            ]
+    def _generate_stage_configs(self):
+        stage_configs = [
+            StageConfig(**vars(sub_config),stage_name=stage)
+            for sub_config in self.sub_configs
+            for stage in sub_config.stages
+        ]
         return stage_configs
     
     def _generate_subpath(self, N: int, llm_str: str):
@@ -50,28 +48,20 @@ class ConfigManager:
     
     def retrieve(
         self,
-        config_id: Optional[str],
         llm_str: Optional[str],
         N: Optional[int],
         stage: Optional[str]
     ):
-        if config_id:
-            stage_configs = self.stage_configs[config_id]
-            if llm_str:
-                llm_configs = [config for config in stage_configs if config.llm == llm_str]
-                if isinstance(N, int):
-                    replicate_configs = [config for config in llm_configs if config.replication == N]
-                    if stage:
-                        return next((config for config in replicate_configs if config.stage_name == stage))
-                    return replicate_configs
-                return llm_configs
-            return stage_configs
-        return None
-    
-    def add(self, config: TestConfig):
-        self.test_configs[config.id] = config
-        self.sub_configs.update(self._generate_sub_configs({config.id: config}))
-        self.stage_configs.update(self._generate_stage_configs({config.id: self.sub_configs[config.id]}))
+        stage_configs = self.stage_configs
+        if llm_str:
+            llm_configs = [config for config in stage_configs if config.llm == llm_str]
+            if isinstance(N, int):
+                replicate_configs = [config for config in llm_configs if config.replication == N]
+                if stage:
+                    return next((config for config in replicate_configs if config.stage_name == stage))
+                return replicate_configs
+            return llm_configs
+        return stage_configs
         
 
 
