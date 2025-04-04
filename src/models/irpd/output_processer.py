@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 from pydantic import BaseModel
 
-from utils import txt_to_pdf, load_json_n_validate, write_json
+from utils import txt_to_pdf, load_json_n_validate, write_json, write_file
 from tools.functions import categories_to_txt, instance_types, output_attrb
 from models.irpd.test_meta import TestMeta, ModelInfo, StageTokens, StageInfo
 from models.irpd.outputs import SubOutput, StageOutput
@@ -77,12 +77,9 @@ class OutputProcesser:
         return None
     
     def _stage_info(self, meta: TestMeta):
-        last_subset = self.outputs[len(self.outputs) - 1].outputs
-        last_time_stamp = last_subset[len(last_subset)].meta.created
-        
         stage_info = meta.stages[self.stage_name]
-        stage_info.created = last_time_stamp
-        stage_info.subsets = self.subsets
+        stage_info.created = self.outputs[0].outputs[0].meta.created
+        stage_info.subsets.extend(self.subsets)
         stage_info.batch_id = self.batch_id
         
         for output in self.outputs:
@@ -117,10 +114,37 @@ class OutputProcesser:
         write_json(meta_path, meta)
         return None
     
-    def process(self):
+    def _write_output(self):
+        outputs = self.outputs[0].outputs
+        prompts_path = self.configs.prompts_path
+        responses_path = self.configs.responses_path
+        
+        system_prompt = outputs[0].meta.prompt.system
+        system_path = f"{self.subsets[0]}_stg_{self.stage}_system_prompt.txt"
+        write_file(prompts_path / system_path, system_prompt)
+        
+        for output in outputs:
+            user_prompt = output.meta.prompt.user
+            user_path = f"{self.subsets[0]}_"
+            response_path = f"{self.subsets[0]}_"
+            if self.stage in {"2", "3"}:
+                user_path += f"{output.parsed.window_number}_user_prompt.txt"
+                response_path += f"{output.parsed.window_number}_response.txt"
+            else:
+                user_path += f"stg_{self.stage}_user_prompt.txt"
+                response_path += f"stg_{self.stage}_response.txt"
+            write_file(prompts_path / user_path, user_prompt)
+            write_file(responses_path / response_path, output.text)
+        return None
+    
+    def process_final(self):
         if self.stage_name in {"1", "1r", "1c"}:
             self._build_categories_pdf()
         else:
             self._build_data_output()
+        return None
+    
+    def process_intermediate(self):
+        self._write_output()
         self._write_meta()
         return None
