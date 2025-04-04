@@ -51,13 +51,9 @@ class StageConfig(SubConfig):
     stage_name: str
     subsets: List[str] = None
     stage_path: Path = None
-    prompts_path: Path = None
-    responses_path: Path = None
     
     def __post_init__(self):
         self.stage_path = self.sub_path / f"stage_{self.stage_name}"
-        self.prompts_path = self.stage_path / "prompts"
-        self.responses_path = self.stage_path / "responses"
         self.subsets = ["full"]
         
         if self.stage_name in {"1", "1r"}:
