@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from pydantic import BaseModel
 
 
@@ -25,3 +26,30 @@ def categories_to_txt(categories: BaseModel) -> str:
         )
         category_texts.append(category_text)
     return "".join(category_texts)
+
+
+def instance_types(case: str) -> List[str]:
+    """
+    Function that returns list of instance types for a given case.
+    """
+    if case in {"uni", "uniresp"}:
+        return ["ucoop", "udef"]
+    return ["coop", "def"]
+
+
+def output_attrb(output: BaseModel) -> BaseModel:
+    """
+    Returns the output for a given output
+    """
+    # Stage 1
+    if hasattr(output, "categories"):
+        return output.categories
+    # Stage 1r & 1c
+    if hasattr(output, "refined_categories"):
+        return output.refined_categories
+    # Stage 2
+    if hasattr(output, "assigned_categories"):
+        return output.assigned_categories
+    # Stage 3
+    if hasattr(output, "category_ranking"):
+        return output.category_ranking
