@@ -16,6 +16,7 @@ class StageOutput:
     stage_name: str
     subset: str
     stage_outputs: List[RequestOut] = field(default_factory=list)
+    complete: bool = False
 
 
 @dataclass
@@ -24,10 +25,12 @@ class SubOutput:
     llm_str: str
     replication: int
     sub_outputs: List[StageOutput] = field(default_factory=list)
+    complete: bool = False
 
 
 @dataclass
 class TestOutput:
     config: TestConfig
     test_outputs: List[SubOutput] = field(default_factory=list)
+    complete: bool = False
     
