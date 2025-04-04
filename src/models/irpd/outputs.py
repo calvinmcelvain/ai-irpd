@@ -15,7 +15,7 @@ class StageOutput:
     stage_config: StageConfig
     stage: str
     subset: str
-    outputs: List[RequestOut] = field(default_factory=list)
+    stage_outputs: List[RequestOut] = field(default_factory=list)
 
 
 @dataclass
@@ -23,11 +23,11 @@ class SubOutput:
     sub_config: SubConfig
     llm_str: str
     replication: int
-    stage_outputs: List[StageOutput] = field(default_factory=list)
+    sub_outputs: List[StageOutput] = field(default_factory=list)
 
 
 @dataclass
 class TestOutput:
     config: TestConfig
-    outputs: List[SubOutput] = field(default_factory=list)
+    test_outputs: List[SubOutput] = field(default_factory=list)
     
