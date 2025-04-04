@@ -2,6 +2,7 @@ from pathlib import Path
 from itertools import product
 from typing import Dict, List, Optional
 
+from utils import to_list
 from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 from models.irpd.outputs import TestOutput, SubOutput, StageOutput
 from models.llm_model import LLMModel
@@ -29,11 +30,19 @@ class ConfigManager:
     
     def _generate_stage_configs(self):
         stage_configs = [
-            StageConfig(**vars(sub_config),stage_name=stage)
+            StageConfig(**vars(sub_config), stage_name=stage_name, subset=subset)
             for sub_config in self.sub_configs
-            for stage in sub_config.stages
+            for stage_name in sub_config.stages
+            for subset in self._get_subsets(stage_name)
         ]
         return stage_configs
+    
+    def _get_subsets(self, stage_name: str):
+        subsets = ["full"]
+        if stage_name in {"1", "1r"}:
+            prod = product(self.config.cases, self.config.instance_types)
+            subsets += [f"{c}_{i}" for c, i in prod]
+        return subsets
     
     def _generate_subpath(self, N: int, llm_str: str):
         subpath = self.test_path
@@ -48,20 +57,21 @@ class ConfigManager:
     
     def retrieve(
         self,
-        llm_str: Optional[str],
-        N: Optional[int],
-        stage: Optional[str]
+        llm_str: Optional[str] = None,
+        N: Optional[int] = None,
+        stage_name: Optional[str] = None,
+        subset: Optional[str] = None
     ):
-        stage_configs = self.stage_configs
+        configs = self.stage_configs
         if llm_str:
-            llm_configs = [config for config in stage_configs if config.llm == llm_str]
-            if isinstance(N, int):
-                replicate_configs = [config for config in llm_configs if config.replication == N]
-                if stage:
-                    return next((config for config in replicate_configs if config.stage_name == stage))
-                return replicate_configs
-            return llm_configs
-        return stage_configs
+            configs = filter(lambda config: config.llm == llm_str, configs)
+        if N is not None:
+            configs = filter(lambda config: config.replication == N, configs)
+        if stage_name:
+            configs = filter(lambda config: config.stage_name == stage_name, configs)
+        if subset:
+            configs = filter(lambda config: config.subset == subset, configs)
+        return to_list(configs)
         
 
 
