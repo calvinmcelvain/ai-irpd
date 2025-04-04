@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 from pydantic import BaseModel
 
-from utils import txt_to_pdf, loade_json_n_validate, write_json
+from utils import txt_to_pdf, load_json_n_validate, write_json
 from tools.functions import categories_to_txt, instance_types, output_attrb
 from models.irpd.test_meta import TestMeta, ModelInfo, StageTokens, StageInfo
 from models.irpd.outputs import SubOutput, StageOutput
@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 class OutputProcesser:
     def __init__(self, stage_outputs: List[StageOutput]):
+        self.outputs = stage_outputs
         self.configs = stage_outputs[0].stage_config
         self.stage = self.configs.stage_name
         self.sub_path = self.configs.sub_path
@@ -27,9 +28,9 @@ class OutputProcesser:
         self.batch_id = self.configs.batch_id
         self.subsets = list(set(output.subset for output in stage_outputs))
     
-    def _build_categories_pdf(self, stage_name: str, stage_outputs: List[StageOutput]):
-        pdf = f"# Stage {stage_name} Categories\n\n"
-        for output in stage_outputs:
+    def _build_categories_pdf(self):
+        pdf = f"# Stage {self.stage_name} Categories\n\n"
+        for output in self.outputs:
             categories = output_attrb(output.outputs[0].parsed)
             
             subset = output.stage_config.subset
@@ -38,24 +39,24 @@ class OutputProcesser:
                 case, instance_type = subset.split("_")
                 pdf += f"## {case.capitalize()} - {instance_type.upper()} Categories\n\n"
             else:
-                if stage_name == "1c":
+                if self.stage_name == "1c":
                     pdf += f"## Final Category Set\n\n"
                 else:
                     pdf += f"## Unified Categories\n\n"
             pdf += categories_to_txt(categories)
-        pdf_path = self.sub_path / f"_stage_{stage_name}_categories.pdf"
+        pdf_path = self.sub_path / f"_stage_{self.stage_name}_categories.pdf"
         txt_to_pdf(pdf, pdf_path)
         return None
     
-    def _build_data_output(self, stage_name: str, stage_outputs: List[StageOutput]):
+    def _build_data_output(self):
         dfs = []
-        for case in self.configs.cases:
+        for case in self.cases:
             raw_path = self.data_path / "raw"
             raw_df_path = raw_path / f"{case}_{self.treatment}_{self.ra}.csv"
             raw_df = pd.read_csv(raw_df_path)
             df_list = []
             
-            for outputs in stage_outputs:
+            for outputs in self.outputs:
                 response_list = []
                 for output in outputs.outputs:
                     response = {"reasoning": output.parsed.reasoning}
@@ -72,24 +73,19 @@ class OutputProcesser:
             merged_df["case"] = case
             dfs.append(merged_df)
         df = pd.concat(dfs, ignore_index=True, sort=False)
-        df.to_csv(self.sub_path / f"_stage_{stage_name}_final.csv", index=False)
+        df.to_csv(self.sub_path / f"_stage_{self.stage_name}_final.csv", index=False)
         return None
     
-    def _stage_info(
-        self,
-        stage_outputs: List[StageOutput], 
-        stage_name: str,
-        meta: TestMeta
-    ):
-        last_subset = stage_outputs[len(stage_outputs) - 1].outputs
+    def _stage_info(self, meta: TestMeta):
+        last_subset = self.outputs[len(self.outputs) - 1].outputs
         last_time_stamp = last_subset[len(last_subset)].meta.created
         
-        stage_info = meta.stages[stage_name]
+        stage_info = meta.stages[self.stage_name]
         stage_info.created = last_time_stamp
         stage_info.subsets = self.subsets
         stage_info.batch_id = self.batch_id
         
-        for output in stage_outputs:
+        for output in self.outputs:
             input_tokens = sum([t.meta.input_tokens for t in output.outputs])
             output_tokens = sum([t.meta.output_tokens for t in output.outputs])
             total_tokens = input_tokens + output_tokens
@@ -100,11 +96,11 @@ class OutputProcesser:
             stage_info_tokens.total_tokens += total_tokens
         return meta
             
-    def _write_meta(self, stage_name: str, stage_outputs: List[StageOutput]):
+    def _write_meta(self):
         meta_path = self.sub_path / "_test_meta.json"
         
         if meta_path.exists():
-            meta = loade_json_n_validate(meta_path, stage_name, TestMeta)
+            meta = load_json_n_validate(meta_path, TestMeta)
         else:
             model_info = ModelInfo(
                 model=self.llm_instance.model,
@@ -114,20 +110,17 @@ class OutputProcesser:
             meta = TestMeta(
                 model_info=model_info,
                 sub_config=self.configs,
-                stages={stage_name: StageInfo(tokens=tokens)}
+                stages={self.stage_name: StageInfo(tokens=tokens)}
             )
         
-        meta = self._stage_info(stage_outputs, meta)
+        meta = self._stage_info(meta)
         write_json(meta_path, meta)
         return None
     
-    def process(self, stage_name: str):
-        stage_outputs: List[StageOutput] = list(
-            filter(lambda output: output.stage_name == stage_name, self.output)
-        )
-        if stage_name in {"1", "1r", "1c"}:
-            self._build_categories_pdf(stage_name, stage_outputs)
+    def process(self):
+        if self.stage_name in {"1", "1r", "1c"}:
+            self._build_categories_pdf()
         else:
-            self._build_data_output(stage_name, stage_outputs)
-        self._write_meta(stage_name, stage_outputs)
+            self._build_data_output()
+        self._write_meta()
         return None
