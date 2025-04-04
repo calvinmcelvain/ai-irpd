@@ -2,8 +2,8 @@ import logging
 from typing import List
 from dataclasses import dataclass, field
 
-from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 from models.request_output import RequestOut
+from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 
 
 log = logging.getLogger(__name__)
