@@ -1,10 +1,12 @@
 import logging
 from pathlib import Path
 from itertools import product
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from utils import to_list
 from models.llm_model import LLMModel
+from models.request_output import RequestOut
+from models.batch_output import BatchOut
 from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
 from models.irpd.outputs import TestOutput, SubOutput, StageOutput
 from models.irpd.output_processer import OutputProcesser
@@ -98,7 +100,7 @@ class OutputManager:
                 sub_outputs=[
                     StageOutput(
                         stage_config=stage_config,
-                        stage=stage_config.stage_name,
+                        stage_name=stage_config.stage_name,
                         subset=stage_config.subset
                     )
                     for stage_config in self.config_manager.retrieve(
@@ -111,25 +113,72 @@ class OutputManager:
         ]
         return sub_outputs
     
-    def store(
-        self,
-        stage_name: str,
-        llm_str: str,
-        replication: int,
-        subset: str,
-        outputs: Union[RequestOut, List[RequestOut]]
-    ):
-        output_idx = self._output_index(llm_str, replication, stage_name)
-        if isinstance(output_idx, int):
-            output = self.stage_outputs[stage_name][output_idx]
-            output.store(subset, outputs)
-        else:
-            stage_output = StageOutput(stage_name, llm_str, replication)
-            stage_output.store(subset, outputs)
-            self.stage_outputs[stage_name].append(stage_output)
-        return None
+    def _get_output_index(self, output: StageOutput):
+        sub_output: SubOutput = self.retreive(
+            llm_str=output.stage_config.llm_str,
+            N=output.stage_config.replication
+        )
+        sub_output_idx = self.test_outputs.test_outputs.index(sub_output)
+        stage_output_idx = sub_output.sub_outputs.index(output)
+        return sub_output_idx, stage_output_idx
     
-    def retrieve(
+    def retreive(
+        self,
+        llm_str: Optional[str] = None,
+        N: Optional[int] = None,
+        stage_name: Optional[str] = None,
+        subset: Optional[str] = None
+    ):
+        outputs = self.test_outputs.test_outputs
+        if llm_str:
+            outputs = filter(lambda output: output.llm_str == llm_str, outputs)
+            if N is not None:
+                outputs = filter(lambda output: output.replication == N, outputs)
+                if stage_name:
+                    outputs = filter(lambda output: output.stage_name == stage_name, outputs.sub_outputs)
+                    if subset:
+                        outputs = filter(lambda output: output.subset == subset, outputs)
+        if not outputs:
+            log.warning(
+                "\nOutputs not found for:"
+                f"\n\t llm: {llm_str}"
+                f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
+                f"\n\t stage: {stage_name}"
+                f"\n\t subset: {subset}"
+            )
+            return None
+        return to_list(outputs)
+    
+    def store_completions(
+        self,
+        llm_str: str,
+        N: int,
+        stage_name: str,
+        subset: str,
+        outputs: Union[RequestOut, List[RequestOut]],
+        expected_outputs: int
+    ):
+        output = self.retreive(llm_str, N, stage_name, subset)[0]
+        assert isinstance(output, StageOutput), "Output could not be stored."
+        
+        output.stage_outputs = to_list(outputs)
+        output.complete = len(to_list(outputs)) == expected_outputs
+        
+        idx_1, idx_2 = self._get_output_index(output)
+        self.test_outputs.test_outputs[idx_1].sub_outputs[idx_2] = output
+        log.info(
+            "\nOutputs stored successfully for:"
+            f"\n\t llm: {llm_str}"
+            f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
+            f"\n\t stage: {stage_name}"
+            f"\n\t subset: {subset}"
+            f"\n\t COMPLETE: {output.complete}"
+        )
+        
+        # self.processor(output).process()
+        return None
+        
+    def retrieves(
         self,
         stage_name: str = None,
         llm_str: str = None,
@@ -282,7 +331,7 @@ class OutputManager:
             self.outputs[subset] = to_list(outputs)
         return None
     
-    def retreive(self, subset: str):
+    def retreiveaa(self, subset: str):
         if subset in self.outputs.keys():
             return self.outputs[subset]
         return None

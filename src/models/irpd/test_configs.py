@@ -16,6 +16,8 @@ class TestConfig:
     llm_config: str
     test_type: str
     test_path: Path
+    data_path: Path
+    prompts_path: Path
     stages: List[str]
     batches: bool
     total_replications: int
