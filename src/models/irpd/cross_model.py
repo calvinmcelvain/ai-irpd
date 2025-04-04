@@ -65,7 +65,6 @@ class CrossModel(IRPDBase):
         return test_paths
     
     def _generate_configs(self):
-        test_configs = {}
         for idx, prod in enumerate(self._prod):
             llm_config, case, ra, treatment = prod
             config = TestConfig(
@@ -78,7 +77,6 @@ class CrossModel(IRPDBase):
                 test_path=self.test_paths[idx],
                 stages=self.stages
             )
-            test_configs[config.id] = config
-        self.configs = ConfigManager(test_configs)
+            self.configs[config.id] = ConfigManager(config)
         return None
     

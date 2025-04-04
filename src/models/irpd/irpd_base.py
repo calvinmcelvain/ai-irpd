@@ -17,9 +17,6 @@ log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
-    configs: ConfigManager
-    outputs: OutputManager
-    
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -50,6 +47,9 @@ class IRPDBase(ABC):
         self.output_path = str_to_path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = str_to_path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = str_to_path(data_path or get_env_var("DATA_PATH"))
+        
+        self.configs = {}
+        self.outputs = {}
     
     def _validate_test_paths(self):
         test_paths = [Path(path) for path in self.test_paths]
@@ -71,15 +71,15 @@ class IRPDBase(ABC):
         )
         return max(map(int, matches), default=0)
     
-    def _get_test_config_ids(self, config_ids: Union[str, List[str]]):
+    def _get_test_configs(self, config_ids: Union[str, List[str]]):
         if config_ids:
             config_ids = to_list(config_ids)
             return [
-                config_id for config_id in config_ids
+                self.configs[config_id] for config_id in config_ids
                 if config_id in self.configs.test_configs.keys()
             ]
         else:
-            return self.configs.test_configs.keys()
+            return self.configs.values()
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
         configs = to_list(configs)
@@ -113,9 +113,8 @@ class IRPDBase(ABC):
         print_response: bool = False
     ):
         clear_logger(app=False)
-        test_config_ids = self._get_test_config_ids(config_ids=config_ids)
+        test_configs = self._get_test_configs(config_ids=config_ids)
         
-        for config_id in test_config_ids:
-            configs = self.configs.retrieve(config_id)
-            test_runner = TestRunner(configs, max_instances, print_response)
+        for config in test_configs:
+            test_runner = TestRunner(config, max_instances, print_response)
             await test_runner.run()

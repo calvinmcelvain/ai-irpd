@@ -63,7 +63,6 @@ class Subtest(IRPDBase):
         return test_paths
     
     def _generate_configs(self):
-        test_configs = {}
         for idx, prod in enumerate(self._prod):
             llm, llm_config, case, ra, treatment = prod
             config = TestConfig(
@@ -78,6 +77,5 @@ class Subtest(IRPDBase):
                 batches=self.batch_request,
                 total_replications=1
             )
-            test_configs[config.id] = config
-        self.configs = ConfigManager(test_configs)
+            self.configs[config.id] = ConfigManager(config)
         return None
