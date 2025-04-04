@@ -130,6 +130,17 @@ def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
         return None
 
 
+def loade_json_n_validate(
+    file_path: Union[str, Path],
+    schema: BaseModel
+) -> BaseModel | None:
+    """
+    Loads json file and validates for schema.
+    """
+    json_data = load_json(file_path)
+    return validate_json(json_data, schema)
+
+
 def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | None:
     """
     Returns the object from json schema validation.
