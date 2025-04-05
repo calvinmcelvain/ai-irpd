@@ -55,12 +55,12 @@ class BaseLLM(ABC):
         prompts = Prompts(system=system, user=user)
         meta = MetaOutput(
             input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            prompt=prompts
+            output_tokens=output_tokens
         )
         return RequestOut(
             text=content,
             parsed=validate_json_string(content, schema),
+            prompts=prompts,
             meta=meta
         )
     
