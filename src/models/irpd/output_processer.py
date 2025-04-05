@@ -83,7 +83,7 @@ class OutputProcesser:
         for output in self.outputs:
             input_tokens = sum([t.meta.input_tokens for t in output.outputs])
             output_tokens = sum([t.meta.output_tokens for t in output.outputs])
-            total_tokens = input_tokens + output_tokens
+            total_tokens = sum([input_tokens, output_tokens])
             
             stage_info_tokens = stage_info.tokens[output.subset]
             stage_info_tokens.input_tokens += input_tokens
