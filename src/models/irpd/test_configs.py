@@ -42,8 +42,10 @@ class SubConfig(TestConfig):
     llm_str: str
     llm_instance: BaseLLM
     replication: int
+    meta_path: Path = None
     
     def __post_init__(self):
+        self.meta_path = self.sub_path / "_test_meta.json"
         if self.batches:
             self.batches = self.llm_instance.batches
 
