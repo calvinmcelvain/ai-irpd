@@ -119,12 +119,12 @@ class OutputProcesser:
         prompts_path = self.configs.prompts_path
         responses_path = self.configs.responses_path
         
-        system_prompt = outputs[0].meta.prompt.system
+        system_prompt = outputs[0].prompts.system
         system_path = f"{self.subsets[0]}_stg_{self.stage}_system_prompt.txt"
         write_file(prompts_path / system_path, system_prompt)
         
         for output in outputs:
-            user_prompt = output.meta.prompt.user
+            user_prompt = output.prompts.user
             user_path = f"{self.subsets[0]}_"
             response_path = f"{self.subsets[0]}_"
             if self.stage in {"2", "3"}:
