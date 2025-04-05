@@ -24,9 +24,9 @@ class MetaOutput:
 class RequestOut:
     text: str = None
     parsed: BaseModel = None
-    prompts: Prompts
+    prompts: Prompts = None
     meta: MetaOutput = None
     
     def __post_init__(self):
         if self.parsed and not self.text:
-            self.text = json.dumps(self.parsed.model_dump())
+            self.text = json.dumps(self.parsed.model_dump(), indent=4)
