@@ -51,10 +51,10 @@ class ConfigManager:
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
     
-    def _generate_subpath(self, N: int, llm_str: str):
+    def _generate_subpath(self, n: int, llm_str: str):
         subpath = self.test_path
         if len(self.llms) > 1: subpath = subpath / llm_str
-        if self.total_replications > 1: subpath = subpath / f"replication_{N}"
+        if self.total_replications > 1: subpath = subpath / f"replication_{n}"
         return Path(subpath)
     
     def _generate_llm_instance(self, llm: str):
@@ -65,15 +65,15 @@ class ConfigManager:
     def retrieve(
         self,
         llm_str: Optional[str] = None,
-        N: Optional[int] = None,
+        n: Optional[int] = None,
         stage_name: Optional[str] = None,
         subset: Optional[str] = None
     ):
         configs = self.stage_configs
         if llm_str:
             configs = filter(lambda config: config.llm_str == llm_str, configs)
-        if N is not None:
-            configs = filter(lambda config: config.replication == N, configs)
+        if n is not None:
+            configs = filter(lambda config: config.replication == n, configs)
         if stage_name:
             configs = filter(lambda config: config.stage_name == stage_name, configs)
         if subset:
@@ -127,24 +127,32 @@ class OutputManager:
             output.complete for output in stage_outputs
             if output.stage_name == stage_name
         )
-        if stage_complete:
-            log.info(f"All stage {stage_name} complete. Writing final outputs...")
-            output_processor = self.processor(stage_outputs)
-            output_processor.process_final()
+        return stage_complete
+    
+    def _log_stored_completion(self, stage_output: StageOutput):
+        config = stage_output.stage_config
+        log.info(
+            "\nOutputs stored successfully for:"
+            f"\n\t llm: {config.llm_str}"
+            f"\n\t replicate: {config.replication} / {self.config_manager.config.total_replications}"
+            f"\n\t stage: {config.stage_name}"
+            f"\n\t subset: {config.subset}"
+            f"\n\t COMPLETE: {stage_output.complete}"
+        )
         return None
     
     def retrieve(
         self,
         llm_str: Optional[str] = None,
-        N: Optional[int] = None,
+        n: Optional[int] = None,
         stage_name: Optional[str] = None,
         subset: Optional[str] = None
     ):
         outputs: List[SubOutput] = self.test_outputs.test_outputs
         if llm_str:
             outputs: List[SubOutput] = filter(lambda output: output.llm_str == llm_str, outputs)
-            if N is not None:
-                outputs: SubOutput = filter(lambda output: output.replication == N, outputs)
+            if n is not None:
+                outputs: SubOutput = filter(lambda output: output.replication == n, outputs)
                 if stage_name:
                     outputs: List[StageOutput] = filter(lambda output: output.stage_name == stage_name, outputs.stage_outputs)
                     if subset:
@@ -153,7 +161,7 @@ class OutputManager:
             log.warning(
                 "\nOutputs not found for:"
                 f"\n\t llm: {llm_str}"
-                f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
+                f"\n\t replicate: {n} / {self.config_manager.config.total_replications}"
                 f"\n\t stage: {stage_name}"
                 f"\n\t subset: {subset}"
             )
@@ -163,38 +171,32 @@ class OutputManager:
     def store_completion(
         self,
         llm_str: str,
-        N: int,
+        n: int,
         stage_name: str,
         subset: str,
         outputs: Union[RequestOut, List[RequestOut]]
     ):
-        output = self.retrieve(llm_str, N, stage_name, subset)[0]
+        output = self.retrieve(llm_str, n, stage_name, subset)[0]
         assert isinstance(output, StageOutput), "Output could not be stored."
         
         output.outputs = list(outputs)
         
         stage_config = self.config_manager.retrieve(
-            llm_str, N, stage_name, subset
+            llm_str, n, stage_name, subset
         )
         
         expected_outputs = TestPrompts(stage_config, self).expected_outputs
         output.complete = len(output.outputs) == expected_outputs
         
+        stage_outputs = self.retrieve(llm_str, n, stage_name)
+        stage_complete = self._check_stage_completion(stage_name, stage_outputs)
+            
+        self.processor(list(output)).process(stage_complete)
+        
         idx_1, idx_2 = self._get_output_index(output)
         self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
-        log.info(
-            "\nOutputs stored successfully for:"
-            f"\n\t llm: {llm_str}"
-            f"\n\t replicate: {N} / {self.config_manager.config.total_replications}"
-            f"\n\t stage: {stage_name}"
-            f"\n\t subset: {subset}"
-            f"\n\t COMPLETE: {output.complete}"
-        )
         
-        self.processor(list(output)).process_intermediate()
-        
-        stage_outputs = self.retrieve(llm_str, N, stage_name)
-        self._check_stage_completion(stage_name, stage_outputs)
+        self._log_stored_completion(output)
         return None
     
     def store_batch(
@@ -206,148 +208,27 @@ class OutputManager:
         outputs = batch.responses
         stage_configs: List[StageConfig] = self.config_manager.retrieve(llm_str)
         for stage_config in stage_configs:
-            replication  = stage_config.replication
+            n  = stage_config.replication
             subset = stage_config.subset
             
-            output = self.retrieve(llm_str, replication, stage_name, subset)
+            output = self.retrieve(llm_str, n, stage_name, subset)
             assert isinstance(output, StageOutput), "Output could not be stored."
             
             output.outputs = next((
                 response.response for response in outputs
-                if response.response_id == f"{replication}-{subset}"
+                if response.response_id == f"{n}-{subset}"
             ))
             
             expected_outputs = TestPrompts(stage_config, self).expected_outputs
             output.complete = len(output.outputs) == expected_outputs
             
+            stage_outputs = self.retrieve(llm_str, n, stage_name)
+            stage_complete = self._check_stage_completion(stage_name, stage_outputs)
+            
+            self.processor(list(output)).process(stage_complete)
+            
             idx_1, idx_2 = self._get_output_index(output)
             self.test_outputs.test_outputs[idx_1].stage_outputs[idx_2] = output
-            log.info(
-                "\nOutputs stored successfully for:"
-                f"\n\t llm: {llm_str}"
-                f"\n\t replicate: {replication} / {stage_config.total_replications}"
-                f"\n\t stage: {stage_name}"
-                f"\n\t subset: {subset}"
-                f"\n\t COMPLETE: {output.complete}"
-            )
             
-            self.processor(list(output)).process_intermediate()
-            
-            stage_outputs = self.retrieve(llm_str, replication, stage_name)
-            self._check_stage_completion(stage_name, stage_outputs)
-        return None
-    
-    def _check_directory(
-        self,
-        sub_path: Path,
-        llm_str: str,
-        replication: int,
-        stage_name: str,
-        schema: BaseModel
-    ):
-        stage_path = sub_path / f"stage_{stage_name}"
-        if not check_directories(stage_path):
-            log.warning(
-                f"OUTPUT: No outputs found for Stage {stage_name}"
-                f" in replication {replication} using {llm_str}."
-            )
-            return False
-
-        meta_json = load_json(sub_path / "_test_meta.json")
-        meta = validate_json(meta_json, TestMeta)
-        subsets = meta.stages[stage_name].subsets
-
-        stage_output = StageOutput(stage_name, llm_str, replication)
-        stage_output.initialize(subsets)
-
-        found_subsets = []
-
-        for subset in subsets:
-            subset_path = stage_path / subset
-            if not check_directories(subset_path):
-                continue
-
-            responses_path = subset_path / "responses"
-            responses_parsed = [
-                RequestOut(parsed=validate_json(load_json(response), schema))
-                for response in responses_path.iterdir()
-                if response.name.endswith("response.txt")
-            ]
-            if responses_parsed:
-                stage_output.store(subset, responses_parsed)
-                found_subsets.append(subset)
-        
-        output_indx = self._output_index(llm_str, replication, stage_name)
-        if isinstance(output_indx, int):
-            self.stage_outputs[stage_name][output_indx] = stage_output
-        else:
-            self.stage_outputs[stage_name] += [stage_output]
-
-        if stage_output.output_validation(subsets):
-            log.info(
-                f"OUTPUT: All outputs found for Stage {stage_name}"
-                f" in replication {replication} using {llm_str}."
-            )
-            return True
-        elif len(found_subsets):
-            log.warning(
-                f"OUTPUT: Partial outputs found for Stage {stage_name}"
-                f" in replication {replication} using {llm_str}."
-                f" Found subsets: {found_subsets}."
-            )
-        else:
-            log.warning(
-                f"OUTPUT: No outputs found for Stage {stage_name}"
-                f" in replication {replication} using {llm_str}."
-            )
-            return False
-        
-    def _check_batch(
-        self,
-        sub_path: Path,
-        stage_name: str,
-        llm_str: str,
-        schema: BaseModel
-    ):
-        meta_path = sub_path / "_test_meta.json"
-        
-        if not meta_path.exists():
-            return False
-        
-        meta_json = load_json(meta_path)
-        meta = validate_json(meta_json, TestMeta)
-        
-        batch_id = meta.stages[stage_name].batch_id
-        batch_file = f"stage_{stage_name}_{llm}.jsonl"
-        batch_file_path = Path(self.test_path / "_batches" / batch_file)
-        
-        llm = getattr(LLMModel, llm_str).get_llm_instance(self.llm_config)
-        batch = llm.retreive_batch(batch_id, schema, batch_file_path)
-        
-        if batch:
-            log.info(f"OUTPUT: Stage {stage_name} batch complete, storing outputs.")
-            
-            for response in batch:
-                id_split = response.response_id.split("-")
-                replication = id_split[0]
-                subset = id_split[1]
-                
-                output_indx = self._output_index(llm_str, replication, stage_name)
-                if isinstance(output_indx, int):
-                    self.stage_outputs[stage_name][output_indx].store(subset, response.response)
-                else:
-                    stage_output = StageOutput(stage_name, llm_str, replication)
-                    self.stage_outputs[stage_name] += [stage_output.store(subset, response.response)]
-        return True
-    
-    def store(self, subset: str, outputs: Union[RequestOut, List[RequestOut]]):
-        if self.outputs[subset]:
-            self.outputs[subset].extend(to_list(outputs))
-        else:
-            self.outputs[subset] = to_list(outputs)
-        return None
-    
-    def retreiveaa(self, subset: str):
-        if subset in self.outputs.keys():
-            return self.outputs[subset]
+            self._log_stored_completion(output)
         return None
