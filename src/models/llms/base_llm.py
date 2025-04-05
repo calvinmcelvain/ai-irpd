@@ -4,8 +4,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
-from models.request_output import RequestOut
-from models.meta_output import MetaOutput
+from models.request_output import RequestOut, MetaOutput
 from utils import validate_json_string
 
 
