@@ -106,14 +106,17 @@ class IRPDBase(ABC):
     def _generate_configs(self):
         pass
     
-    async def run(
+    def run(
         self,
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
         clear_logger(app=False)
-        test_configs = self._get_test_configs(config_ids=config_ids)
+        test_configs: List[ConfigManager] = self._get_test_configs(config_ids=config_ids)
         
-        for config in test_configs:
-            test_runner = TestRunner(config, print_response)
-            await test_runner.run()
+        for config_manager in test_configs:
+            config_id = config_manager.config.id
+            output_manager = self.outputs[config_id]
+            
+            test_runner = TestRunner(config_manager, output_manager, print_response)
+            self.outputs[config_id] = test_runner.run()

@@ -1,10 +1,11 @@
 import logging
+from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 
 from models.request_output import RequestOut
-from models.irpd.test_configs import TestConfig, SubConfig, StageConfig
+from models.irpd.test_configs import SubConfig, StageConfig
 
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ class StageInfo(BaseModel):
     subsets: List[str] = []
     tokens: Dict[str, StageTokens]
     batch_id: Optional[str] = None
+    batch_path: Path = None
 
 
 class TestMeta(BaseModel):
@@ -42,21 +44,19 @@ class StageOutput:
     subset: str
     outputs: List[RequestOut] = field(default_factory=list)
     complete: bool = False
-
-
-@dataclass
-class SubOutput:
-    sub_config: SubConfig
-    llm_str: str
-    replication: int
-    stage_outputs: List[StageOutput] = field(default_factory=list)
-    complete: bool = False
-    batch_id: str = None
+    llm_str: str = None
+    replication: int = None
+    
+    def __post_init__(self):
+        self.llm_str = self.stage_config.llm_str
+        self.replication = self.stage_config.replication
 
 
 @dataclass
 class TestOutput:
-    config: TestConfig
-    test_outputs: List[SubOutput] = field(default_factory=list)
+    llm_str: str
+    stage_outputs: List[StageOutput] = field(default_factory=list)
     complete: bool = False
     
+    def test_complete(self):
+        self.complete = all(output.complete for output in self.stage_outputs)

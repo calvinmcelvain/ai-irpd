@@ -5,7 +5,6 @@ from pathlib import Path
 from uuid import uuid4
 
 from utils import lazy_import
-from models.irpd.test_prompts import TestPrompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -68,6 +67,5 @@ class StageConfig(SubConfig):
         self.prompts_path = self.stage_path / self.subset / "prompts"
         self.responses_path = self.stage_path / self.subset / "responses"
         self.schema = lazy_import("models.irpd.schemas", f"Stage{self.stage_name}Schema")
-        self.expected_outputs()
     
     

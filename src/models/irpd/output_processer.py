@@ -76,39 +76,21 @@ class OutputProcesser:
     
     def _stage_info(self, meta: TestMeta):
         stage_info = meta.stages[self.stage_name]
-        stage_info.created = self.outputs[0].outputs[0].meta.created
         stage_info.subsets.extend(self.subsets)
         stage_info.batch_id = self.batch_id
         
-        for output in self.outputs:
-            input_tokens = sum([t.meta.input_tokens for t in output.outputs])
-            output_tokens = sum([t.meta.output_tokens for t in output.outputs])
-            total_tokens = sum([input_tokens, output_tokens])
-            
-            stage_info_tokens = stage_info.tokens[output.subset]
-            stage_info_tokens.input_tokens += input_tokens
-            stage_info_tokens.output_tokens += output_tokens
-            stage_info_tokens.total_tokens += total_tokens
+        if self.outputs[0].outputs:
+            stage_info.created = self.outputs[0].outputs[0].meta.created
+            for output in self.outputs:
+                input_tokens = sum([t.meta.input_tokens for t in output.outputs])
+                output_tokens = sum([t.meta.output_tokens for t in output.outputs])
+                total_tokens = sum([input_tokens, output_tokens])
+                
+                stage_info_tokens = stage_info.tokens[output.subset]
+                stage_info_tokens.input_tokens += input_tokens
+                stage_info_tokens.output_tokens += output_tokens
+                stage_info_tokens.total_tokens += total_tokens
         return meta
-            
-    def _write_meta(self):
-        if self.meta_path.exists():
-            meta = load_json_n_validate(self.meta_path, TestMeta)
-        else:
-            model_info = ModelInfo(
-                model=self.llm_instance.model,
-                parameters=self.llm_instance.configs.model_dump_json()
-            )
-            tokens = {subset: StageTokens() for subset in self.subsets}
-            meta = TestMeta(
-                model_info=model_info,
-                sub_config=self.configs,
-                stages={self.stage_name: StageInfo(tokens=tokens)}
-            )
-        
-        meta = self._stage_info(meta)
-        write_json(self.meta_path, meta)
-        return None
     
     def _write_output(self):
         for output in self.outputs:
@@ -131,11 +113,30 @@ class OutputProcesser:
                         response_path += f"stg_{self.stage}_response.txt"
                     write_file(prompts_path / user_path, user_prompt)
                     write_file(responses_path / response_path, response.text)
-            return None
+        return None
     
-    def process(self, stage_complete: bool):
+    def write_meta(self):
+        if self.meta_path.exists():
+            meta = load_json_n_validate(self.meta_path, TestMeta)
+        else:
+            model_info = ModelInfo(
+                model=self.llm_instance.model,
+                parameters=self.llm_instance.configs.model_dump_json()
+            )
+            tokens = {subset: StageTokens() for subset in self.subsets}
+            meta = TestMeta(
+                model_info=model_info,
+                sub_config=self.configs,
+                stages={self.stage_name: StageInfo(tokens=tokens)}
+            )
+        
+        meta = self._stage_info(meta)
+        write_json(self.meta_path, meta)
+        return None
+        
+    def process(self, stage_complete: bool = False):
         self._write_output()
-        self._write_meta()
+        self.write_meta()
         if stage_complete:
             if self.stage_name in {"1", "1r", "1c"}:
                 self._build_categories_pdf()
