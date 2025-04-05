@@ -3,6 +3,7 @@ from pathlib import Path
 from itertools import product
 from typing import List, Optional, Union
 
+from utils import check_directories, load_json_n_validate
 from models.llm_model import LLMModel
 from models.request_output import RequestOut
 from models.batch_output import BatchOut
@@ -36,12 +37,25 @@ class ConfigManager:
         return sub_configs
     
     def _generate_stage_configs(self):
-        stage_configs = [
-            StageConfig(**vars(sub_config), stage_name=stage_name, subset=subset)
-            for sub_config in self.sub_configs
-            for stage_name in sub_config.stages
-            for subset in self._get_subsets(stage_name)
-        ]
+        stage_configs = []
+        for sub_config in self.sub_configs:
+            expected_outputs = {
+                stage: TestPrompts(
+                    StageConfig(**vars(sub_config), stage_name=stage)
+                ).expected_outputs
+                for stage in sub_config.stages
+            }
+            stage_configs.extend([
+                StageConfig(
+                    **vars(sub_config),
+                    stage_name=stage_name,
+                    expected_outputs=expected_outputs[stage_name],
+                    subset=subset
+                )
+                for sub_config in self.sub_configs
+                for stage_name in sub_config.stages
+                for subset in self._get_subsets(stage_name)
+            ])
         return stage_configs
     
     def _get_subsets(self, stage_name: str):
@@ -103,6 +117,8 @@ class OutputManager:
                         stage_name=stage_config.stage_name,
                         subset=stage_config.subset
                     )
+                    if not self._check_output_directory(stage_config) else
+                    self._check_output_directory(stage_config)
                     for stage_config in self.config_manager.retrieve(
                         llm_str=sub_config.llm_str,
                         N=sub_config.replication
@@ -112,6 +128,28 @@ class OutputManager:
             for sub_config in self.config_manager.sub_configs
         ]
         return sub_outputs
+    
+    def _check_output_directory(self, stage_config: StageConfig):
+        stage_name = stage_config.stage_name
+        subset = stage_config.subset
+        stage_path = stage_config.stage_path
+        subset_path = stage_path / subset
+        responses_path = stage_config.responses_path
+        prompts_path = stage_config.prompts_path
+        
+        if not check_directories([responses_path, prompts_path]):
+            log.info(f"No outputs found in {subset_path}")
+            return None
+        
+        outputs = [
+            RequestOut(parsed=load_json_n_validate(path, stage_config.schema))
+            for path in responses_path.iterdir()
+        ]
+        
+        expected_outputs = TestPrompts(stage_config, self).expected_outputs
+        complete = len(outputs) == expected_outputs
+        
+        return StageOutput(stage_config, stage_name, subset, outputs, complete)
     
     def _get_output_index(self, output: StageOutput):
         sub_output: SubOutput = self.retreive(
