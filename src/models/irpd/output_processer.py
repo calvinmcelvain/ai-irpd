@@ -17,6 +17,7 @@ class OutputProcesser:
         self.configs = stage_outputs[0].stage_config
         self.stage = self.configs.stage_name
         self.sub_path = self.configs.sub_path
+        self.meta_path = self.configs.meta_path
         self.cases = self.configs.cases
         self.treatment = self.configs.treatment
         self.ra = self.configs.ra
@@ -91,10 +92,8 @@ class OutputProcesser:
         return meta
             
     def _write_meta(self):
-        meta_path = self.sub_path / "_test_meta.json"
-        
-        if meta_path.exists():
-            meta = load_json_n_validate(meta_path, TestMeta)
+        if self.meta_path.exists():
+            meta = load_json_n_validate(self.meta_path, TestMeta)
         else:
             model_info = ModelInfo(
                 model=self.llm_instance.model,
@@ -108,7 +107,7 @@ class OutputProcesser:
             )
         
         meta = self._stage_info(meta)
-        write_json(meta_path, meta)
+        write_json(self.meta_path, meta)
         return None
     
     def _write_output(self):
