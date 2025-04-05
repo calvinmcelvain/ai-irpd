@@ -1,7 +1,24 @@
 import json
+from datetime import datetime
 from dataclasses import dataclass
 from pydantic import BaseModel
-from models.meta_output import MetaOutput
+
+from models.prompts import Prompts
+
+
+
+@dataclass
+class MetaOutput:
+    input_tokens: int
+    output_tokens: int
+    prompt: Prompts
+    created: int = None
+    total_tokens: int = None
+    
+    def __post_init__(self):
+        self.total_tokens = sum([self.input_tokens, self.output_tokens])
+        if not self.created:
+            self.created = int(datetime.now().timestamp())
 
 
 @dataclass
