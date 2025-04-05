@@ -3,7 +3,7 @@ from typing import List
 from time import sleep
 
 from utils import load_json_n_validate
-from models.irpd.managers import ConfigManager, OutputManager
+from models.llm_model import LLMModel
 from models.irpd.output_processer import OutputProcesser
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.outputs import TestOutput, TestMeta
@@ -18,8 +18,8 @@ log = logging.getLogger(__name__)
 class TestRunner:
     def __init__(
         self,
-        config_manager: ConfigManager,
-        output_manager: OutputManager,
+        config_manager,
+        output_manager,
         print_response: bool = False
     ):
         self.config_manager = config_manager
@@ -52,6 +52,11 @@ class TestRunner:
                 ]
                 aggregated_prompts.extend(prompts)
         return aggregated_prompts
+    
+    def _generate_llm_instance(self, llm_str: str):
+        return getattr(LLMModel, llm_str).get_llm_instance(
+            self.llm_config, self.print_response
+        )
     
     def _run_batch(self, stage_outputs: List[StageOutput]):
         stage_name = stage_outputs[0].stage_name

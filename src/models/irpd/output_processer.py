@@ -126,7 +126,6 @@ class OutputProcesser:
             tokens = {subset: StageTokens() for subset in self.subsets}
             meta = TestMeta(
                 model_info=model_info,
-                sub_config=self.configs,
                 stages={self.stage_name: StageInfo(tokens=tokens)}
             )
         

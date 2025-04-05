@@ -1,28 +1,24 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
-
-from utils import lazy_import
-from models.llms.base_llm import BaseLLM
 
 
 
 @dataclass
 class TestConfig:
-    case: str
-    ra: str
-    treatment: str
-    llms: List[str]
-    llm_config: str
-    test_type: str
-    test_path: Path
-    data_path: Path
-    prompts_path: Path
-    stages: List[str]
-    batches: bool
-    total_replications: int
+    case: str = None
+    ra: str = None
+    treatment: str = None
+    llms: List[str] = None
+    llm_config: str = None
+    test_type: str = None
+    test_path: Path = None
+    data_path: Path = None
+    prompts_path: Path = None
+    stages: List[str] = None
+    batches: bool = None
+    total_replications: int = None
     cases: List[str] = None
     instance_types: List[str] = None
     max_instances: Optional[int] = None
@@ -36,36 +32,5 @@ class TestConfig:
             self.instance_types = ["ucoop", "udef"]
         else:
             self.instance_types =["coop", "def"]
-    
-
-@dataclass
-class SubConfig(TestConfig):
-    sub_path: Path
-    llm_str: str
-    llm_instance: BaseLLM
-    replication: int
-    meta_path: Path = None
-    
-    def __post_init__(self):
-        self.meta_path = self.sub_path / "_test_meta.json"
-        if self.batches:
-            self.batches = self.llm_instance.batches
-
-    
-@dataclass
-class StageConfig(SubConfig):
-    stage_name: str
-    expected_outputs: int = None
-    schema: BaseModel = None
-    subset: str = None
-    stage_path: Path = None
-    prompts_path: Path = None
-    responses_path: Path = None
-    
-    def __post_init__(self):
-        self.stage_path = self.sub_path / f"stage_{self.stage_name}"
-        self.prompts_path = self.stage_path / self.subset / "prompts"
-        self.responses_path = self.stage_path / self.subset / "responses"
-        self.schema = lazy_import("models.irpd.schemas", f"Stage{self.stage_name}Schema")
     
     

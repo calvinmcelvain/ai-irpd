@@ -5,7 +5,6 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 
 from models.request_output import RequestOut
-from models.irpd.test_configs import SubConfig, StageConfig
 
 
 log = logging.getLogger(__name__)
@@ -33,23 +32,17 @@ class StageInfo(BaseModel):
 
 class TestMeta(BaseModel):
     model_info: ModelInfo
-    sub_config: SubConfig
     stages: Dict[str, StageInfo]
 
 
 @dataclass
 class StageOutput:
-    stage_config: StageConfig
     stage_name: str
     subset: str
+    llm_str: str
+    replication: int
     outputs: List[RequestOut] = field(default_factory=list)
     complete: bool = False
-    llm_str: str = None
-    replication: int = None
-    
-    def __post_init__(self):
-        self.llm_str = self.stage_config.llm_str
-        self.replication = self.stage_config.replication
 
 
 @dataclass

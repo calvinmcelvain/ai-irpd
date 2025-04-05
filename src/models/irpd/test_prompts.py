@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from utils import file_to_string
 from models.prompts import Prompts
-from models.irpd.test_configs import StageConfig
+from models.irpd.test_configs import TestConfig
 from models.irpd.managers import OutputManager
 
 
@@ -15,24 +15,28 @@ log = logging.getLogger(__name__)
 class TestPrompts:
     def __init__(
         self,
-        stage_config: StageConfig,
+        test_config: TestConfig,
+        llm_str: str,
+        stage_name: str,
+        replication: int,
+        subset: str,
         output_manager: OutputManager
     ):
-        self.stage = stage_config.stage_name
-        self.replication = stage_config.replication
-        self.subset = stage_config.subset
-        self.llm_str = stage_config.llm_str
-        self.case = stage_config.case
-        self.cases = stage_config.cases
-        self.treatment = stage_config.treatment
-        self.ra = stage_config.ra
-        self.stage_config = stage_config
+        self.stage = stage_name
+        self.replication = replication
+        self.subset = subset
+        self.llm_str = llm_str
+        self.case = test_config.case
+        self.cases = test_config.cases
+        self.treatment = test_config.treatment
+        self.ra = test_config.ra
+        self.test_config = test_config
         self.output_manager = output_manager
         
-        self.fixed = stage_config.test_type in {"cross_model", "intra_model"}
+        self.fixed = test_config.test_type in {"cross_model", "intra_model"}
         
-        self.data_path = stage_config.data_path
-        self.prompts_path = stage_config.prompts_path
+        self.data_path = test_config.data_path
+        self.prompts_path = test_config.prompts_path
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
         
@@ -131,7 +135,7 @@ class TestPrompts:
             prompt += self._data_definitions()
             if self.stage in {"2", "3"}:
                 prompt += "\n\n## Categories\n\n"
-                if "1c" in self.stage_config.stages:
+                if "1c" in self.test_config.stages:
                     context = self.output_manager.retrieve(
                         self.llm_str, self.replication, "1c", "full"
                     )
@@ -147,7 +151,7 @@ class TestPrompts:
     
     def _construct_user_prompt(self):
         summary_path = self.data_path / "ra_summaries.csv"
-        if "0" not in self.stage_config.stages:
+        if "0" not in self.test_config.stages:
             df = pd.read_csv(summary_path)
             df = df[(df["case"].isin(self.cases))]
             if self.treatment != "merged":
@@ -185,8 +189,8 @@ class TestPrompts:
             current_outputs = self.output_manager.retrieve(
                 self.llm_str, self.replication, self.stage, self.subset
             )
-            if self.stage_config.max_instances:
-                df = df[:self.stage_config.max_instances]
+            if self.test_config.max_instances:
+                df = df[:self.test_config.max_instances]
             if self.stage in current_outputs.outputs:
                 window_nums = [output.parsed.window_number for output in current_outputs.outputs]
                 df = df[~df["window_number"].isin(window_nums)]

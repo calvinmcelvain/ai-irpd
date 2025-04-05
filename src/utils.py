@@ -20,6 +20,15 @@ log = logging.getLogger(__name__)
 
 
 
+def to_list(arg: Union[object, List[object]]):
+    """
+    Returns listed arg.
+    """
+    if isinstance(arg, list):
+        return arg
+    return [arg]
+
+
 def get_env_var(key: str) -> str:
     """
     Retrieve the environment variable associated with `key`.
