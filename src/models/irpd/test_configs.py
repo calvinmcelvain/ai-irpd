@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Optional
+from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
 
+from utils import lazy_import
 from models.llms.base_llm import BaseLLM
 
 
@@ -53,6 +55,7 @@ class SubConfig(TestConfig):
 @dataclass
 class StageConfig(SubConfig):
     stage_name: str
+    schema: BaseModel = None
     subset: str = None
     stage_path: Path = None
     prompts_path: Path = None
@@ -62,5 +65,6 @@ class StageConfig(SubConfig):
         self.stage_path = self.sub_path / f"stage_{self.stage_name}"
         self.prompts_path = self.stage_path / self.subset / "prompts"
         self.responses_path = self.stage_path / self.subset / "responses"
+        self.schema = lazy_import("models.irpd.schemas", f"Stage{self.stage_name}Schema")
     
     
