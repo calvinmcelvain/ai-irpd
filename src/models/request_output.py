@@ -11,9 +11,8 @@ from models.prompts import Prompts
 class MetaOutput:
     input_tokens: int
     output_tokens: int
-    prompt: Prompts
-    created: int = None
     total_tokens: int = None
+    created: int = None
     
     def __post_init__(self):
         self.total_tokens = sum([self.input_tokens, self.output_tokens])
@@ -25,6 +24,7 @@ class MetaOutput:
 class RequestOut:
     text: str = None
     parsed: BaseModel = None
+    prompts: Prompts
     meta: MetaOutput = None
     
     def __post_init__(self):
