@@ -1,13 +1,11 @@
 import logging
 import pandas as pd
 from typing import List
-from pathlib import Path
-from pydantic import BaseModel
 
 from utils import txt_to_pdf, load_json_n_validate, write_json, write_file
-from tools.functions import categories_to_txt, instance_types, output_attrb
+from tools.functions import categories_to_txt, output_attrb
 from models.irpd.test_meta import TestMeta, ModelInfo, StageTokens, StageInfo
-from models.irpd.outputs import SubOutput, StageOutput
+from models.irpd.outputs import StageOutput
 
 
 log = logging.getLogger(__name__)
@@ -115,36 +113,34 @@ class OutputProcesser:
         return None
     
     def _write_output(self):
-        outputs = self.outputs[0].outputs
-        prompts_path = self.configs.prompts_path
-        responses_path = self.configs.responses_path
-        
-        system_prompt = outputs[0].prompts.system
-        system_path = f"{self.subsets[0]}_stg_{self.stage}_system_prompt.txt"
-        write_file(prompts_path / system_path, system_prompt)
-        
-        for output in outputs:
-            user_prompt = output.prompts.user
-            user_path = f"{self.subsets[0]}_"
-            response_path = f"{self.subsets[0]}_"
-            if self.stage in {"2", "3"}:
-                user_path += f"{output.parsed.window_number}_user_prompt.txt"
-                response_path += f"{output.parsed.window_number}_response.txt"
-            else:
-                user_path += f"stg_{self.stage}_user_prompt.txt"
-                response_path += f"stg_{self.stage}_response.txt"
-            write_file(prompts_path / user_path, user_prompt)
-            write_file(responses_path / response_path, output.text)
-        return None
+        for output in self.outputs:
+            if not output.complete:
+                prompts_path = self.configs.prompts_path
+                responses_path = self.configs.responses_path
+                system_prompt = output.outputs[0].prompts.system
+                system_path = f"{self.subsets[0]}_stg_{self.stage}_system_prompt.txt"
+                write_file(prompts_path / system_path, system_prompt)
+                
+                for response in output.outputs:
+                    user_prompt = response.prompts.user
+                    user_path = f"{self.subsets[0]}_"
+                    response_path = f"{self.subsets[0]}_"
+                    if self.stage in {"2", "3"}:
+                        user_path += f"{response.parsed.window_number}_user_prompt.txt"
+                        response_path += f"{response.parsed.window_number}_response.txt"
+                    else:
+                        user_path += f"stg_{self.stage}_user_prompt.txt"
+                        response_path += f"stg_{self.stage}_response.txt"
+                    write_file(prompts_path / user_path, user_prompt)
+                    write_file(responses_path / response_path, response.text)
+            return None
     
-    def process_final(self):
-        if self.stage_name in {"1", "1r", "1c"}:
-            self._build_categories_pdf()
-        else:
-            self._build_data_output()
-        return None
-    
-    def process_intermediate(self):
+    def process(self, stage_complete: bool):
         self._write_output()
         self._write_meta()
+        if stage_complete:
+            if self.stage_name in {"1", "1r", "1c"}:
+                self._build_categories_pdf()
+            else:
+                self._build_data_output()
         return None
