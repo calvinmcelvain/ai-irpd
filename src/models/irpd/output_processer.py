@@ -4,8 +4,7 @@ from typing import List
 
 from utils import txt_to_pdf, load_json_n_validate, write_json, write_file
 from tools.functions import categories_to_txt, output_attrb
-from models.irpd.test_meta import TestMeta, ModelInfo, StageTokens, StageInfo
-from models.irpd.outputs import StageOutput
+from models.irpd.outputs import StageOutput, ModelInfo, StageInfo, StageTokens, TestMeta
 
 
 log = logging.getLogger(__name__)

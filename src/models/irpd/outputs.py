@@ -50,7 +50,6 @@ class SubOutput:
     llm_str: str
     replication: int
     stage_outputs: List[StageOutput] = field(default_factory=list)
-    meta: TestMeta
     complete: bool = False
     batch_id: str = None
 
