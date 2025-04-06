@@ -95,6 +95,7 @@ class TestRunner:
         
         log.info(
             f"\n Requesting batch for:"
+            f"\n\t config: {self.test_config.id}"
             f"\n\t llm: {llm_str}"
             f"\n\t stage: {stage_name}"
             f"\n\t replications: {self.test_config.total_replications}"
@@ -152,6 +153,7 @@ class TestRunner:
                 
                 log.info(
                     f"\n Requesting completion for:"
+                    f"\n\t config: {self.test_config.id}"
                     f"\n\t llm: {llm_str}"
                     f"\n\t replicate: {replication} of {self.test_config.total_replications}"
                     f"\n\t stage: {stage_name}"

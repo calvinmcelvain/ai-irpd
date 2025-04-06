@@ -143,6 +143,7 @@ class OutputManager:
     def _log_stored_completion(self, stage_output: StageOutput):
         log.info(
             "\nOutputs stored successfully for:"
+            f"\n\t config: {self.test_config.id}"
             f"\n\t llm: {stage_output.llm_str}"
             f"\n\t replicate: {stage_output.replication} of {self.total_replications}"
             f"\n\t stage: {stage_output.stage_name}"
@@ -170,6 +171,7 @@ class OutputManager:
         if outputs is None:
             log.warning(
                 "\nOutputs not found for:"
+                f"\n\t config: {self.test_config.id}"
                 f"\n\t llm: {llm_str}"
                 f"\n\t replicate: {n} of {self.test_config.total_replications}"
                 f"\n\t stage: {stage_name}"
