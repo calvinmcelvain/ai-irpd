@@ -93,10 +93,11 @@ class OutputManager:
                                 break
                             
                             batch_id = meta.stages[stage_name].batch_id
-                            batch_path = Path(meta.stages[stage_name].batch_path)
                             
                             if batch_id is None:
                                 continue
+                            
+                            batch_path = Path(meta.stages[stage_name].batch_path)
                             
                             retries = 0
                             while retries < 6:
