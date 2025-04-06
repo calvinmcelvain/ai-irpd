@@ -1,6 +1,7 @@
 import logging
 import json
 import pandas as pd
+from pathlib import Path
 from typing import List
 from datetime import datetime
 
@@ -117,7 +118,10 @@ class OutputProcesser:
             meta.stages[self.stage_name] = StageInfo()
         stage_info = meta.stages[self.stage_name]
         stage_info.batch_id = self.batch_id
-        stage_info.batch_path = self.batch_path.as_posix()
+        if isinstance(self.batch_path, Path):
+            stage_info.batch_path = self.batch_path.as_posix()
+        else:
+            stage_info.batch_path = self.batch_path
         
         for output in self.outputs:
             if not output.complete and output.outputs:

@@ -200,7 +200,8 @@ class TestPrompts:
                 )
                 for output in stage_2[0].outputs:
                     assigned_cats = [cat.category_name for cat in output.parsed.assigned_categories]
-                    df["assigned_categories"] = str(assigned_cats)
+                    df_index = df[df["window_number"] == output.parsed.window_number].index
+                    df.loc[df_index, "assigned_categories"] = str(assigned_cats)
             self.user = df.to_dict("records")
         return None
     
