@@ -118,11 +118,11 @@ class TestRunner:
             elif batch_out == "failed":
                 break
             
+            retries += 1
             if retries < 6:
                 time_to_wait = 10 + retries * 10
                 log.info(f"Waiting {time_to_wait} seconds.")
                 sleep(time_to_wait)
-                retries += 1
             else:
                 log.warning(f"Retries exhausted.")
                 break
