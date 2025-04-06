@@ -3,9 +3,11 @@ import time
 import random as r
 import json
 import boto3
+from typing import Optional
 from pydantic import BaseModel
 from abc import abstractmethod
 
+from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -50,17 +52,28 @@ class BedrockClient(BaseLLM):
         out = next(i["toolUse"]["input"] for i in content_out if "toolUse" in i)
         return out
     
-    def request(self, user: str, system: str, schema: BaseModel = None, **kwargs):
-        client = self.create_client()
-        
+    def _request_load(
+        self,
+        user: str,
+        system: str,
+        schema: Optional[BaseModel]
+    ):
         user_m = self._add_json_requirement(user) if schema else user
         body_load = self._prep_messages(user_m, system)
         body_load.update({"inferenceConfig": self.configs.model_dump(exclude_none=True)})
         body_load.update(self._json_tool_call(schema)) if schema else {}
-        
         request_load = {"modelId": self.model}
         request_load.update({"contentType": "application/json"})
         request_load.update({"body": json.dumps(body_load)})
+        return request_load
+    
+    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
+        client = self.create_client()
+        
+        user = prompts.user
+        system = prompts.system
+        
+        request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
         rate_limit_time = kwargs.get("rate_limit_time", 30)

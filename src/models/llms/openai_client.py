@@ -88,6 +88,17 @@ class OpenAIClient(BaseLLM):
             log.info(f"Batch {batch_id} is {batch.status}.")
             return None
         
+        log.info(
+            f"\nBatch requests summary:"
+            f"\n\t success: {batch.request_counts.completed}"
+            f"\n\t failed: {batch.request_counts.failed}"
+            f"\n\t total: {batch.request_counts.total}"
+        )
+        
+        if batch.error_file_id:
+            log.info(f"Batch {batch_id} had error {json.dumps(batch.errors, indent=2)}")
+            return "failed"
+        
         batch_output_file = client.files.content(file_id=batch.output_file_id).iter_lines()
         batch_input_file = load_jsonl(batch_file_path) if batch_file_path else None
         

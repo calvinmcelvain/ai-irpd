@@ -49,7 +49,7 @@ def create_directory(paths: List[Union[str, Path]]) -> None:
     """
     Creates directory for paths.
     """
-    paths = list(paths)
+    paths = to_list(paths)
     for path in paths:
         path_c = Path(path)
         try:
@@ -183,8 +183,8 @@ def write_file(
     """
     Write a list of strings to specified file paths.
     """
-    file_paths = list(file_paths)
-    file_writes = list(file_writes)
+    file_paths = to_list(file_paths)
+    file_writes = to_list(file_writes)
     assert len(file_paths) == len(file_writes), "`file_paths` and `file_writes` must be same length."
     for idx, path in enumerate(file_paths):
         path = Path(path)
@@ -202,7 +202,7 @@ def write_jsonl(
     """
     Writes jsonl file from json/dict object.
     """
-    json_obj = list(json_obj)
+    json_obj = to_list(json_obj)
     write_file(file_paths=file_path, file_writes="")
     with open(Path(file_path), "w") as f:
         for line in json_obj:
@@ -229,7 +229,7 @@ def check_directories(paths: Union[Union[str, Path], List[Union[str, Path]]]) ->
     Check if all given directories exist.
     """
     try:
-        paths = list(paths)
+        paths = to_list(paths)
         return all(Path(path).is_dir() for path in paths)
     except Exception as e:
         log.exception(f"Error checking directories: {e}")

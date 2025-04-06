@@ -7,6 +7,7 @@ from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
 from google.api_core.exceptions import ResourceExhausted, InternalServerError
 
+from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 
@@ -58,9 +59,11 @@ class Gemini(BaseLLM):
         return request_load
         
     
-    def request(self, user, system, schema: BaseModel = None, **kwargs):
+    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
         client = self.create_client()
         
+        user = prompts.user
+        system = prompts.system
         request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)

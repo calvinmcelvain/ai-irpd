@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 from utils import file_to_string
 from models.prompts import Prompts
-from models.irpd.test_configs import TestConfig
-from models.irpd.managers import OutputManager
+from models.irpd.test_config import TestConfig
+from models.irpd.output_manager import OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class TestPrompts:
         subset: str,
         output_manager: OutputManager
     ):
-        self.stage = stage_name
+        self.stage_name = stage_name
         self.replication = replication
         self.subset = subset
         self.llm_str = llm_str
@@ -53,7 +53,7 @@ class TestPrompts:
         return section + "\n"
     
     def _task_overview(self):
-        section_path = self.sections_path / "task_overview" / f"stage_{self.stage}.md"
+        section_path = self.sections_path / "task_overview" / f"stage_{self.stage_name}.md"
         return self._get_section(section_path, "Task Overview")
 
     def _experimental_context(self):
@@ -65,16 +65,16 @@ class TestPrompts:
         return self._get_section(section_path, "Summary Context")
     
     def _task(self):
-        section_path = self.sections_path / "task" / f"stage_{self.stage}.md"
+        section_path = self.sections_path / "task" / f"stage_{self.stage_name}.md"
         return self._get_section(section_path, "Task")
     
     def _constraints(self):
-        section_path = self.sections_path / "constraints" / f"stage_{self.stage}.md"
+        section_path = self.sections_path / "constraints" / f"stage_{self.stage_name}.md"
         return self._get_section(section_path, "Constraints")
     
     def _data_definitions(self):
         section_path = self.sections_path / "data_definitions"
-        stage_path = section_path / f"stage_{self.stage}"
+        stage_path = section_path / f"stage_{self.stage_name}"
         
         section = file_to_string(section_path / "initial.md")
         
@@ -84,7 +84,7 @@ class TestPrompts:
             section += file_to_string(subset_path / "initial.md")
             for case in self.cases:
                 section += file_to_string(subset_path / f"{case}.md")
-        if self.stage in {"3"}:
+        if self.stage_name in {"3"}:
             section += file_to_string(stage_path / f"assignment.md")
         
         section += file_to_string(stage_path / "window_number.md")
@@ -131,9 +131,9 @@ class TestPrompts:
         e = self._constraints()
         prompt = a + b + c + d + e
         
-        if self.stage in {"1", "2", "3"}:
+        if self.stage_name in {"1", "2", "3"}:
             prompt += self._data_definitions()
-            if self.stage in {"2", "3"}:
+            if self.stage_name in {"2", "3"}:
                 prompt += "\n\n## Categories\n\n"
                 if "1c" in self.test_config.stages:
                     context = self.output_manager.retrieve(
@@ -146,7 +146,7 @@ class TestPrompts:
                 for output in context:
                     categories = self._get_att(output.outputs[0].parsed)
                     prompt += self._categories_to_txt(categories)
-        self.user = prompt
+        self.system = prompt
         return None
     
     def _construct_user_prompt(self):
@@ -170,35 +170,35 @@ class TestPrompts:
         else:
             log.error("Stage 0 has not been setup yet for prompts.")
             raise ValueError
-        if self.stage == "1":
+        if self.stage_name == "1":
             self.user = [df.to_dict("records")]
-        if self.stage == "1r":
+        if self.stage_name == "1r":
             context = self.output_manager.retrieve(
                 self.llm_str, self.replication, "1", self.subset
             )
             categories = context[0].outputs[0].parsed
             self.user = [self._categories_to_txt(self._get_att(categories))]
-        if self.stage == "1c":
+        if self.stage_name == "1c":
             prompt = ""
-            context = self.output_manager.retrieve(self.llm, self.replication, "1r")
+            context = self.output_manager.retrieve(self.llm_str, self.replication, "1r")
             for output in context:
                 categories = self._get_att(output.outputs[0].parsed)
                 prompt += self._categories_to_txt(categories)
             self.user = [prompt]
-        if self.stage in {"2", "3"}:
+        if self.stage_name in {"2", "3"}:
             current_outputs = self.output_manager.retrieve(
-                self.llm_str, self.replication, self.stage, self.subset
-            )
+                self.llm_str, self.replication, self.stage_name, self.subset
+            )[0]
             if self.test_config.max_instances:
                 df = df[:self.test_config.max_instances]
-            if self.stage in current_outputs.outputs:
+            if current_outputs.outputs:
                 window_nums = [output.parsed.window_number for output in current_outputs.outputs]
                 df = df[~df["window_number"].isin(window_nums)]
-            if self.stage in {"3"}:
+            if self.stage_name in {"3"}:
                 stage_2 = self.output_manager.retrieve(
                     self.llm_str, self.replication, "2", self.subset
                 )
-                for output in stage_2.outputs:
+                for output in stage_2[0].outputs:
                     assigned_cats = [cat.category_name for cat in output.parsed.assigned_categories]
                     df["assigned_categories"] = str(assigned_cats)
             self.user = df.to_dict("records")

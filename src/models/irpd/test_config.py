@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Optional
 from pathlib import Path
 from uuid import uuid4
@@ -20,17 +20,15 @@ class TestConfig:
     batches: bool = None
     total_replications: int = None
     cases: List[str] = None
-    instance_types: List[str] = None
     max_instances: Optional[int] = None
     id: Optional[str] = None
     
     def __post_init__(self):
         self.id = uuid4().hex
         self.cases = self.case.split("_")
+    
+    def convert_to_dict(self):
+        return asdict(self, dict_factory=lambda x: {
+            k: (v.as_posix() if isinstance(v, Path) else v) for k, v in x
+        })
         
-        if self.case in {"uni", "uniresp"}:
-            self.instance_types = ["ucoop", "udef"]
-        else:
-            self.instance_types =["coop", "def"]
-    
-    

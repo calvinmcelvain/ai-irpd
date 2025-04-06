@@ -5,8 +5,8 @@ from pathlib import Path
 
 from utils import to_list
 from models.irpd.irpd_base import IRPDBase
-from models.irpd.test_configs import TestConfig
-from models.irpd.managers import ConfigManager, OutputManager
+from models.irpd.test_config import TestConfig
+from models.irpd.output_manager import OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -85,6 +85,6 @@ class Test(IRPDBase):
                 batches=self.batch_request,
                 total_replications=1
             )
-            self.configs[config.id] = ConfigManager(config)
+            self.configs[config.id] = config
             self.outputs[config.id] = OutputManager(config)
         return None

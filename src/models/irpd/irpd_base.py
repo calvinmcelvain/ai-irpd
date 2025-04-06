@@ -6,9 +6,8 @@ from abc import ABC, abstractmethod
 
 from utils import get_env_var, to_list
 from logger import clear_logger
-from models.irpd.test_configs import TestConfig
+from models.irpd.test_config import TestConfig
 from models.irpd.test_runner import TestRunner
-from models.irpd.managers import ConfigManager
 
 
 log = logging.getLogger(__name__)
@@ -77,12 +76,13 @@ class IRPDBase(ABC):
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
         if config_ids:
-            config_ids = set(list(config_ids))
-            return list(filter(lambda config: config.test_id in config_ids, self.configs.values()))
-        return list(self.configs.values())
+            config_ids = to_list(config_ids)
+            return {k: self.configs[k] for k in config_ids if k in self.configs}
+        else:
+            return self.configs
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
-        configs = list(configs)
+        configs = to_list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
                 log.error(
@@ -96,7 +96,7 @@ class IRPDBase(ABC):
                     " Did not add."
                 )
                 continue
-            self.configs[config.id] = ConfigManager(config)
+            self.configs[config.id] = config
 
     @abstractmethod
     def _generate_test_paths(self):
@@ -112,11 +112,10 @@ class IRPDBase(ABC):
         print_response: bool = False
     ):
         clear_logger(app=False)
-        test_configs: List[ConfigManager] = self._get_test_configs(config_ids=config_ids)
+        test_configs: Dict[str, TestConfig] = self._get_test_configs(config_ids=config_ids)
         
-        for config_manager in test_configs:
-            config_id = config_manager.config.id
+        for config_id, config in test_configs.items():
             output_manager = self.outputs[config_id]
             
-            test_runner = TestRunner(config_manager, output_manager, print_response)
+            test_runner = TestRunner(config, output_manager, print_response)
             self.outputs[config_id] = test_runner.run()

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from utils import lazy_import, load_config
+from utils import lazy_import, load_config, to_list
 
 
 CONFIGS = load_config("irpd_configs.yml")
@@ -25,7 +25,6 @@ LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
 log = logging.getLogger(__name__)
-
 
 
 @dataclass(frozen=True)
@@ -59,6 +58,8 @@ class IRPDTestClass(TestClassContainer, Enum):
         test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
         **kwargs
     ):
+        if len(to_list(stages)) == 1 and STAGES.__args__.index(to_list(stages)[0]) != 0:
+            stages = list(STAGES.__args__[:STAGES.__args__.index(to_list(stages)[0]) + 1])
         test_class = self.impl
         return test_class(
             cases=cases,
