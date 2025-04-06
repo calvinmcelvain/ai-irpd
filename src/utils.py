@@ -20,6 +20,15 @@ log = logging.getLogger(__name__)
 
 
 
+def to_list(arg: Union[object, List[object]]):
+    """
+    Returns listed arg.
+    """
+    if isinstance(arg, list):
+        return arg
+    return [arg]
+
+
 def get_env_var(key: str) -> str:
     """
     Retrieve the environment variable associated with `key`.
@@ -36,31 +45,13 @@ def get_env_var(key: str) -> str:
     return value
 
 
-def to_list(value: Union[str, list]) -> list:
-    """
-    Returns list containing string.
-    """
-    if isinstance(value, list):
-        return value
-    return [value]
-
-
-def str_to_path(path: Union[str, Path]) -> Path:
-    """
-    Return Path object for path arg.
-    """
-    if isinstance(path, str):
-        return Path(path)
-    return path
-
-
 def create_directory(paths: List[Union[str, Path]]) -> None:
     """
     Creates directory for paths.
     """
     paths = to_list(paths)
     for path in paths:
-        path_c = str_to_path(path)
+        path_c = Path(path)
         try:
             if not path_c.exists():
                 path_c.mkdir(exist_ok=True, parents=True)
@@ -108,7 +99,7 @@ def load_config(config: str) -> dict:
         raise
 
 
-def load_json(file_path: Union[str, Path], dumps: bool = False) -> object | str:
+def load_json(file_path: Union[str, Path], dumps: bool = False) -> dict | str:
     """
     Returns the JSON object (or string) from a JSON file.
     """
@@ -116,6 +107,19 @@ def load_json(file_path: Union[str, Path], dumps: bool = False) -> object | str:
         json_data = json.loads(Path(file_path).read_text())
     except (JSONDecodeError, FileNotFoundError) as e:
         log.error(f"Error loading JSON from {file_path}: {e}")
+        raise
+    return json.dumps(json_data) if dumps else json_data
+
+
+def load_jsonl(file_path: Union[str, Path], dumps: bool = False) -> List[dict] | str:
+    """
+    Returns a list of JSON objects (or a JSON string) from a JSONL file.
+    """
+    try:
+        with open(Path(file_path), "r") as f:
+            json_data = [json.loads(line) for line in f if line.strip()]
+    except (JSONDecodeError, FileNotFoundError) as e:
+        log.error(f"Error loading JSONL from {file_path}: {e}")
         raise
     return json.dumps(json_data) if dumps else json_data
 
@@ -133,6 +137,17 @@ def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
             f"JSON data: {json.dumps(json_data, indent=2)}"
         )
         return None
+
+
+def load_json_n_validate(
+    file_path: Union[str, Path],
+    schema: BaseModel
+) -> BaseModel | None:
+    """
+    Loads json file and validates for schema.
+    """
+    json_data = load_json(file_path)
+    return validate_json(json_data, schema)
 
 
 def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | None:
@@ -162,7 +177,7 @@ def file_to_string(file_path: Union[str, Path]) -> str:
 
 
 def write_file(
-    file_paths: Union[str, List[Union[str, Path]]],
+    file_paths: Union[Union[str, Path], List[Union[str, Path]]],
     file_writes: Union[str, List[str]]
 ) -> None:
     """
@@ -178,6 +193,21 @@ def write_file(
         except Exception as e:
             log.error(f"Error writing to file '{path.as_posix()}': {e}")
             raise
+        
+
+def write_jsonl(
+    file_path: Union[str, Path],
+    json_obj: Union[dict, List[dict]]
+):
+    """
+    Writes jsonl file from json/dict object.
+    """
+    json_obj = to_list(json_obj)
+    write_file(file_paths=file_path, file_writes="")
+    with open(Path(file_path), "w") as f:
+        for line in json_obj:
+            json.dump(line, f)
+            f.write("\n")
 
 
 def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None:
@@ -194,11 +224,12 @@ def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None
         raise
 
 
-def check_directories(paths: List[str]) -> bool:
+def check_directories(paths: Union[Union[str, Path], List[Union[str, Path]]]) -> bool:
     """
     Check if all given directories exist.
     """
     try:
+        paths = to_list(paths)
         return all(Path(path).is_dir() for path in paths)
     except Exception as e:
         log.exception(f"Error checking directories: {e}")

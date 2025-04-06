@@ -1,9 +1,10 @@
 from pydantic import BaseModel
+from typing import List, Optional, Tuple
+from pathlib import Path
 from abc import ABC, abstractmethod
 
 from models.prompts import Prompts
-from models.request_output import RequestOut
-from models.meta_output import MetaOutput
+from models.request_output import RequestOut, MetaOutput
 from utils import validate_json_string
 
 
@@ -17,14 +18,16 @@ class BaseLLM(ABC):
         model: str = None,
         configs: BaseModel = None,
         print_response: bool = False,
-        json_tool: bool = False,
         **kwargs
     ):
         self.api_key = api_key
         self.model = model
         self.configs = configs or self.default_configs()
         self.print_response = print_response
-        self.json_tool = json_tool
+        self.json_tool = kwargs.get("json_tool", None)
+        self.batches = kwargs.get("batches", True)
+        self.region = kwargs.get("region", None)
+        self.base_url = kwargs.get("base_url", None)
     
     @staticmethod
     def _prep_system_message(system: str):
@@ -52,12 +55,12 @@ class BaseLLM(ABC):
         prompts = Prompts(system=system, user=user)
         meta = MetaOutput(
             input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            prompt=prompts
+            output_tokens=output_tokens
         )
         return RequestOut(
             text=content,
             parsed=validate_json_string(content, schema),
+            prompts=prompts,
             meta=meta
         )
     
@@ -69,12 +72,34 @@ class BaseLLM(ABC):
     def create_client(self):
         pass
     
+    def _format_batch(
+        self,
+        messages: List[Tuple[str, Prompts]],
+        schema: BaseModel = None
+    ):
+        pass
+    
+    def retreive_batch(
+        self,
+        batch_id: str,
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
+        pass
+    
+    def request_batch(
+        self,
+        messages: List[Tuple[str, Prompts]],
+        schema: Optional[BaseModel] = None,
+        batch_file_path: Optional[Path] = None
+    ):
+        pass
+    
     @abstractmethod
     def request(
         self,
-        user: str,
-        system: str,
-        schema: BaseModel = None,
+        prompts: Prompts,
+        schema: Optional[BaseModel] = None,
         **kwargs
     ):
         pass

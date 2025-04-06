@@ -1,9 +1,32 @@
+import json
+from datetime import datetime
+from dataclasses import dataclass
 from pydantic import BaseModel
-from typing import Optional
-from models.meta_output import MetaOutput
+
+from models.prompts import Prompts
 
 
-class RequestOut(BaseModel):
-    text: str
-    meta: Optional[MetaOutput]
-    parsed: Optional[BaseModel]
+
+@dataclass
+class MetaOutput:
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int = None
+    created: int = None
+    
+    def __post_init__(self):
+        self.total_tokens = sum([self.input_tokens, self.output_tokens])
+        if not self.created:
+            self.created = int(datetime.now().timestamp())
+
+
+@dataclass
+class RequestOut:
+    text: str = None
+    parsed: BaseModel = None
+    prompts: Prompts = None
+    meta: MetaOutput = None
+    
+    def __post_init__(self):
+        if self.parsed and not self.text:
+            self.text = json.dumps(self.parsed.model_dump(), indent=4)

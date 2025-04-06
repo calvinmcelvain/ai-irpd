@@ -34,6 +34,8 @@ class LLMModelClass(LLMModelClassContainer, Enum):
 class OtherArgs:
     json_tool: bool = None
     region: str = None
+    base_url: str = None
+    batches: bool = True
 
 
 @dataclass(frozen=True)
@@ -88,7 +90,8 @@ class LLMModel(LLMModelContainer, Enum):
         "GROK_2_1212",
         "grok-2-1212",
         "XAI_API_KEY",
-        LLMModelClass.GROK
+        LLMModelClass.GROK,
+        OtherArgs(base_url="https://api.x.ai/v1")
     )
     CLAUDE_3_5_SONNET = (
         "CLAUDE_3_5_SONNET",
@@ -108,26 +111,29 @@ class LLMModel(LLMModelContainer, Enum):
         "GEMINI_2_FLASH",
         "gemini-2.0-flash-001",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI
+        LLMModelClass.GEMINI,
+        OtherArgs(batches=False)
     )
     GEMINI_2_FLASH_LITE = (
         "GEMINI_2_FLASH_LITE",
         "gemini-2.0-flash-lite-001",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI
+        LLMModelClass.GEMINI,
+        OtherArgs(batches=False)
     )
     GEMINI_1_5_PRO = (
         "GEMINI_1_5_PRO",
         "gemini-1.5-pro-002",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI
+        LLMModelClass.GEMINI,
+        OtherArgs(batches=False)
     )
     NOVA_PRO_V1 = (
         "NOVA_PRO_V1",
         "amazon.nova-pro-v1:0",
         "BEDROCK_API_KEY",
         LLMModelClass.NOVA,
-        OtherArgs(json_tool=True, region="us-east-1")
+        OtherArgs(json_tool=True, region="us-east-1", batches=False)
     )
     MISTRAL_LARGE_2411 = (
         "MISTRAL_LARGE_2411",
@@ -152,5 +158,7 @@ class LLMModel(LLMModelContainer, Enum):
             configs=config_json,
             print_response=print_response,
             json_tool=self.other_args.json_tool,
-            region=self.other_args.region
+            region=self.other_args.region,
+            base_url=self.other_args.base_url,
+            batches=self.other_args.batches
         )
