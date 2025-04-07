@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
-from pydantic import BaseModel
 
+from tools.functions import categories_to_txt, output_attrb
 from utils import file_to_string
 from models.prompts import Prompts
 from models.irpd.test_config import TestConfig
@@ -94,35 +94,6 @@ class TestPrompts:
             return section
         return section
     
-    @staticmethod
-    def _get_att(output):
-        if hasattr(output, "categories"):
-            return output.categories
-        if hasattr(output, "refined_categories"):
-            return output.refined_categories
-        if hasattr(output, "assigned_categories"):
-            return output.assigned_categories
-        if hasattr(output, "category_ranking"):
-            return output.category_ranking
-    
-    @staticmethod
-    def _categories_to_txt(categories: BaseModel):
-        category_texts = []
-        for category in categories:
-            example_texts = []
-            for idx, example in enumerate(category.examples, start=1):
-                example_texts.append(
-                    f"  {idx}. Window number: {example.window_number},"
-                    f" Reasoning: {example.reasoning}"
-                )
-            category_text = (
-                f"### {category.category_name}\n\n"
-                f"**Definition**: {category.definition}\n\n"
-                f"**Examples**:\n\n{"\n".join(example_texts)}\n\n"
-            )
-            category_texts.append(category_text)
-        return "".join(category_texts)
-    
     def _construct_system_prompt(self):
         a = self._task_overview()
         b = self._experimental_context()
@@ -144,8 +115,8 @@ class TestPrompts:
                         self.llm_str, self.replication, "1r"
                     )
                 for output in context:
-                    categories = self._get_att(output.outputs[0].parsed)
-                    prompt += self._categories_to_txt(categories)
+                    categories = output_attrb(output.outputs[0].parsed)
+                    prompt += categories_to_txt(categories)
         self.system = prompt
         return None
     
@@ -177,13 +148,13 @@ class TestPrompts:
                 self.llm_str, self.replication, "1", self.subset
             )
             categories = context[0].outputs[0].parsed
-            self.user = [self._categories_to_txt(self._get_att(categories))]
+            self.user = [categories_to_txt(output_attrb(categories))]
         if self.stage_name == "1c":
             prompt = ""
             context = self.output_manager.retrieve(self.llm_str, self.replication, "1r")
             for output in context:
-                categories = self._get_att(output.outputs[0].parsed)
-                prompt += self._categories_to_txt(categories)
+                categories = output_attrb(output.outputs[0].parsed)
+                prompt += categories_to_txt(categories)
             self.user = [prompt]
         if self.stage_name in {"2", "3"}:
             current_outputs = self.output_manager.retrieve(
