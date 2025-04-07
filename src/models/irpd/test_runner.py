@@ -53,7 +53,6 @@ class TestRunner:
                 n = stage_output.replication
                 
                 test_prompts = TestPrompts(
-                    test_config=self.test_config,
                     llm_str=llm_str,
                     stage_name=stage,
                     replication=n,
