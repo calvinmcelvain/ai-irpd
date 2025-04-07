@@ -4,7 +4,6 @@ import pandas as pd
 from tools.functions import categories_to_txt, output_attrb
 from utils import file_to_string
 from models.prompts import Prompts
-from models.irpd.test_config import TestConfig
 from models.irpd.output_manager import OutputManager
 
 
@@ -15,7 +14,6 @@ log = logging.getLogger(__name__)
 class TestPrompts:
     def __init__(
         self,
-        test_config: TestConfig,
         llm_str: str,
         stage_name: str,
         replication: int,
@@ -26,17 +24,17 @@ class TestPrompts:
         self.replication = replication
         self.subset = subset
         self.llm_str = llm_str
-        self.case = test_config.case
-        self.cases = test_config.cases
-        self.treatment = test_config.treatment
-        self.ra = test_config.ra
-        self.test_config = test_config
+        self.test_config = output_manager.test_config
+        self.case = self.test_config.case
+        self.cases = self.test_config.cases
+        self.treatment = self.test_config.treatment
+        self.ra = self.test_config.ra
         self.output_manager = output_manager
         
-        self.fixed = test_config.test_type in {"cross_model", "intra_model"}
+        self.fixed = self.test_config.test_type in {"cross_model", "intra_model"}
         
-        self.data_path = test_config.data_path
-        self.prompts_path = test_config.prompts_path
+        self.data_path = self.test_config.data_path
+        self.prompts_path = self.test_config.prompts_path
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
         
