@@ -35,7 +35,7 @@ class Gemini(BaseLLM):
     """
     Google's Gemini class.
     
-    Defines request
+    Defines request methods for genai SDK.
     """
     def create_client(self):
         return genai.Client(api_key=self.api_key)
@@ -68,9 +68,22 @@ class Gemini(BaseLLM):
         request_load.update(self._prep_user_message(user))
         request_load.update({"config": GenerateContentConfig(**configs)})
         return request_load
-        
     
-    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
+    def _format_batch(self, messages, schema = None):
+        pass
+    
+    def retreive_batch(self, batch_id, schema = None, batch_file_path = None):
+        pass
+    
+    def request_batch(self, messages, schema = None, batch_file_path = None):
+        pass
+    
+    def request(
+        self,
+        prompts: Prompts,
+        schema: BaseModel = None,
+        **kwargs
+    ):
         client = self.create_client()
         
         user = prompts.user
