@@ -1,3 +1,6 @@
+"""
+Module for Prompts object.
+"""
 from pydantic import BaseModel
 
 
