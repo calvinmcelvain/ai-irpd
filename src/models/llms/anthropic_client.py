@@ -1,9 +1,15 @@
+"""
+Anthropic client module.
+
+Contains the AnthropicClient model and AnthropicToolCall model.
+"""
+
 import logging
 import time
 import json
 import random as r
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
@@ -13,6 +19,7 @@ from pydantic import BaseModel
 from abc import abstractmethod
 
 from utils import write_jsonl, load_jsonl
+from models.request_output import RequestOut
 from models.batch_output import BatchOut, BatchResponse
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -23,24 +30,46 @@ log = logging.getLogger(__name__)
 
 
 class AnthropicToolCall(BaseModel):
+    """
+    Pydantic model for tool calls to Anthropic models. `name` should not be
+    changed.
+    """
     name: str = "json_output"
     input_schema: object | None
     
 
 class AnthropicClient(BaseLLM):
+    """
+    Anthropic client class.
+    
+    Defines request methods using the Anthropic client.
+    """
     @abstractmethod
     def default_configs(self):
+        """
+        Sets default configs of LLM if not specified. Abstract for inherited
+        LLM models
+        """
         pass
     
     def create_client(self):
+        """
+        Initializes the Antropic client.
+        """
         return Anthropic(api_key=self.api_key)
     
     def _json_tool_call(self, schema: BaseModel):
+        """
+        Prepares LLM load for tool call feature.
+        """
         tool_load = AnthropicToolCall(input_schema=schema.model_json_schema())
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
     def _prep_messages(self, user: str, system: str):
+        """
+        Prepares messages for LLM.
+        """
         messages = {"messages": [self._prep_user_message(user)]}
         messages.update({"system": system})
         return messages
@@ -51,6 +80,9 @@ class AnthropicClient(BaseLLM):
         system: str,
         schema: Optional[BaseModel]
     ):
+        """
+        Creates the and returns general format for requests for Anthropic SDK.
+        """
         request_load = {"model": self.model}
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
@@ -62,6 +94,9 @@ class AnthropicClient(BaseLLM):
         messages: List[Prompts],
         schema: Optional[BaseModel] = None
     ):
+        """
+        Formats a list of messages to Anthropic batch request format.
+        """
         batch = {"requests": []}
         for message_id, message in messages:
             user = message.user,
@@ -78,7 +113,19 @@ class AnthropicClient(BaseLLM):
         batch_id: str,
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
-    ):
+    ) -> BatchOut | str:
+        """
+        Retrieves batch from Anthropic client, if complete. Otherwise returns a 
+        string of the current status of batch.
+
+        Args:
+            batch_id (str): The ID of the batch to be retrieved.
+            schema (Optional[BaseModel], optional): The schema of output if 
+            requested structured outputs. Defaults to None.
+            batch_file_path (Optional[Path], optional): The path to the original
+            batch request. Used to output a 'complete' BatchOut object. 
+            Defaults to None.
+        """
         client = self.create_client()
         
         batch = client.messages.batches.retrieve(batch_id)
@@ -98,6 +145,7 @@ class AnthropicClient(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
+            # Matching request prompts to response (if spceified)
             if batch_input_file:
                 prompts = next((
                     p["params"] 
@@ -128,7 +176,17 @@ class AnthropicClient(BaseLLM):
         messages: List[Prompts],
         schema: Optional[BaseModel] = None,
         batch_file_path: Optional[Path] = None
-    ):
+    ) -> str:
+        """
+        Requests batch from Anthropic client. Returns the batch ID.
+
+        Args:
+            messages (List[Prompts]): A list of Prompt objects.
+            schema (Optional[BaseModel], optional): The output structure/schema. 
+            Defaults to None.
+            batch_file_path (Optional[Path], optional): The path to save 
+            formatted batch. Saves as jsonl. Defaults to None.
+        """
         client = self.create_client()
         
         formatted_batch = self._format_batch(messages, schema)
@@ -140,7 +198,24 @@ class AnthropicClient(BaseLLM):
         
         return batch.id
         
-    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
+    def request(
+        self,
+        prompts: Prompts,
+        schema: BaseModel = None,
+        **kwargs
+    ) -> RequestOut:
+        """
+        Requests chat completion from Anthropic client. Returns a RequestOut
+        object.
+
+        Args:
+            prompts (Prompts): A Prompt object.
+            schema (BaseModel, optional): The structure/schema of output. 
+            Defaults to None.
+            kwargs:
+                - max_attempts: Number of attempts if failure.
+                - rate_limit_time: Time to wait if request limit hit.
+        """
         client = self.create_client()
         
         user = prompts.user
@@ -165,6 +240,8 @@ class AnthropicClient(BaseLLM):
                 time.sleep(rate_limit_time)
         
             if isinstance(response, Message):
+                # Getting the request content
+                # Specified in `tool_use` if structured outputs defined.
                 content = next(i.input if "tool_use" in i.type else i.text for i in response.content)
                 request_out = self._request_out(
                     input_tokens=response.usage.input_tokens,
