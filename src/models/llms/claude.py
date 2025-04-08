@@ -20,7 +20,4 @@ class Claude(AnthropicClient):
     configs: ClaudeConfigs
     
     def default_configs(self):
-        """
-        Defaults to default configs of Claude model.
-        """
         return ClaudeConfigs()

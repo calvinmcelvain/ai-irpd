@@ -11,9 +11,7 @@ import json
 import boto3
 from typing import Optional
 from pydantic import BaseModel
-from abc import abstractmethod
 
-from models.request_output import RequestOut
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
@@ -33,33 +31,17 @@ class BedrockClient(BaseLLM):
 
     Defines request methods using the Bedrock client.
     """
-    @abstractmethod
     def default_configs(self):
-        """
-        Sets default configs of LLM if not specified. Abstract for inherited
-        LLM models.
-        """
         pass
     
     def create_client(self):
-        """
-        Initializes the Bedrock client. Note that the API key for Bedrock
-        client is read from set environmental variable: `AWS_SECRET_ACCESS_KEY`.
-        """
         return boto3.client("bedrock-runtime", region_name=self.region)
     
     @staticmethod
     def _prep_user_message(user: str):
-        """
-        Prepares user messages for LLM.
-        """
         return {"role": "user", "content": [{"text": user}]}
     
     def _json_tool_call(self, schema: BaseModel):
-        """
-        Prepares LLM load for tool call feature. Used for structured outputs
-        in Nova models.
-        """
         tool_load = BedrockToolCall(inputSchema={"json": schema.model_json_schema()})
         return {"toolConfig": {"tools": [{"toolSpec": tool_load.model_dump()}]}}
     
@@ -73,9 +55,6 @@ class BedrockClient(BaseLLM):
         return user_m
     
     def _prep_messages(self, user: str, system: str):
-        """
-        Prepares messages for LLM.
-        """
         messages = {"system": [{"text": system}]}
         messages.update({"messages": [self._prep_user_message(user)]})
         return messages
@@ -89,15 +68,21 @@ class BedrockClient(BaseLLM):
         out = next(i["toolUse"]["input"] for i in content_out if "toolUse" in i)
         return out
     
+    def _format_batch(self, messages, schema = None):
+        pass
+    
+    def request_batch(self, messages, schema = None, batch_file_path = None):
+        pass
+    
+    def retreive_batch(self, batch_id, schema = None, batch_file_path = None):
+        pass
+    
     def _request_load(
         self,
         user: str,
         system: str,
         schema: Optional[BaseModel]
     ):
-        """
-        Creates and returns general formal for requests for Bedrock model.
-        """
         user_m = self._add_json_requirement(user) if schema else user
         body_load = self._prep_messages(user_m, system)
         body_load.update({"inferenceConfig": self.configs.model_dump(exclude_none=True)})
@@ -112,19 +97,7 @@ class BedrockClient(BaseLLM):
         prompts: Prompts,
         schema: BaseModel = None,
         **kwargs
-    ) -> RequestOut:
-        """
-        Requests chat completion from Bedrock client. Returns a RequestOut
-        object.
-
-        Args:
-            prompts (Prompts): A Prompt object.
-            schema (BaseModel, optional): The structure/json schema of output.
-            Defaults to None.
-            kwargs:
-                - max_attempts: Number of attempts if failure.
-                - rate_limit_time: Time to wait if request limit is hit.
-        """
+    ):
         client = self.create_client()
         
         user = prompts.user

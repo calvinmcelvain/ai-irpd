@@ -1,3 +1,9 @@
+"""
+Google's Gemini module.
+
+Contains Gemini model and configs.
+"""
+
 import logging
 import time
 import random as r
@@ -26,6 +32,11 @@ class GeminiConfigs(BaseModel):
 
 
 class Gemini(BaseLLM):
+    """
+    Google's Gemini class.
+    
+    Defines request
+    """
     def create_client(self):
         return genai.Client(api_key=self.api_key)
     
