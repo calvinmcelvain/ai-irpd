@@ -1,3 +1,8 @@
+"""
+Nova module.
+
+Defines Nova configs.
+"""
 from pydantic import BaseModel, Field
 
 from models.llms.bedrock_client import BedrockClient
@@ -11,6 +16,9 @@ class NovaConfigs(BaseModel):
     
 
 class Nova(BedrockClient):
+    """`
+    Nova class (inherits BedrockClient).
+    """
     configs: NovaConfigs
     
     def default_configs(self):
