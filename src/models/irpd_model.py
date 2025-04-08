@@ -98,6 +98,9 @@ class IRPDTestClass(TestClassContainer, Enum):
             optional): The specific paths to used for tests. Generally this is
             used if continuing stopped test or adding more stages to a test. 
             Defaults to None.
+            kwargs:
+                - prompts_path, output_path: The paths to be used for outputs
+                and/or prompts.
         """
         # Adjust stages only for Test and Subtest models.
         if self in {IRPDTestClass.TEST, IRPDTestClass.SUBTEST}:
