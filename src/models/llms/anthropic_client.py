@@ -1,7 +1,7 @@
 """
 Anthropic client module.
 
-Contains the AnthropicClient model and AnthropicToolCall model.
+Contains the AnthropicClient model.
 """
 
 import logging
@@ -30,10 +30,6 @@ log = logging.getLogger(__name__)
 
 
 class AnthropicToolCall(BaseModel):
-    """
-    Pydantic model for tool calls to Anthropic models. `name` should not be
-    changed.
-    """
     name: str = "json_output"
     input_schema: object | None
     
@@ -48,7 +44,7 @@ class AnthropicClient(BaseLLM):
     def default_configs(self):
         """
         Sets default configs of LLM if not specified. Abstract for inherited
-        LLM models
+        LLM models.
         """
         pass
     
@@ -60,7 +56,8 @@ class AnthropicClient(BaseLLM):
     
     def _json_tool_call(self, schema: BaseModel):
         """
-        Prepares LLM load for tool call feature.
+        Prepares LLM load for tool call feature. Used for structured outputs
+        in Claude models.
         """
         tool_load = AnthropicToolCall(input_schema=schema.model_json_schema())
         tool_choice = {"name": "json_output", "type": "tool"}
