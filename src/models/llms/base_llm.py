@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 from models.batch_output import BatchOut
 from models.prompts import Prompts
-from models.request_output import RequestOut, MetaOutput
+from models.request_output import RequestOut, MetaOut
 from utils import validate_json_string
 
 
@@ -73,7 +73,7 @@ class BaseLLM(ABC):
         Outputs a generalized RequestOut object from LLM response.
         """
         prompts = Prompts(system=system, user=user)
-        meta = MetaOutput(
+        meta = MetaOut(
             input_tokens=input_tokens,
             output_tokens=output_tokens
         )
