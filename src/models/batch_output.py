@@ -1,3 +1,8 @@
+"""
+Batch output module.
+
+Contains the dataclass objects for batch request outputs (BatchOut & BatchResponse).
+"""
 from typing import List
 from dataclasses import dataclass
 
