@@ -1,3 +1,9 @@
+"""
+IRPDBase module.
+
+Contains the IRPDBase model that specifies the `run` method and validation 
+methods.
+"""
 import re
 import logging
 from typing import List, Optional, Union, Dict
@@ -47,14 +53,21 @@ class IRPDBase(ABC):
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
 
+        # If paths not specified, using env variable.
         self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = Path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = Path(data_path or get_env_var("DATA_PATH"))
         
+        # Initializing configs and outputs attrbs.
         self.configs = {}
         self.outputs = {}
     
     def _validate_test_paths(self):
+        """
+        Ensures all test paths are Path objects and ensures that the number of
+        test paths specified are the same length as the calculated number of
+        tests.
+        """
         test_paths = [Path(path) for path in self.test_paths]
         if not len(self.test_paths) == len(self._prod):
             log.error(
@@ -67,6 +80,9 @@ class IRPDBase(ABC):
 
     @staticmethod
     def _get_max_test_number(directory: Path, prefix: str = "test_"):
+        """
+        Gets the maximum test number for a given test directory.
+        """
         pattern = re.compile(rf"{re.escape(prefix)}(\d+)")
         matches = (
             match.group(1) for p in directory.iterdir()
@@ -75,6 +91,10 @@ class IRPDBase(ABC):
         return max(map(int, matches), default=0)
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
+        """
+        Returns dictionary of test configs based on a list of config ids. 
+        Otherwise returns configs attrb.
+        """
         if config_ids:
             config_ids = to_list(config_ids)
             return {k: self.configs[k] for k in config_ids if k in self.configs}
@@ -82,6 +102,9 @@ class IRPDBase(ABC):
             return self.configs
 
     def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
+        """
+        Method to add test configs to configs attrb.
+        """
         configs = to_list(configs)
         for config in configs:
             if not isinstance(config, TestConfig):
@@ -100,10 +123,17 @@ class IRPDBase(ABC):
 
     @abstractmethod
     def _generate_test_paths(self):
+        """
+        Generates test paths for each test config. Different for each test type.
+        """
         pass
     
     @abstractmethod
     def _generate_configs(self):
+        """
+        Generates the test configs based on instance args. Difference for each
+        test type.
+        """
         pass
     
     def run(
@@ -111,6 +141,17 @@ class IRPDBase(ABC):
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
     ):
+        """
+        Runs IRPD based on the defined test configs.
+
+        Args:
+            config_ids (Union[str, List[str]], optional): If specified, will 
+            only run the config ids defined. Otherwise runs all test configs. 
+            Defaults to None.
+            print_response (bool, optional): If True, prints the LLM request for
+            each chat completion request. If batch, this arg. is null. Defaults 
+            to False.
+        """
         clear_logger(app=False)
         test_configs: Dict[str, TestConfig] = self._get_test_configs(config_ids=config_ids)
         
@@ -119,3 +160,4 @@ class IRPDBase(ABC):
             
             test_runner = TestRunner(config, output_manager, print_response)
             self.outputs[config_id] = test_runner.run()
+        return None
