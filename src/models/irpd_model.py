@@ -1,3 +1,9 @@
+"""
+IRPD aggregated module.
+
+Aggregates the IRPD test models: Test, Subtest, IntraModel, CrossModel,
+and SampleSplitting.
+"""
 import logging
 from pathlib import Path
 from typing import List, Union, Literal, Optional
@@ -11,6 +17,8 @@ from utils import lazy_import, load_config, to_list
 CONFIGS = load_config("irpd_configs.yml")
 DEFAULTS = CONFIGS["defaults"]
 
+# Specifying the arguments for test models.
+# Also makes it easier when creating an instance w/ autofill.
 CASES = Literal["uni", "switch", "uniresp", "first", "uni_switch"]
 RAS = Literal["ra1", "ra2", "both"]
 TREATMENTS = Literal["imperfect", "perfect", "merged"]
@@ -59,8 +67,44 @@ class IRPDTestClass(TestClassContainer, Enum):
         test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
         **kwargs
     ):
-        if len(to_list(stages)) == 1 and STAGES.__args__.index(to_list(stages)[0]) != 0:
-            stages = list(STAGES.__args__[:STAGES.__args__.index(to_list(stages)[0]) + 1])
+        """
+        Creates an IRPD test instance.
+
+        Args:
+            cases (Union[List[CASES], CASES]): The cases that want to be run.
+            Can be from ["uni", "uniresp", "switch", "first", 
+            "uni_switch"].
+            ras (Union[List[RAS], RAS]): The RA summaries to be used (if want
+            LLM generated summaries, i.e., stage 0, use `exp`). Can be from
+            ["ra1", "ra2", "both", "exp"].
+            treatments (Union[List[TREATMENTS], TREATMENTS]): The treatments to
+            be run. Can be from ["imperfect", "perfect", "merged"].
+            stages (Union[List[STAGES], STAGES]): The stages to be run for each
+            test. Can be from ["0", "1", "1r", "1c", "2", "3"]. Must be on order
+            if Test or Subtest.
+            N (int, optional): The number of replications. Only used if test
+            type is IntraModel or CrossModel. Defaults to 1.
+            llms (Union[List[LLMS], LLMS], optional): The LLM models to be used
+            in tests. Defaults to `GPT_4O_1120`.
+            llm_configs (Union[List[LLM_CONFIGS], LLM_CONFIGS], optional): The
+            configs used for LLM model(s). Defaults to `base`. Can be from 
+            ["base", "res1", "res2", "res3"].
+            max_instances (Optional[int], optional): The maximum number of 
+            "instances" or "summaries" to be used in iterative stages ("0", "2",
+            and "3"). Defaults to None (all instances used).
+            batch (bool, optional): If True, then Batch API used for tests, if
+            the LLM supports it. Defaults to False.
+            test_paths (Union[List[Union[str, Path]], Union[str, Path]], 
+            optional): The specific paths to used for tests. Generally this is
+            used if continuing stopped test or adding more stages to a test. 
+            Defaults to None.
+        """
+        # Adjust stages only for Test and Subtest models.
+        if self in {IRPDTestClass.TEST, IRPDTestClass.SUBTEST}:
+            stage_list = STAGES.__args__
+            if len(to_list(stages)) == 1 and stage_list.index(to_list(stages)[0]) != 0:
+                stages = list(stage_list[:stage_list.index(to_list(stages)[0]) + 1])
+        
         test_class = self.impl
         return test_class(
             cases=cases,
