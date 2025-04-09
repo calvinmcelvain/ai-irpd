@@ -178,7 +178,8 @@ class OutputProcesser:
         stage_info.batch_id = self.batch_id
         
         # Cannot write Path object.
-        stage_info.batch_path = self.batch_path.as_posix()
+        stage_info.batch_path = self.batch_path
+        if self.batch_path: stage_info.batch_path = self.batch_path.as_posix()
         
         for output in self.outputs:
             # If stage is complete, it should mean that the meta has already
