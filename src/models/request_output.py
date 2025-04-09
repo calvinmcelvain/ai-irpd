@@ -19,6 +19,8 @@ class MetaOut:
     
     def __post_init__(self):
         self.total_tokens = sum([self.input_tokens, self.output_tokens])
+        
+        # For standardization, the created field is written as a unix timestamp.
         if not self.created:
             self.created = int(datetime.now().timestamp())
 
