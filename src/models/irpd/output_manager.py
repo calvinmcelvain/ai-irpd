@@ -1,3 +1,8 @@
+"""
+Output manager module.
+
+Contains the functional OutputManager model.
+"""
 import logging
 from pathlib import Path
 from time import sleep
@@ -17,6 +22,18 @@ log = logging.getLogger(__name__)
 
 
 class OutputManager:
+    """
+    OutputManager model.
+    
+    Takes a given test config, and checks its respective directories, if they
+    exists, and updates output for outputs that already exist. 
+    
+    This model also has methods `store` to store a StageOutput, or list of 
+    StageOutputs, as well as `store_batch` for batch requests. 
+    
+    Also contains method `write_output` that creates instance of the 
+    OutputProcessor model to write a subset of outputs.
+    """
     def __init__(self, test_config: TestConfig):
         self.config_manager = ConfigManager(test_config)
         self.test_config = test_config
@@ -34,18 +51,27 @@ class OutputManager:
         
         self.test_outputs = self._initialize_test_outputs()
         
+        # Checking current test path (and batch) for outputs on initialization.
         self._check_test_directory()
         self._check_batch()
-        self._check_completeness()
         
     def _initialize_test_outputs(self):
+        """
+        Initializes TestOutput and StageOutput objects.
+        
+        Note: The number of StageOutput objects within a TestOutput should be 
+        the same across TestOutputs.
+        """
         test_outputs = {}
         for llm_str in self.test_config.llms:
+            # Creating a TestOuput object for each LLM.
             test_output = TestOutput(llm_str=llm_str,)
             for n in range(1, self.total_replications + 1):
                 for stage in self.stages:
                     subsets = self.config_manager.get_subsets(stage)
                     for subset in subsets:
+                        # Creates a StageOutput object for each replication,
+                        # stage, and subset.
                         test_output.stage_outputs.append(StageOutput(
                             stage_name=stage,
                             subset=subset,
@@ -56,15 +82,26 @@ class OutputManager:
         return test_outputs
     
     def _check_test_directory(self):
-        for llm_str in self.llms:
-            for stage_output in self.test_outputs[llm_str].stage_outputs:
+        """
+        Checks each possible subpath of a TestConfig for outputs.
+        
+        Note: This method is run before `_check_batch` method.
+        """
+        for llm_str, test_output in self.test_outputs.items():
+            test_output: TestOutput
+            for stage_output in test_output.stage_outputs:
                 stage_name = stage_output.stage_name
                 subset = stage_output.subset
-                sub_path = self.config_manager.generate_subpath(stage_output.replication, stage_output.llm_str)
+                
+                sub_path = self.config_manager.generate_subpath(
+                    stage_output.replication, stage_output.llm_str
+                )
                 stage_string = f"stage_{stage_name}"
                 responses_path = sub_path / stage_string / subset / "responses"
                 prompts_path = sub_path / stage_string / subset / "prompts"
                 
+                # If prompts & responses directories don't exist, there are no
+                # outputs to store.
                 if not check_directories([responses_path, prompts_path]):
                     continue
                 
@@ -73,78 +110,90 @@ class OutputManager:
                     for path in responses_path.iterdir()
                 ]
                 
+                # Preemptively marking StageOutput object as complete (see 
+                # `_check_batch` method for reason). This is validated if the 
+                # number of prompts generated for the stage is equal to the 
+                # outputs in a StageOutput object.
                 stage_output.complete = True
                 self.store_completion(stage_output, outputs)
+                
+                # Checking if TestOutput object is complete.
+                test_output.check_test_complete()
         return None
     
     def _check_batch(self):
-        for llm_str in self.llms:
-            llm = self.generate_llm_instance(llm_str)
-            test_output = self.test_outputs[llm_str]
+        """
+        Checks the Batch status if outputs don't exist in directory.
+        """
+        for llm_str, test_output in self.test_outputs.items():
+            test_output: TestOutput
+            # Check to see if the TestOutput object was already marked complete.
             if not test_output.complete:
-                for stage_name in self.test_config.stages:
-                    stage_outputs = self.retrieve(llm_str=llm_str, stage_name=stage_name)
-                    if not self._check_output_set_completeness(stage_outputs):
-                        meta_path = self.config_manager.generate_meta_path(llm_str, 1)
-                        if self.test_config.batches and meta_path.exists():
-                            meta: TestMeta = load_json_n_validate(meta_path, TestMeta)
-                            
-                            if not stage_name in meta.stages.keys():
-                                break
-                            
-                            batch_id = meta.stages[stage_name].batch_id
-                            
-                            if batch_id is None:
-                                continue
-                            
-                            batch_path = Path(meta.stages[stage_name].batch_path)
-                            
-                            retries = 0
-                            while retries < 6:
-                                schema = self.schemas[stage_name]
-                                batch_out = llm.retreive_batch(batch_id, schema, batch_path)
-                                
-                                if isinstance(batch_out, BatchOut):
-                                    self.store_batch(
-                                        llm_str, stage_name, batch_out, batch_path
-                                    )
-                                    break
-                                
-                                retries += 1
-                                if retries < 6:
-                                    time_to_wait = 10 + retries * 10
-                                    log.info(f"Waiting {time_to_wait} seconds.")
-                                    sleep(time_to_wait)
-                                else:
-                                    log.warning(f"Retries exhausted.")
-                                    break
+                meta_path = self.config_manager.generate_meta_path(llm_str, 1)
+                
+                # Checking to see if meta path exists & Test include batches.
+                if self.test_config.batches and meta_path.exists():
+                    meta: TestMeta = load_json_n_validate(meta_path, TestMeta)
+                    
+                    # Initializing LLM to check batches (if exist).
+                    llm = self.generate_llm_instance(llm_str)
+                    for stage_name in self.test_config.stages:
+                        # If stage name is not in meta, then breaks loop (since
+                        # stages are sequential).
+                        if not stage_name in meta.stages.keys():
+                            break
+                        
+                        batch_id = meta.stages[stage_name].batch_id
+                        batch_path = meta.stages[stage_name].batch_path
+                        
+                        if not (batch_id and batch_path):
+                            # Means the batch hasn't been requested yet. Thus
+                            # subsequent stages haven't.
+                            break
+                        
+                        # Checking batch status.
+                        batch_path = Path(batch_path)
+                        schema = self.schemas[stage_name]
+                        batch_out = llm.retreive_batch(
+                            batch_id, schema, batch_path
+                        )
+                        
+                        # If batch complete, returna a BatchOut object.
+                        if isinstance(batch_out, BatchOut):
+                            self.store_batch(
+                                llm_str, stage_name, batch_out, batch_path
+                            )
+                            break
+                        
+                        # If batch incomplete, skipped for now. See TestRunner
+                        # for retry loop in waiting for batch.
+                        log.info(f"Batch - {batch_id}, was skipped from being stored.")
+                    
+                    # Checking to see if TestOutput object is complete.
+                    test_output.check_test_complete()
         return None
     
     def _get_output_index(self, stage_output: StageOutput):
+        """
+        Returns the index of a given StageOutput object within TestOutput object.
+        """
         return self.test_outputs[stage_output.llm_str].stage_outputs.index(stage_output)
     
-    def _check_completeness(self, llm_str: str = None):
-        llm_str = to_list(llm_str) if llm_str else self.llms
-        for llm in llm_str:
-            self.test_outputs[llm].test_complete()
-            if self.test_outputs[llm].complete:
-                log.info(f"All outputs for {llm} are complete.")
-        return None
-    
-    def _check_output_set_completeness(self, stage_outputs: List[StageOutput]):
-        return all(output.complete for output in stage_outputs)
-    
-    def _check_stage_completion(self, stage_outputs: List[StageOutput]):
-        llm_str = stage_outputs[0].llm_str
-        stage_name = stage_outputs[0].stage_name
-        n = stage_outputs[0].replication
+    def _check_stage_completion(self, llm_str: str, stage_name: str, n: int):
+        """
+        Checks whether a stage is complete.
+        """
         all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
-        return self._check_output_set_completeness(all_stage_ouptuts)
+        return all(output.complete for output in all_stage_ouptuts)
     
     def _log_stored_completion(self, stage_output: StageOutput):
+        """
+        Logs stored completion.
+        """
         log.info(
             "\nOutputs stored successfully for:"
             f"\n\t config: {self.test_config.id}"
+            f"\n\t case: {self.test_config.case}"
             f"\n\t llm: {stage_output.llm_str}"
             f"\n\t replicate: {stage_output.replication} of {self.total_replications}"
             f"\n\t stage: {stage_output.stage_name}"
@@ -160,6 +209,9 @@ class OutputManager:
         stage_name: Optional[str] = None,
         subset: Optional[str] = None
     ):
+        """
+        Retrieves output(s).
+        """
         outputs: Dict[str, TestOutput] = self.test_outputs
         if llm_str:
             outputs: List[StageOutput] = outputs[llm_str].stage_outputs
@@ -172,6 +224,7 @@ class OutputManager:
         if outputs is None:
             log.warning(
                 "\nOutputs not found for:"
+                f"\n\t case: {self.test_config.case}"
                 f"\n\t config: {self.test_config.id}"
                 f"\n\t llm: {llm_str}"
                 f"\n\t replicate: {n} of {self.test_config.total_replications}"
@@ -186,18 +239,23 @@ class OutputManager:
         stage_output: StageOutput,
         outputs: Union[RequestOut, List[RequestOut]]
     ):
+        """
+        Stores a chat completion request.
+        """
         llm_str = stage_output.llm_str
         n = stage_output.replication
         stage_name = stage_output.stage_name
         subset = stage_output.subset
         
-        output = self.retrieve(llm_str, n, stage_name, subset)[0]
-        assert isinstance(output, StageOutput), "Output could not be stored."
+        output: TestOutput = self.retrieve(llm_str, n, stage_name, subset)[0]
+        idx = self._get_output_index(output)
         
         output.outputs = to_list(outputs)
-        
-        idx = self._get_output_index(stage_output)
+        output.complete = True
         self.test_outputs[stage_output.llm_str].stage_outputs[idx] = output
+        
+        # Writing output
+        self.write_output(to_list(output))
         
         self._log_stored_completion(output)
         return None
@@ -209,45 +267,54 @@ class OutputManager:
         batch_out: BatchOut,
         batch_file_path: Path
     ):
+        """
+        Stores a batch request.
+        """
         outputs = batch_out.responses
         stage_outputs: List[StageOutput] = self.retrieve(
             llm_str=llm_str,
             stage_name=stage_name
         )
         for stage_output in stage_outputs:
-            assert isinstance(stage_output, StageOutput), "Output could not be stored."
-            
+            idx = self._get_output_index(stage_output)
             n  = stage_output.replication
             subset = stage_output.subset
             
+            # Storing batch outputs in StageOutput object if batch request ID
+            # matches the StageOutput attrbs.
             stage_output.outputs = [
                 response.response for response in outputs
                 if response.response_id.startswith(f"{n}-{subset}")
             ]
+            stage_output.complete = True
             
-            if not stage_output.batch_id or not stage_output.batch_path:
+            # Storing batch id and batch path if one or both are not stored.
+            if not (stage_output.batch_id or stage_output.batch_path):
                 stage_output.batch_id = batch_out.batch_id
                 stage_output.batch_path = batch_file_path
             
-            idx = self._get_output_index(stage_output)
-            
-            self.write_output(to_list(stage_output))
-            stage_output.complete = True
-            
             self.test_outputs[llm_str].stage_outputs[idx] = stage_output
+            
+            # Writing output
+            self.write_output(to_list(stage_output))
 
             self._log_stored_completion(stage_output)
-            
-            replication_outputs = self.retrieve(llm_str, n, stage_name)
-            self.write_output(to_list(replication_outputs))
         return None
     
-    def write_output(self, stage_outputs: List[StageOutput]):
-        self.processor(stage_outputs, self.config_manager).process()
-        if self._check_stage_completion(stage_outputs):
-            llm_str = stage_outputs[0].llm_str
-            stage_name = stage_outputs[0].stage_name
-            n = stage_outputs[0].replication
+    def write_output(self, stage_output: StageOutput):
+        """
+        Writes output
+        """
+        self.processor(to_list(stage_output), self.config_manager).process()
+        
+        llm_str = stage_output.llm_str
+        stage_name = stage_output.stage_name
+        n = stage_output.replication
+        
+        # Checking to see if stage is complete. If so, writing the final form
+        # outputs (e.g., category pdfs & classification CSVs).
+        stage_complete = self._check_stage_completion(llm_str, stage_name, n)
+        if stage_complete:
             all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
             self.processor(to_list(all_stage_ouptuts), self.config_manager).process(True)
             self._check_completeness(llm_str)

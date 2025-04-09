@@ -25,7 +25,7 @@ class TestOutput:
     stage_outputs: List[StageOutput] = field(default_factory=list)
     complete: bool = False
     
-    def test_complete(self):
+    def check_test_complete(self):
         self.complete = all(output.complete for output in self.stage_outputs)
         
 

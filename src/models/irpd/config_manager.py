@@ -48,7 +48,7 @@ class ConfigManager:
     
     def generate_meta_path(self, n: int, llm_str: str):
         """
-        Generates the path for 'test' meta. Writes this file in each subpath.
+        Generates the path for 'test' meta. File exists for each subpath.
         """
         subpath = self.generate_subpath(n, llm_str)
         return subpath / "_test_meta.json"
