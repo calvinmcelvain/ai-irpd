@@ -110,11 +110,6 @@ class OutputManager:
                     for path in responses_path.iterdir()
                 ]
                 
-                # Preemptively marking StageOutput object as complete (see 
-                # `_check_batch` method for reason). This is validated if the 
-                # number of prompts generated for the stage is equal to the 
-                # outputs in a StageOutput object.
-                stage_output.complete = True
                 self.store_completion(stage_output, outputs)
                 
                 # Checking if TestOutput object is complete.
@@ -127,7 +122,10 @@ class OutputManager:
         """
         for llm_str, test_output in self.test_outputs.items():
             test_output: TestOutput
+            
             # Check to see if the TestOutput object was already marked complete.
+            # Note: If output found in directory, object should be marked as 
+            # complete.
             if not test_output.complete:
                 meta_path = self.config_manager.generate_meta_path(llm_str, 1)
                 
