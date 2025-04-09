@@ -219,7 +219,11 @@ class OutputProcesser:
         # Write stage specific meta info.
         meta.stages[self.stage_name] = self._stage_meta_info(meta)
         
+        # Rewriting TestConfig model in case rerunning test w/o current stages.
+        meta.test_info = self.config_manager.config.convert_to_dict()
+        
         write_json(self.meta_path, meta.model_dump())
+        
         log.info(
             f"\nMeta data successully written for:"
             f"\n\t config: {self.test_config.id}"
