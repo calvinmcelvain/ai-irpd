@@ -1,3 +1,8 @@
+"""
+Mistral LLM module.
+
+Defines general configs for Mistral model and the Mistral model itself.
+"""
 import logging
 import json
 import time
@@ -34,6 +39,11 @@ class MistralToolCall(BaseModel):
 
 
 class Mistral(BaseLLM):
+    """
+    Mistral class.
+    
+    Defines request methods using the Mistral SDK.
+    """
     def create_client(self):
         return mistralai.Mistral(api_key=self.api_key)
     
@@ -102,6 +112,7 @@ class Mistral(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
+            # Matching prompts from batch file to resonse by request IDs.
             if batch_input_file:
                 prompts = next((
                     p["body"]["messages"] 

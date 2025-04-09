@@ -1,3 +1,8 @@
+"""
+Module for Claude model.
+
+Defines general configs for Claude models.
+"""
 from pydantic import BaseModel, Field
 
 from models.llms.anthropic_client import AnthropicClient
@@ -12,6 +17,9 @@ class ClaudeConfigs(BaseModel):
     
 
 class Claude(AnthropicClient):
+    """
+    Claude model (inherits Anthropic model).
+    """
     configs: ClaudeConfigs
     
     def default_configs(self):

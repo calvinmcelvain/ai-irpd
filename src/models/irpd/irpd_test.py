@@ -1,3 +1,8 @@
+"""
+The IRPD base test module.
+
+Contains the Test model.
+"""
 import logging
 from itertools import product
 from typing import Optional, List, Union
@@ -46,6 +51,9 @@ class Test(IRPDBase):
             batch
         )
         self.test_type = "test"
+        
+        # The total number of tests is the number of combinations of LLMs, LLM
+        # configs, cases, RAs, and treatments.
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
@@ -59,6 +67,8 @@ class Test(IRPDBase):
         if self.test_paths:
             return self._validate_test_paths()
         test_paths = []
+        
+        # Test paths are dependent on the case: .../outputs/base_tests/{case}/
         for case in self.cases:
             test_dir = self.output_path / "base_tests" / case
             current_test = self._get_max_test_number(test_dir)

@@ -1,3 +1,8 @@
+"""
+OpenAI's GPT module.
+
+Defines general configs for GPT model.
+"""
 from pydantic import BaseModel, Field
 
 from models.llms.openai_client import OpenAIClient
@@ -16,12 +21,17 @@ class GPTConfigs(BaseModel):
 
 
 class GPT(OpenAIClient):
+    """
+    GPT model (inherits OpenAIClient model).
+    """
     configs: GPTConfigs
     
     def default_configs(self):
         return GPTConfigs()
     
     def _prep_messages(self, user: str, system: str):
+        # For o1 (and above) models, a `developer` role is used instead of 
+        # standard `system` role.
         if "o1" in self.model:
             developer = {"role": "developer", "content": system}
             return {"messages": [developer, self._prep_user_message(user)]}

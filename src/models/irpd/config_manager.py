@@ -1,3 +1,8 @@
+"""
+Test config manager.
+
+Contains the function model, ConfigManager.
+"""
 import logging
 
 from utils import create_directory
@@ -11,6 +16,12 @@ log = logging.getLogger(__name__)
 
 
 class ConfigManager:
+    """
+    ConfigManger model.
+    
+    Used to generate subpaths, meta-paths, subsets, and llm instances for a 
+    given TestConfig.
+    """
     def __init__(self, test_config: TestConfig):
         self.config = test_config
         self.stages = test_config.stages
@@ -21,6 +32,13 @@ class ConfigManager:
         self.total_replications = test_config.total_replications
     
     def generate_subpath(self, n: int, llm_str: str):
+        """
+        Generates a subpath for a given replication and LLM. 
+        
+        For tests w/ more than one LLM, a dir. is made for each LLM. For tests 
+        w/ more than one replication, a dir. is made for each replicaiton (w/ 
+        respect to the LLM dir.)
+        """
         subpath = self.test_path
         if len(self.llms) > 1: subpath = subpath / llm_str
         if self.total_replications > 1: subpath = subpath / f"replication_{n}"
@@ -29,10 +47,16 @@ class ConfigManager:
         return subpath
     
     def generate_meta_path(self, n: int, llm_str: str):
+        """
+        Generates the path for 'test' meta. File exists for each subpath.
+        """
         subpath = self.generate_subpath(n, llm_str)
         return subpath / "_test_meta.json"
     
     def get_subsets(self, stage_name: str):
+        """
+        Generates subsets for a given stage.
+        """
         subsets = ["full"]
         if stage_name in {"1", "1r"}:
             prod = [
@@ -44,4 +68,7 @@ class ConfigManager:
         return subsets
     
     def generate_llm_instance(self, llm_str: str, print_reponse: bool = False):
+        """
+        Returns the LLM model instance from the /llms package.
+        """
         return getattr(LLMModel, llm_str).get_llm_instance(self.llm_config, print_reponse)

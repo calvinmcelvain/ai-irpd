@@ -1,11 +1,17 @@
-# Structure strongly follows
-# https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
+"""
+LLM aggregated module.
+
+Aggregates all LLM models. Structure strongly follows:
+https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
+"""
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
 from utils import lazy_import, load_config, validate_json, get_env_var
 
+
 CONFIGS = load_config("llm_configs.yml")
+
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,15 @@ class LLMModel(LLMModelContainer, Enum):
         config: str = "base",
         print_response: bool = False
     ):
+        """
+        Creates an instance of a LLM model.
+
+        Args:
+            config (str, optional): The config used for LLM model. Defaults to 
+            "base". Can be from ["base", "res1", "res2", "res3"].
+            print_response (bool, optional): If True, prints response of all
+            LLM requests. Defaults to False.
+        """
         model_class, model_configs = self.model_class.impl
         config_json = validate_json(
             CONFIGS[config][self.key],

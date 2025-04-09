@@ -1,16 +1,21 @@
+"""
+Anthropic client module.
+
+Contains the AnthropicClient model.
+"""
+
 import logging
 import time
 import json
 import random as r
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from anthropic import Anthropic
 from anthropic import InternalServerError, BadRequestError, RateLimitError
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.messages.batch_create_params import Request
 from anthropic.types.message import Message
 from pydantic import BaseModel
-from abc import abstractmethod
 
 from utils import write_jsonl, load_jsonl
 from models.batch_output import BatchOut, BatchResponse
@@ -28,7 +33,11 @@ class AnthropicToolCall(BaseModel):
     
 
 class AnthropicClient(BaseLLM):
-    @abstractmethod
+    """
+    Anthropic client class.
+    
+    Defines request methods using the Anthropic client.
+    """
     def default_configs(self):
         pass
     
@@ -98,6 +107,7 @@ class AnthropicClient(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
+            # Matching request prompts to response (if spceified)
             if batch_input_file:
                 prompts = next((
                     p["params"] 
@@ -140,7 +150,12 @@ class AnthropicClient(BaseLLM):
         
         return batch.id
         
-    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
+    def request(
+        self,
+        prompts: Prompts,
+        schema: BaseModel = None,
+        **kwargs
+    ):
         client = self.create_client()
         
         user = prompts.user
@@ -165,6 +180,8 @@ class AnthropicClient(BaseLLM):
                 time.sleep(rate_limit_time)
         
             if isinstance(response, Message):
+                # Getting the request content
+                # Specified in `tool_use` if structured outputs defined.
                 content = next(i.input if "tool_use" in i.type else i.text for i in response.content)
                 request_out = self._request_out(
                     input_tokens=response.usage.input_tokens,

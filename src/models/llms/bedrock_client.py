@@ -1,3 +1,9 @@
+"""
+Amazon Bedrock client module.
+
+Contains the BedrockClient model.
+"""
+
 import logging
 import time
 import random as r
@@ -5,7 +11,6 @@ import json
 import boto3
 from typing import Optional
 from pydantic import BaseModel
-from abc import abstractmethod
 
 from models.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -21,7 +26,11 @@ class BedrockToolCall(BaseModel):
 
 
 class BedrockClient(BaseLLM):    
-    @abstractmethod
+    """
+    Bedrock client class.
+
+    Defines request methods using the Bedrock client.
+    """
     def default_configs(self):
         pass
     
@@ -38,6 +47,10 @@ class BedrockClient(BaseLLM):
     
     @staticmethod
     def _add_json_requirement(user: str):
+        """
+        Adds json tool requirement to prompt. Needed for structured outputs for
+        models that use tool_call instead.
+        """
         user_m = user + "/n/n" + "Use the json_response tool."
         return user_m
     
@@ -47,10 +60,22 @@ class BedrockClient(BaseLLM):
         return messages
     
     def _dump_response(self, response: dict):
+        """
+        Returns the insanely dificult response from Bedrock model outputs.
+        """
         content_json = json.loads(response.get('body').read())
         content_out = content_json["output"]["message"]["content"]
         out = next(i["toolUse"]["input"] for i in content_out if "toolUse" in i)
         return out
+    
+    def _format_batch(self, messages, schema = None):
+        pass
+    
+    def request_batch(self, messages, schema = None, batch_file_path = None):
+        pass
+    
+    def retreive_batch(self, batch_id, schema = None, batch_file_path = None):
+        pass
     
     def _request_load(
         self,
@@ -67,7 +92,12 @@ class BedrockClient(BaseLLM):
         request_load.update({"body": json.dumps(body_load)})
         return request_load
     
-    def request(self, prompts: Prompts, schema: BaseModel = None, **kwargs):
+    def request(
+        self,
+        prompts: Prompts,
+        schema: BaseModel = None,
+        **kwargs
+    ):
         client = self.create_client()
         
         user = prompts.user

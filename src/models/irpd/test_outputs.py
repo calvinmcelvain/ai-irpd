@@ -1,3 +1,9 @@
+"""
+Test outputs module.
+
+Contains the TestOutput & StageOutput objects. Also the TestMeta object (along
+with its composition objects).
+"""
 from pydantic import BaseModel
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -25,10 +31,15 @@ class TestOutput:
     stage_outputs: List[StageOutput] = field(default_factory=list)
     complete: bool = False
     
-    def test_complete(self):
+    def check_test_complete(self):
+        """
+        Sets the complete field based on whether all the complete fields for 
+        all StageOutput objects are True.
+        """
         self.complete = all(output.complete for output in self.stage_outputs)
         
 
+# TestMeta objects.
 class ModelInfo(BaseModel):
     model: str
     parameters: dict

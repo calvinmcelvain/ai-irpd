@@ -1,3 +1,8 @@
+"""
+The sample splitting test module.
+
+Contains the SampleSplitting model.
+"""
 import logging
 from typing import Optional, List, Union
 from pathlib import Path
@@ -47,12 +52,4 @@ class SampleSplitting(IRPDBase):
         pass
     
     def _generate_test_configs(self):
-        pass
-    
-    def run(
-        self,
-        max_instances = None,
-        config_ids = None,
-        print_response = False
-    ):
         pass

@@ -1,8 +1,12 @@
+"""
+OpenAI module.
+
+Contains OpenAIClient model.
+"""
 import time
 import logging
 import json
 import random as r
-from abc import abstractmethod
 from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional, Tuple
@@ -27,13 +31,17 @@ class OpenAIToolCall(BaseModel):
 
 
 class OpenAIClient(BaseLLM):
+    """
+    OpenAIClient model.
+    
+    Defines the request methods for OpenAI SDK.
+    """
     def create_client(self):
         return OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
         )
     
-    @abstractmethod
     def default_configs(self):
         pass
     
@@ -110,6 +118,7 @@ class OpenAIClient(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
+            # Mathces prompts from batch file to responses in batch by request ID.
             if batch_input_file:
                 prompts = next((
                     p["body"]["messages"] 

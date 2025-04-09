@@ -1,3 +1,8 @@
+"""
+XAI's Grok module.
+
+Defines general Grok configs.
+"""
 from pydantic import BaseModel, Field
 
 from models.llms.openai_client import OpenAIClient
@@ -14,6 +19,9 @@ class GrokConfigs(BaseModel):
 
 
 class Grok(OpenAIClient):
+    """
+    Grok model (inherits OpenAIClient model).
+    """
     configs: GrokConfigs
     
     def default_configs(self):
