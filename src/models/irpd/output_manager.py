@@ -148,6 +148,12 @@ class OutputManager:
                             # Means the batch hasn't been requested yet. Thus
                             # subsequent stages haven't.
                             break
+                        else:
+                            # Storing the batch ID and path in the StageOutput 
+                            # objects if they exist.
+                            for stage_output in test_output.stage_outputs:
+                                stage_output.batch_id = batch_id
+                                stage_output.batch_path = Path(batch_path)
                         
                         # Checking batch status.
                         batch_path = Path(batch_path)
@@ -156,7 +162,7 @@ class OutputManager:
                             batch_id, schema, batch_path
                         )
                         
-                        # If batch complete, returna a BatchOut object.
+                        # If batch complete, it is a BatchOut object.
                         if isinstance(batch_out, BatchOut):
                             self.store_batch(
                                 llm_str, stage_name, batch_out, batch_path
@@ -169,6 +175,9 @@ class OutputManager:
                     
                     # Checking to see if TestOutput object is complete.
                     test_output.check_test_complete()
+                    
+                    # Re-storing the TestOutput object.
+                    self.test_outputs[llm_str] = test_output
         return None
     
     def _get_output_index(self, stage_output: StageOutput):
@@ -253,7 +262,7 @@ class OutputManager:
         self.test_outputs[stage_output.llm_str].stage_outputs[idx] = output
         
         # Writing output
-        self.write_output(to_list(output))
+        self.write_output(output)
         
         self._log_stored_completion(output)
         return None
@@ -294,7 +303,7 @@ class OutputManager:
             self.test_outputs[llm_str].stage_outputs[idx] = stage_output
             
             # Writing output
-            self.write_output(to_list(stage_output))
+            self.write_output(stage_output)
 
             self._log_stored_completion(stage_output)
         return None
