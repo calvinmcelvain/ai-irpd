@@ -1,3 +1,8 @@
+"""
+The subtest IRPD test module.
+
+Contains the Subtest test model.
+"""
 import logging
 from itertools import product
 from typing import Union, Optional, List
@@ -45,7 +50,10 @@ class Subtest(IRPDBase):
             test_paths,
             batch
         )
-        self.test_type = "test"
+        self.test_type = "subtest"
+        
+        # The total number of tests is the total combinations of LLMs, LLM
+        # configs, cases, RAs, and treatments.
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))

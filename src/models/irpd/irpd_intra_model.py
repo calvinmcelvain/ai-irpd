@@ -1,3 +1,8 @@
+"""
+Intra-model IRPD test module.
+
+Contains the IntraModel model.
+"""
 import logging
 from itertools import product
 from typing import Optional, List, Union
@@ -45,6 +50,9 @@ class IntraModel(IRPDBase):
             batch
         )
         self.test_type = "cross_model"
+        
+        # For intra-model tests, the number of tests is the total combinations
+        # of LLMs, LLM configs, cases, RAs, and treatments.
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
@@ -55,6 +63,8 @@ class IntraModel(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
+        
+        # Tests are in directorys: .../outputs/intra_model/
         test_dir = self.output_path / self.test_type
         current_test = self._get_max_test_number(test_dir)
         test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
