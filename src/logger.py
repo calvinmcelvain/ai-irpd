@@ -1,3 +1,6 @@
+"""
+Module for logger.
+"""
 import sys
 import logging
 import logging.config
@@ -12,6 +15,10 @@ logs_path.mkdir(exist_ok=True, parents=True)
 
 
 def clear_logger(app: bool = True, debug: bool = True):
+    """
+    Function to clear logs in logger files. Only clear loggers with True 
+    specified.
+    """
     if app:
         open(app_log_file, 'w').close()
     if debug:
@@ -19,6 +26,11 @@ def clear_logger(app: bool = True, debug: bool = True):
 
 
 def setup_logger():
+    """
+    Initializes the logger w/ logger configs.
+    
+    Note: This clears both app & debug log files.
+    """
     clear_logger()
 
     logging.config.dictConfig({
