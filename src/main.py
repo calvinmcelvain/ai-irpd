@@ -3,7 +3,7 @@ import sys
 import logging
 from pathlib import Path
 
-from logger import setup_logger
+from logger import LoggerManager
 from utils import is_tail_running
 from models.irpd_model import IRPDTestClass
 
@@ -13,7 +13,9 @@ log = logging.getLogger("app")
 
 
 if __name__ == "__main__":
-    setup_logger()
+    log_manager = LoggerManager()
+    log_manager.clear_logs()
+    log_manager.setup_logger()
 
     # Optional -- Opens a new terminal/shell w/ live logs
     repo_path = Path(__file__).parents[1]
