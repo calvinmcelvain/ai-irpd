@@ -1,3 +1,8 @@
+"""
+Utilities module.
+
+Contains general functions.
+"""
 import os
 import subprocess
 import sys
@@ -11,6 +16,7 @@ import importlib.resources as pkg_resources
 from typing import List, Union
 from pathlib import Path
 from dotenv import load_dotenv 
+from yaml import YAMLError
 from json import JSONDecodeError
 from markdown_pdf import MarkdownPdf, Section
 from pydantic import BaseModel, ValidationError
@@ -77,25 +83,32 @@ def lazy_import(module_name: str, class_name: str) -> object:
 
 def load_config(config: str) -> dict:
     """
-    Load a YAML config file.
+    Load a YAML or JSON config file.
     """
     if not config.strip():
         raise ValueError("Config filename cannot be empty.")
 
-    if not config.endswith(".yml"):
+    if not config.endswith((".yml", ".yaml", ".json")):
         log.warning(
-            f"Config file '{config}' missing .yml extension. Appending automatically."
+            f"Config file '{config}' missing .yml, .yaml, or .json extension."
+            " Appending .yml extension by default."
         )
         config += ".yml"
 
     try:
         with pkg_resources.open_text(configs, config) as f:
-            return yaml.safe_load(f)
+            if config.endswith((".yml", ".yaml")):
+                return yaml.safe_load(f)
+            elif config.endswith(".json"):
+                return json.load(f)
     except FileNotFoundError:
         log.error(f"Configuration file not found: {config}")
         raise
-    except yaml.YAMLError as e:
+    except YAMLError as e:
         log.error(f"Error parsing YAML file '{config}': {e}")
+        raise
+    except JSONDecodeError as e:
+        log.error(f"Error parsing JSON file '{config}': {e}")
         raise
 
 

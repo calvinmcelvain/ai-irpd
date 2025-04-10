@@ -1,3 +1,8 @@
+"""
+Functions module.
+
+Contains useful functions specific to IRPD testing.
+"""
 import logging
 from typing import List
 from pydantic import BaseModel
