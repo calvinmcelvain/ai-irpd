@@ -1,3 +1,8 @@
+"""
+Utilities module.
+
+Contains general functions.
+"""
 import os
 import subprocess
 import sys
