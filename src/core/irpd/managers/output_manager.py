@@ -8,7 +8,7 @@ from pathlib import Path
 from time import sleep
 from typing import List, Dict, Optional, Union
 
-from utils import check_directories, load_json_n_validate, lazy_import, to_list
+from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
 from models.irpd.output_processer import OutputProcesser

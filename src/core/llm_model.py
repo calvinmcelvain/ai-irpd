@@ -7,7 +7,7 @@ https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import cached_property
-from utils import lazy_import, load_config, validate_json, get_env_var
+from helpers.utils import lazy_import, load_config, validate_json, get_env_var
 
 
 CONFIGS = load_config("llm_configs.yml")

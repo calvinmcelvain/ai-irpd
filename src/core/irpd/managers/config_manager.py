@@ -5,8 +5,8 @@ Contains the function model, ConfigManager.
 """
 import logging
 
-from utils import create_directory
-from tools.functions import instance_types
+from helpers.utils import create_directory
+from core.irpd.functions import instance_types
 from models.llm_model import LLMModel
 from models.irpd.test_config import TestConfig
 

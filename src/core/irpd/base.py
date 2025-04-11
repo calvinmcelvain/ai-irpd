@@ -10,7 +10,7 @@ from typing import List, Optional, Union, Dict
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from utils import get_env_var, to_list
+from helpers.utils import get_env_var, to_list
 from logger import clear_logger
 from models.irpd.test_config import TestConfig
 from models.irpd.test_runner import TestRunner

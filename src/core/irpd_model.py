@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from utils import lazy_import, load_config, to_list
+from helpers.utils import lazy_import, load_config, to_list
 
 
 CONFIGS = load_config("irpd_configs.yml")

@@ -1,21 +1,20 @@
 """
-OpenAI module.
+Mistral LLM module.
 
-Contains OpenAIClient model.
+Defines general configs for Mistral model and the Mistral model itself.
 """
-import time
 import logging
 import json
+import time
 import random as r
+import mistralai
 from pathlib import Path
-from pydantic import BaseModel
-from typing import List, Optional, Tuple
-from openai import OpenAI
-from openai import APIConnectionError, APITimeoutError, RateLimitError
-from openai.types.chat import ChatCompletion
+from typing import Optional, List, Tuple
+from mistralai import ChatCompletionResponse
+from pydantic import BaseModel, Field
 from openai.lib._parsing._completions import type_to_response_format_param
 
-from utils import write_jsonl, load_jsonl
+from helpers.utils import write_jsonl, load_jsonl
 from types.batch_output import BatchOut, BatchResponse
 from types.prompts import Prompts
 from models.llms.base_llm import BaseLLM
@@ -25,31 +24,37 @@ log = logging.getLogger(__name__)
 
 
 
-class OpenAIToolCall(BaseModel):
+class MistralConfigs(BaseModel):
+    max_completion_tokens: int = Field(None, ge=1, le=4096)
+    temperature: float = Field(None, ge=0, le=1)
+    top_p: float = Field(None, ge=0, le=1)
+    random_seed: int = Field(None, ge=1)
+    frequency_penalty: float = Field(None, ge=0, le=1)
+    presence_penalty: float = Field(None, ge=0, le=1)
+
+
+class MistralToolCall(BaseModel):
     name: str = "json_response"
     parameters: object | None
 
 
-class OpenAIClient(BaseLLM):
+class Mistral(BaseLLM):
     """
-    OpenAIClient model.
+    Mistral class.
     
-    Defines the request methods for OpenAI SDK.
+    Defines request methods using the Mistral SDK.
     """
     def create_client(self):
-        return OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        return mistralai.Mistral(api_key=self.api_key)
     
     def default_configs(self):
-        pass
+        return MistralConfigs()
     
     def _prep_messages(self, user: str, system: str):
         return {"messages": [self._prep_system_message(system), self._prep_user_message(user)]}
     
     def _json_tool_call(self, schema: BaseModel):
-        tool_load = OpenAIToolCall(parameters=schema.model_json_schema())
+        tool_load = MistralToolCall(parameters=schema.model_json_schema())
         tool_choice = {"name": "json_output", "type": "tool"}
         return {"tools": [tool_load.model_dump()], "tool_choice": tool_choice}
     
@@ -63,9 +68,9 @@ class OpenAIClient(BaseLLM):
         request_load.update(self.configs.model_dump(exclude_none=True))
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
-        request_load.update({"response_format": schema}) if schema else {}
+        request_load.update({"response_format": schema}) if schema and not self.json_tool else {}
         return request_load
-        
+    
     def _format_batch(
         self,
         messages: List[Tuple[str, Prompts]],
@@ -75,7 +80,7 @@ class OpenAIClient(BaseLLM):
         for message_id, message in messages:
             user = message.user
             system = message.system
-            batch_input = {"custom_id": message_id, "method": "POST", "url": "/v1/chat/completions"}
+            batch_input = {"custom_id": message_id}
             schema = type_to_response_format_param(schema)
             request_load = self._request_load(user, system, schema)
             batch_input.update({"body": request_load})
@@ -90,24 +95,13 @@ class OpenAIClient(BaseLLM):
     ):
         client = self.create_client()
         
-        batch = client.batches.retrieve(batch_id)
+        batch = client.batch.jobs.get(batch_id)
         
-        if batch.status != "completed":
+        if batch.status != "SUCCESS":
             log.info(f"Batch {batch_id} is {batch.status}.")
             return None
         
-        log.info(
-            f"\nBatch requests summary:"
-            f"\n\t success: {batch.request_counts.completed}"
-            f"\n\t failed: {batch.request_counts.failed}"
-            f"\n\t total: {batch.request_counts.total}"
-        )
-        
-        if batch.error_file_id:
-            log.info(f"Batch {batch_id} had error {json.dumps(batch.errors, indent=2)}")
-            return "failed"
-        
-        batch_output_file = client.files.content(file_id=batch.output_file_id).iter_lines()
+        batch_output_file = client.files.download(file_id=batch.output_file)
         batch_input_file = load_jsonl(batch_file_path) if batch_file_path else None
         
         batch_output = BatchOut(
@@ -118,7 +112,7 @@ class OpenAIClient(BaseLLM):
             response_json = json.loads(response)
             response_id = response_json["custom_id"]
             
-            # Mathces prompts from batch file to responses in batch by request ID.
+            # Matching prompts from batch file to resonse by request IDs.
             if batch_input_file:
                 prompts = next((
                     p["body"]["messages"] 
@@ -158,14 +152,20 @@ class OpenAIClient(BaseLLM):
         
         batch_file_path = Path(batch_file_path or "/tmp/formatted_batch.jsonl")
         write_jsonl(batch_file_path, formatted_batch)
-        file = client.files.create(file=batch_file_path.open("rb"), purpose="batch")
+        file = client.files.upload(
+            file={
+                "file_name": batch_file_path.name,
+                "content": batch_file_path.open("rb")
+            },
+            purpose="batch"
+        )
         
         if not save_batch: batch_file_path.unlink()
         
-        batch = client.batches.create(
-            input_file_id=file.id,
-            endpoint="/v1/chat/completions",
-            completion_window="24h"
+        batch = client.batch.jobs.create(
+            input_files=[file.id],
+            model=self.model,
+            endpoint="/v1/chat/completions"
         )
         
         if batch.errors:
@@ -181,32 +181,28 @@ class OpenAIClient(BaseLLM):
         request_load = self._request_load(user, system, schema)
         
         max_attempts = kwargs.get("max_attempts", 5)
-        rate_limit_time = kwargs.get("rate_limit_time", 30)
         
         response = None
         attempt_n = 0
         while response is None and attempt_n < max_attempts:
             try:
                 if schema and not self.json_tool:
-                    response = client.beta.chat.completions.parse(**request_load)
+                    response = client.chat.parse(**request_load)
                 else:
-                    response = client.chat.completions.create(**request_load)
-            except (APIConnectionError, APITimeoutError) as e:
+                    response = client.chat.complete(**request_load)
+            except Exception as e:
                 attempt_n += 1
                 log.exception(f"Attempt {attempt_n}: Got error - {e}")
                 time.sleep(r.uniform(0.5, 2.0))
-            except RateLimitError as e:
-                attempt_n += 1
-                log.exception(f"Attempt {attempt_n}: Got RateLimit error - {e}")
-                time.sleep(rate_limit_time)
         
-            if isinstance(response, ChatCompletion):
+            if isinstance(response, ChatCompletionResponse):
+                content = response.choices[0].message.content
                 request_out = self._request_out(
                     input_tokens=response.usage.prompt_tokens,
                     output_tokens=response.usage.completion_tokens,
-                    system=system,
                     user=user,
-                    content=response.choices[0].message.content,
+                    system=system,
+                    content=content,
                     schema=schema
                 )
             else:
@@ -214,12 +210,13 @@ class OpenAIClient(BaseLLM):
                     f"Response was not a Message instance. Got - {response}"
                 )
                 return response
-        
+
         if attempt_n == max_attempts:
             log.error("Max attempts exceeded.")
             raise
-
+        
         if self.print_response:
             print(f"Request response: {request_out.text}")
             print(f"Request meta: {request_out.meta}")
+        
         return request_out

@@ -8,7 +8,7 @@ from itertools import product
 from typing import Union, Optional, List
 from pathlib import Path
 
-from utils import to_list
+from helpers.utils import to_list
 from models.irpd.irpd_base import IRPDBase
 from models.irpd.test_config import TestConfig
 from models.irpd.output_manager import OutputManager

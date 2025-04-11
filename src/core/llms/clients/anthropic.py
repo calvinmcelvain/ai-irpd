@@ -17,7 +17,7 @@ from anthropic.types.messages.batch_create_params import Request
 from anthropic.types.message import Message
 from pydantic import BaseModel
 
-from utils import write_jsonl, load_jsonl
+from helpers.utils import write_jsonl, load_jsonl
 from types.batch_output import BatchOut, BatchResponse
 from types.prompts import Prompts
 from models.llms.base_llm import BaseLLM

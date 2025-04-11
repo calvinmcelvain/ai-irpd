@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from types.batch_output import BatchOut
 from types.prompts import Prompts
 from types.request_output import RequestOut, MetaOut
-from utils import validate_json_string
+from helpers.utils import validate_json_string
 
 
 

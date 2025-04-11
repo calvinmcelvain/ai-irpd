@@ -4,7 +4,7 @@ from itertools import combinations
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from irpd.output_manager import OutputManager
-from utils import validate_json_string
+from helpers.utils import validate_json_string
 from irpd.stages.schemas import *
 
 

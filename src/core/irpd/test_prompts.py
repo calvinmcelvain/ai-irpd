@@ -6,8 +6,8 @@ Contains the TestPrompts module and its corresponding methods.
 import logging
 import pandas as pd
 
-from tools.functions import categories_to_txt, output_attrb
-from utils import file_to_string, to_list
+from core.irpd.functions import categories_to_txt, output_attrb
+from helpers.utils import file_to_string, to_list
 from types.prompts import Prompts
 from models.irpd.output_manager import OutputManager
 

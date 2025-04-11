@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
-from tools.functions import categories_to_txt, output_attrb
+from helpers.utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
+from core.irpd.functions import categories_to_txt, output_attrb
 from models.irpd.test_outputs import StageOutput, ModelInfo, StageInfo, SubsetInfo, TestMeta
 from models.irpd.config_manager import ConfigManager
 
