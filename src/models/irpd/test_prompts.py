@@ -8,7 +8,7 @@ import pandas as pd
 
 from tools.functions import categories_to_txt, output_attrb
 from utils import file_to_string, to_list
-from models.prompts import Prompts
+from types.prompts import Prompts
 from models.irpd.output_manager import OutputManager
 
 

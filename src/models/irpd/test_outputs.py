@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 
-from models.request_output import RequestOut
+from types.request_output import RequestOut
 
 
 

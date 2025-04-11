@@ -15,8 +15,8 @@ from pydantic import BaseModel, Field
 from openai.lib._parsing._completions import type_to_response_format_param
 
 from utils import write_jsonl, load_jsonl
-from models.batch_output import BatchOut, BatchResponse
-from models.prompts import Prompts
+from types.batch_output import BatchOut, BatchResponse
+from types.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 
 

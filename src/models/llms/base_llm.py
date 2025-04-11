@@ -8,9 +8,9 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from models.batch_output import BatchOut
-from models.prompts import Prompts
-from models.request_output import RequestOut, MetaOut
+from types.batch_output import BatchOut
+from types.prompts import Prompts
+from types.request_output import RequestOut, MetaOut
 from utils import validate_json_string
 
 

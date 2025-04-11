@@ -8,12 +8,12 @@ from typing import List
 from time import sleep
 
 from utils import load_json_n_validate, to_list, create_directory
-from models.prompts import Prompts
+from types.prompts import Prompts
 from models.llms.base_llm import BaseLLM
 from models.irpd.output_processer import OutputProcesser
 from models.irpd.test_prompts import TestPrompts
 from models.irpd.test_outputs import TestOutput, TestMeta
-from models.batch_output import BatchOut
+from types.batch_output import BatchOut
 from models.irpd.test_outputs import StageOutput
 from models.irpd.test_config import TestConfig
 from models.irpd.config_manager import ConfigManager

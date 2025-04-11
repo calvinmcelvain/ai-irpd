@@ -1,0 +1,38 @@
+{
+    "base": {
+        "max_tokens": 4096,
+        "temperature": 0,
+        "top_p": 1,
+        "seed": 1240034,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "reasoning": "high"
+    },
+    "res1": {
+        "max_tokens": 4096,
+        "temperature": 1,
+        "top_p": 1,
+        "seed": null,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "reasoning": "high"
+    },
+    "res2": {
+        "max_tokens": 4096,
+        "temperature": 0,
+        "top_p": 1,
+        "seed": null,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "reasoning": "high"
+    },
+    "res3": {
+        "max_tokens": 4096,
+        "temperature": 1,
+        "top_p": 1,
+        "seed": 1240034,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "reasoning": "high"
+    }
+}
