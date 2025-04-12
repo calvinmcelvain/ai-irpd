@@ -5,12 +5,11 @@ Aggregates all LLM models. Structure strongly follows:
 https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
 """
 from enum import Enum
+from typing import Literal
 from dataclasses import dataclass, field
 from functools import cached_property
-from helpers.utils import lazy_import, load_config, validate_json, get_env_var
 
-
-CONFIGS = load_config("llm_configs.yml")
+from helpers.utils import lazy_import, get_env_var
 
 
 
@@ -18,22 +17,20 @@ CONFIGS = load_config("llm_configs.yml")
 class LLMModelClassContainer:
     module: str
     model_class: str
-    model_config: str
 
     @cached_property
     def impl(self):
         model_class = lazy_import(self.module, self.model_class)
-        model_configs = lazy_import(self.module, self.model_config)
-        return model_class, model_configs
+        return model_class
 
 
 class LLMModelClass(LLMModelClassContainer, Enum):
-    GPT = ("models.llms.gpt", "GPT", "GPTConfigs")
-    CLAUDE = ("models.llms.claude", "Claude", "ClaudeConfigs")
-    GEMINI = ("models.llms.gemini", "Gemini", "GeminiConfigs")
-    NOVA = ("models.llms.nova", "Nova", "NovaConfigs")
-    MISTRAL = ("models.llms.mistral", "Mistral", "MistralConfigs")
-    GROK = ("models.llms.grok", "Grok", "GrokConfigs")
+    GPT = ("core.llms.gpt", "GPT")
+    CLAUDE = ("core.llms.claude", "Claude")
+    GEMINI = ("core.llms.gemini", "Gemini")
+    NOVA = ("core.llms.nova", "Nova")
+    MISTRAL = ("core.llms.mistral", "Mistral")
+    GROK = ("core.llms.grok", "Grok")
 
 
 @dataclass(frozen=True)
@@ -150,7 +147,7 @@ class LLMModel(LLMModelContainer, Enum):
     
     def get_llm_instance(
         self,
-        config: str = "base",
+        config: Literal["base", "res1", "res2", "res3"] = "base",
         print_response: bool = False
     ):
         """
@@ -162,15 +159,11 @@ class LLMModel(LLMModelContainer, Enum):
             print_response (bool, optional): If True, prints response of all
             LLM requests. Defaults to False.
         """
-        model_class, model_configs = self.model_class.impl
-        config_json = validate_json(
-            CONFIGS[config][self.key],
-            model_configs
-        )
+        model_class = self.model_class.impl
         return model_class(
             api_key=get_env_var(self.api_key),
             model=self.model_name,
-            configs=config_json,
+            configs=config,
             print_response=print_response,
             json_tool=self.other_args.json_tool,
             region=self.other_args.region,

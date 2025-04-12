@@ -13,7 +13,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from types.prompts import Prompts
-from models.llms.base_llm import BaseLLM
+from core.llms.base import BaseLLM
 
 
 log = logging.getLogger(__name__)
@@ -31,8 +31,9 @@ class BedrockClient(BaseLLM):
 
     Defines request methods using the Bedrock client.
     """
-    def default_configs(self):
-        pass
+    def _translate_config(self, config):
+        # Deinfed at the Model-level
+        return super()._translate_config(config)
     
     def create_client(self):
         return boto3.client("bedrock-runtime", region_name=self.region)
@@ -69,12 +70,15 @@ class BedrockClient(BaseLLM):
         return out
     
     def _format_batch(self, messages, schema = None):
+        # No support for batches
         pass
     
     def request_batch(self, messages, schema = None, batch_file_path = None):
+        # No support for batches
         pass
     
     def retreive_batch(self, batch_id, schema = None, batch_file_path = None):
+        # No support for batches
         pass
     
     def _request_load(
@@ -85,7 +89,7 @@ class BedrockClient(BaseLLM):
     ):
         user_m = self._add_json_requirement(user) if schema else user
         body_load = self._prep_messages(user_m, system)
-        body_load.update({"inferenceConfig": self.configs.model_dump(exclude_none=True)})
+        body_load.update({"inferenceConfig": self.configs})
         body_load.update(self._json_tool_call(schema)) if schema else {}
         request_load = {"modelId": self.model}
         request_load.update({"contentType": "application/json"})

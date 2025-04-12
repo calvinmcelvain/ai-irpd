@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from helpers.utils import write_jsonl, load_jsonl
 from types.batch_output import BatchOut, BatchResponse
 from types.prompts import Prompts
-from models.llms.base_llm import BaseLLM
+from core.llms.base import BaseLLM
 
 
 log = logging.getLogger(__name__)
@@ -38,8 +38,9 @@ class AnthropicClient(BaseLLM):
     
     Defines request methods using the Anthropic client.
     """
-    def default_configs(self):
-        pass
+    def _translate_config(self, config):
+        # Defined at Model-level.
+        return super()._translate_config(config)
     
     def create_client(self):
         return Anthropic(api_key=self.api_key)
@@ -61,7 +62,7 @@ class AnthropicClient(BaseLLM):
         schema: Optional[BaseModel]
     ):
         request_load = {"model": self.model}
-        request_load.update(self.configs.model_dump(exclude_none=True))
+        request_load.update(self.configs)
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if schema else {}
         return request_load

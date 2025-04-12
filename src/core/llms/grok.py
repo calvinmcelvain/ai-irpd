@@ -3,26 +3,20 @@ XAI's Grok module.
 
 Defines general Grok configs.
 """
-from pydantic import BaseModel, Field
-
-from models.llms.openai_client import OpenAIClient
-
-
-
-class GrokConfigs(BaseModel):
-    max_completion_tokens: int = Field(None, ge=1, le=4096)
-    temperature: float = Field(None, ge=0, le=1)
-    top_p: float = Field(None, ge=0, le=1)
-    seed: int = Field(None, ge=1)
-    frequency_penalty: float = Field(None, ge=0, le=1)
-    presence_penalty: float = Field(None, ge=0, le=1)
+from core.llms.clients.openai import OpenAIClient
+from types.llm_config import LLMConfig
 
 
 class Grok(OpenAIClient):
     """
     Grok model (inherits OpenAIClient model).
     """
-    configs: GrokConfigs
-    
-    def default_configs(self):
-        return GrokConfigs()
+    def _translate_config(self, config: LLMConfig):
+        return {
+            "max_completion_tokens": config.max_tokens,
+            "temperature": config.temperature,
+            "top_p": config.top_p,
+            "seed": config.seed,
+            "frequency_penalty": config.frequency_penalty,
+            "presence_penalty": config.presence_penalty
+        }

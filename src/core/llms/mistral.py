@@ -1,23 +1,23 @@
 """
-Google's Gemini module.
+Mistral LLM module.
 
-Contains Gemini model.
+Contains the Mistral model.
 """
-from core.llms.clients.genai import GenAIClient
+from core.llms.clients.mistral import MistralClient
 from types.llm_config import LLMConfig
 
 
 
-class Gemini(GenAIClient):
+class Mistral(MistralClient):
     """
-    Google's Gemini model (inherits the GenAICLient class).
+    Mistral Model (inherits the MistralClient).
     """
     def _translate_config(self, config: LLMConfig):
         return {
-            "max_output_tokens": config.max_tokens,
+            "max_completion_tokens": config.max_tokens,
             "temperature": config.temperature,
             "top_p": config.top_p,
-            "seed": config.seed,
+            "random_seed": config.seed,
             "frequency_penalty": config.frequency_penalty,
             "presence_penalty": config.presence_penalty
         }

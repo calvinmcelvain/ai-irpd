@@ -18,7 +18,7 @@ from openai.lib._parsing._completions import type_to_response_format_param
 from helpers.utils import write_jsonl, load_jsonl
 from types.batch_output import BatchOut, BatchResponse
 from types.prompts import Prompts
-from models.llms.base_llm import BaseLLM
+from core.llms.base import BaseLLM
 
 
 log = logging.getLogger(__name__)
@@ -42,8 +42,9 @@ class OpenAIClient(BaseLLM):
             base_url=self.base_url
         )
     
-    def default_configs(self):
-        pass
+    def _translate_config(self, config):
+        # Defined at Model-level
+        return super()._translate_config(config)
     
     def _prep_messages(self, user: str, system: str):
         return {"messages": [self._prep_system_message(system), self._prep_user_message(user)]}
@@ -60,7 +61,7 @@ class OpenAIClient(BaseLLM):
         schema: Optional[BaseModel]
     ):
         request_load = {"model": self.model}
-        request_load.update(self.configs.model_dump(exclude_none=True))
+        request_load.update(self.configs)
         request_load.update(self._prep_messages(user, system))
         request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
         request_load.update({"response_format": schema}) if schema else {}
