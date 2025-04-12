@@ -13,7 +13,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from types.prompts import Prompts
-from core.llms.base import BaseLLM
+from core.llms.clients.base import BaseLLM
 
 
 log = logging.getLogger(__name__)

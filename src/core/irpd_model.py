@@ -44,11 +44,11 @@ class TestClassContainer:
     
 
 class IRPDTestClass(TestClassContainer, Enum):
-    TEST = ("core.irpd.test", "Test")
-    SUBTEST = ("core.irpd.subtest", "Subtest")
-    CROSS_MODEL = ("core.irpd.cross_model", "CrossModel")
-    INTRA_MODEL = ("core.irpd.intra_model", "IntraModel")
-    SAMPLE_SPLITTING = ("core.irpd.sample_splitting", "SampleSplitting")
+    TEST = ("core.irpd.models.test", "Test")
+    SUBTEST = ("core.irpd.models.subtest", "Subtest")
+    CROSS_MODEL = ("core.irpd.models.cross_model", "CrossModel")
+    INTRA_MODEL = ("core.irpd.models.intra_model", "IntraModel")
+    SAMPLE_SPLITTING = ("core.irpd.models.sample_splitting", "SampleSplitting")
     
     def get_irpd_instance(
         self,

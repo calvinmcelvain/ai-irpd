@@ -7,8 +7,8 @@ import logging
 
 from helpers.utils import create_directory
 from core.irpd.functions import instance_types
-from core.llm_model import LLMModel
-from types.irpd_config import TestConfig
+from core.llms.models import LLMModel
+from types.test_config import TestConfig
 
 
 log = logging.getLogger(__name__)

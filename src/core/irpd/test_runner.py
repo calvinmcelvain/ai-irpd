@@ -8,14 +8,14 @@ from typing import List
 from time import sleep
 
 from helpers.utils import to_list, create_directory
-from core.llms.base import BaseLLM
-from core.irpd.processors.output_processer import OutputProcesser
-from core.irpd.processors.test_prompts import TestPrompts
-from core.irpd.managers.config_manager import ConfigManager
-from core.irpd.managers.output_manager import OutputManager
+from core.llms.clients.base import BaseLLM
+from core.irpd.output_processer import OutputProcesser
+from core.irpd.test_prompts import TestPrompts
+from core.irpd.config_manager import ConfigManager
+from core.irpd.output_manager import OutputManager
 from types.irpd_output import TestOutput, StageOutput
 from types.batch_output import BatchOut
-from types.irpd_config import TestConfig
+from types.test_config import TestConfig
 from types.prompts import Prompts
 
 

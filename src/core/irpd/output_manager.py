@@ -10,10 +10,10 @@ from typing import List, Dict, Optional, Union
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
-from types.irpd_config import TestConfig
+from types.test_config import TestConfig
 from types.irpd_output import TestOutput, StageOutput, TestMeta
-from core.irpd.processors.output_processer import OutputProcesser
-from core.irpd.managers.config_manager import ConfigManager
+from core.irpd.output_processer import OutputProcesser
+from core.irpd.config_manager import ConfigManager
 
 
 log = logging.getLogger(__name__)

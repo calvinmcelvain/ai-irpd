@@ -17,7 +17,7 @@ from openai.lib._parsing._completions import type_to_response_format_param
 from helpers.utils import write_jsonl, load_jsonl
 from types.batch_output import BatchOut, BatchResponse
 from types.prompts import Prompts
-from core.llms.base import BaseLLM
+from core.llms.clients.base import BaseLLM
 
 
 log = logging.getLogger(__name__)

@@ -1,31 +1,30 @@
 """
-The subtest IRPD test module.
+Intra-model IRPD test module.
 
-Contains the Subtest test model.
+Contains the IntraModel model.
 """
 import logging
 from itertools import product
-from typing import Union, Optional, List
+from typing import Optional, List, Union
 from pathlib import Path
 
-from helpers.utils import to_list
-from core.irpd.base import IRPDBase
-from core.irpd.managers.output_manager import OutputManager
-from types.irpd_config import TestConfig
+from core.irpd.models.base import IRPDBase
+from core.irpd.output_manager import OutputManager
+from types.test_config import TestConfig
 
 
 log = logging.getLogger(__name__)
 
 
 
-class Subtest(IRPDBase):
+class IntraModel(IRPDBase):
     def __init__(
         self, 
         cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
-        N: int = 1,
+        N: int,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -50,15 +49,13 @@ class Subtest(IRPDBase):
             test_paths,
             batch
         )
-        self.test_type = "subtest"
+        self.test_type = "cross_model"
         
-        # The total number of tests is the total combinations of LLMs, LLM
-        # configs, cases, RAs, and treatments.
+        # For intra-model tests, the number of tests is the total combinations
+        # of LLMs, LLM configs, cases, RAs, and treatments.
         self._prod = list(product(
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
-        
-        assert self.replications == 1, "For test type 'test' or 'subtest', replications `N` must be equal to 1"
         
         self.test_paths = self._generate_test_paths()
         self._generate_configs()
@@ -66,9 +63,11 @@ class Subtest(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        test_dir = self.output_path / "subtests"
-        current_test = self._get_max_test_number(test_dir, "")
-        test_paths = [test_dir / f"{i + 1 + current_test}" for i in range(len(self._prod))]
+        
+        # Tests are in directorys: .../outputs/intra_model/
+        test_dir = self.output_path / self.test_type
+        current_test = self._get_max_test_number(test_dir)
+        test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths
     
     def _generate_configs(self):
@@ -78,16 +77,15 @@ class Subtest(IRPDBase):
                 case=case,
                 ra=ra,
                 treatment=treatment,
-                llms=to_list(llm),
+                llms=llm,
                 llm_config=llm_config,
-                test_type=self.test_type,
                 max_instances=self.max_instances,
-                test_path=self.test_paths[idx],
+                test_type=self.test_type,
                 data_path=self.data_path,
                 prompts_path=self.prompts_path,
-                stages=self.stages,
+                test_path=self.test_paths[idx],
                 batches=self.batch_request,
-                total_replications=1
+                stages=self.stages
             )
             self.configs[config.id] = config
             self.outputs[config.id] = OutputManager(config)
