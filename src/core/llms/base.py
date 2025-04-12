@@ -8,10 +8,14 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
+from types.llm_config import LLMConfig
 from types.batch_output import BatchOut
 from types.prompts import Prompts
 from types.request_output import RequestOut, MetaOut
-from helpers.utils import validate_json_string
+from helpers.utils import validate_json_string, load_config
+
+
+LLM_CONFIGS = load_config("llm.json")
 
 
 
@@ -40,7 +44,10 @@ class BaseLLM(ABC):
         """
         self.api_key = api_key
         self.model = model
-        self.configs = self._translate_config(config)
+        
+        base_configs = LLMConfig(**LLM_CONFIGS[config])
+        self.configs = self._translate_config(base_configs)
+        
         self.print_response = print_response
         self.json_tool = kwargs.get("json_tool", None)
         self.batches = kwargs.get("batches", True)
@@ -86,7 +93,7 @@ class BaseLLM(ABC):
         )
     
     @abstractmethod
-    def _translate_config(self, config: str):
+    def _translate_config(self, config: LLMConfig):
         """
         Translates generic config names to client specific config names.
         """
