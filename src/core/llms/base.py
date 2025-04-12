@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
+from types.llm_config import LLMConfig
 from types.batch_output import BatchOut
 from types.prompts import Prompts
 from types.request_output import RequestOut, MetaOut
@@ -23,7 +24,7 @@ class BaseLLM(ABC):
         self,
         api_key: str,
         model: str,
-        configs: BaseModel,
+        config: str,
         print_response: bool = False,
         **kwargs
     ):
@@ -33,13 +34,14 @@ class BaseLLM(ABC):
         Args:
             api_key (str): API key for respective LLM.
             model (str): LLM model.
-            configs (BaseModel): LLM configs.
+            configs (str): Name of config. Can be from ["base", "res1", "res2", 
+            "res3"].
             print_response (bool, optional): If True, prints response of LLM. 
             Defaults to False.
         """
         self.api_key = api_key
         self.model = model
-        self.configs = configs or self.default_configs()
+        self.configs = self._translate_config(config)
         self.print_response = print_response
         self.json_tool = kwargs.get("json_tool", None)
         self.batches = kwargs.get("batches", True)
@@ -85,7 +87,7 @@ class BaseLLM(ABC):
         )
     
     @abstractmethod
-    def _translate_config(self):
+    def _translate_config(self, config: str):
         """
         Translates generic config names to client specific config names.
         """
@@ -117,13 +119,6 @@ class BaseLLM(ABC):
         Creates the and returns general format for requests for LLM chat
         completions.
         """
-    
-    @abstractmethod
-    def default_configs(self):
-        """
-        Sets default configs of LLM if not specified.
-        """
-        pass
     
     @abstractmethod
     def create_client(self):
