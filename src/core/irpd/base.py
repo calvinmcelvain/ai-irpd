@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 
 from helpers.utils import get_env_var, to_list
 from logger import clear_logger
-from models.irpd.test_config import TestConfig
-from models.irpd.test_runner import TestRunner
+from types.irpd_config import TestConfig
+from core.irpd.processors.test_runner import TestRunner
 
 
 log = logging.getLogger(__name__)

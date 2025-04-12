@@ -156,6 +156,7 @@ class LLMModel(LLMModelContainer, Enum):
         Args:
             config (str, optional): The config used for LLM model. Defaults to 
             "base". Can be from ["base", "res1", "res2", "res3"].
+            
             print_response (bool, optional): If True, prints response of all
             LLM requests. Defaults to False.
         """

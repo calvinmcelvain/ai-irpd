@@ -43,7 +43,7 @@ class OutputManager:
         self.llms = test_config.llms
         self.llm_config = test_config.llm_config
         self.schemas = {
-            stage: lazy_import("models.irpd.schemas", f"Stage{stage}Schema")
+            stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
         self.generate_llm_instance = self.config_manager.generate_llm_instance

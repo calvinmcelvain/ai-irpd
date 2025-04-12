@@ -8,9 +8,9 @@ from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
 
-from models.irpd.irpd_base import IRPDBase
-from models.irpd.test_config import TestConfig
-from models.irpd.output_manager import OutputManager
+from core.irpd.base import IRPDBase
+from core.irpd.managers.output_manager import OutputManager
+from types.irpd_config import TestConfig
 
 
 log = logging.getLogger(__name__)

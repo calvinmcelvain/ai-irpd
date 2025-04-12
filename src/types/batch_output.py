@@ -1,3 +1,6 @@
+"""
+Models for Batch outputs.
+"""
 from typing import List
 from pydantic import BaseModel
 

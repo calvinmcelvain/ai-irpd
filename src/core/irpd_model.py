@@ -11,11 +11,8 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from helpers.utils import lazy_import, load_config, to_list
+from helpers.utils import lazy_import, to_list
 
-
-CONFIGS = load_config("irpd_configs.yml")
-DEFAULTS = CONFIGS["defaults"]
 
 # Specifying the arguments for test models.
 # Also makes it easier when creating an instance w/ autofill.
@@ -47,11 +44,11 @@ class TestClassContainer:
     
 
 class IRPDTestClass(TestClassContainer, Enum):
-    TEST = ("models.irpd.irpd_test", "Test")
-    SUBTEST = ("models.irpd.irpd_subtest", "Subtest")
-    CROSS_MODEL = ("models.irpd.irpd_cross_model", "CrossModel")
-    INTRA_MODEL = ("models.irpd.irpd_intra_model", "IntraModel")
-    SAMPLE_SPLITTING = ("models.irpd.irpd_sample_splitting", "SampleSplitting")
+    TEST = ("core.irpd.test", "Test")
+    SUBTEST = ("core.irpd.subtest", "Subtest")
+    CROSS_MODEL = ("core.irpd.cross_model", "CrossModel")
+    INTRA_MODEL = ("core.irpd.intra_model", "IntraModel")
+    SAMPLE_SPLITTING = ("core.irpd.sample_splitting", "SampleSplitting")
     
     def get_irpd_instance(
         self,
@@ -60,8 +57,8 @@ class IRPDTestClass(TestClassContainer, Enum):
         treatments: Union[List[TREATMENTS], TREATMENTS],
         stages: Union[List[STAGES], STAGES],
         N: int = 1,
-        llms: Union[List[LLMS], LLMS] = DEFAULTS["llms"],
-        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = DEFAULTS["llm_configs"],
+        llms: Union[List[LLMS], LLMS] = "GPT_4O_1120",
+        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = "base",
         max_instances: Optional[int] = None,
         batch: bool = False,
         test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
@@ -74,30 +71,40 @@ class IRPDTestClass(TestClassContainer, Enum):
             cases (Union[List[CASES], CASES]): The cases that want to be run.
             Can be from ["uni", "uniresp", "switch", "first", 
             "uni_switch"].
+            
             ras (Union[List[RAS], RAS]): The RA summaries to be used (if want
             LLM generated summaries, i.e., stage 0, use `exp`). Can be from
             ["ra1", "ra2", "both", "exp"].
+            
             treatments (Union[List[TREATMENTS], TREATMENTS]): The treatments to
             be run. Can be from ["imperfect", "perfect", "merged"].
+            
             stages (Union[List[STAGES], STAGES]): The stages to be run for each
             test. Can be from ["0", "1", "1r", "1c", "2", "3"]. Must be on order
             if Test or Subtest.
+            
             N (int, optional): The number of replications. Only used if test
             type is IntraModel or CrossModel. Defaults to 1.
+            
             llms (Union[List[LLMS], LLMS], optional): The LLM models to be used
             in tests. Defaults to `GPT_4O_1120`.
+            
             llm_configs (Union[List[LLM_CONFIGS], LLM_CONFIGS], optional): The
             configs used for LLM model(s). Defaults to `base`. Can be from 
             ["base", "res1", "res2", "res3"].
+            
             max_instances (Optional[int], optional): The maximum number of 
             "instances" or "summaries" to be used in iterative stages ("0", "2",
             and "3"). Defaults to None (all instances used).
+            
             batch (bool, optional): If True, then Batch API used for tests, if
             the LLM supports it. Defaults to False.
+            
             test_paths (Union[List[Union[str, Path]], Union[str, Path]], 
             optional): The specific paths to used for tests. Generally this is
             used if continuing stopped test or adding more stages to a test. 
             Defaults to None.
+            
             kwargs:
                 - prompts_path, output_path: The paths to be used for outputs
                 and/or prompts.
