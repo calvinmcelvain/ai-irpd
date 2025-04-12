@@ -6,7 +6,7 @@ Contains the function model, ConfigManager.
 import logging
 
 from helpers.utils import create_directory
-from core.irpd.functions import instance_types
+from core.functions import instance_types
 from core.llms.llm_models import LLMModel
 from types.irpd_config import IRPDConfig
 

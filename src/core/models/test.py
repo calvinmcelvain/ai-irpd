@@ -1,15 +1,16 @@
 """
-Cross-model IRPD test module.
+The IRPD base test module.
 
-Contains the CrossModel model.
+Contains the Test model.
 """
 import logging
 from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
 
-from core.irpd.models.base import IRPDBase
-from core.irpd.output_manager import OutputManager
+from helpers.utils import to_list
+from core.models.base import IRPDBase
+from core.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 
@@ -17,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 
-class CrossModel(IRPDBase):
+class Test(IRPDBase):
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -49,13 +50,15 @@ class CrossModel(IRPDBase):
             test_paths,
             batch
         )
-        self.test_type = "cross_model"
+        self.test_type = "test"
         
-        # The number of tests for cross-model tests is the total combinations
-        # of LLM configs, cases, ras, & treatments.
+        # The total number of tests is the number of combinations of LLMs, LLM
+        # configs, cases, RAs, and treatments.
         self._prod = list(product(
-            self.llm_configs, self.cases, self.ras, self.treatments
+            self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
+        
+        assert self.replications == 1, "For test type 'test' or 'subtest', replications `N` must be equal to 1"
         
         self.test_paths = self._generate_test_paths()
         self._generate_configs()
@@ -63,31 +66,35 @@ class CrossModel(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-
-        # Test paths are in directory: .../outputs/cross_model/
-        test_dir = self.output_path / self.test_type
-        current_test = self._get_max_test_number(test_dir)
-        test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
+        test_paths = []
+        
+        # Test paths are dependent on the case: .../outputs/base_tests/{case}/
+        for case in self.cases:
+            test_dir = self.output_path / "base_tests" / case
+            current_test = self._get_max_test_number(test_dir)
+            length = int(len(self._prod) / len(self.cases))
+            paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(length)]
+            test_paths.extend(paths)
         return test_paths
     
     def _generate_configs(self):
         for idx, prod in enumerate(self._prod):
-            llm_config, case, ra, treatment = prod
+            llm, llm_config, case, ra, treatment = prod
             config = IRPDConfig(
                 case=case,
                 ra=ra,
                 treatment=treatment,
-                llms=self.llms,
+                llms=to_list(llm),
                 llm_config=llm_config,
-                max_instances=self.max_instances,
                 test_type=self.test_type,
+                max_instances=self.max_instances,
+                test_path=self.test_paths[idx],
                 data_path=self.data_path,
                 prompts_path=self.prompts_path,
-                test_path=self.test_paths[idx],
+                stages=self.stages,
                 batches=self.batch_request,
-                stages=self.stages
+                total_replications=1
             )
             self.configs[config.id] = config
             self.outputs[config.id] = OutputManager(config)
         return None
-    

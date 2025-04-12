@@ -1,15 +1,15 @@
 """
-Intra-model IRPD test module.
+Cross-model IRPD test module.
 
-Contains the IntraModel model.
+Contains the CrossModel model.
 """
 import logging
 from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
 
-from core.irpd.models.base import IRPDBase
-from core.irpd.output_manager import OutputManager
+from core.models.base import IRPDBase
+from core.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 
@@ -17,14 +17,14 @@ log = logging.getLogger(__name__)
 
 
 
-class IntraModel(IRPDBase):
+class CrossModel(IRPDBase):
     def __init__(
         self, 
         cases: Union[List[str], str],
         ras: Union[List[str], str],
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
-        N: int,
+        N: int = 1,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -51,10 +51,10 @@ class IntraModel(IRPDBase):
         )
         self.test_type = "cross_model"
         
-        # For intra-model tests, the number of tests is the total combinations
-        # of LLMs, LLM configs, cases, RAs, and treatments.
+        # The number of tests for cross-model tests is the total combinations
+        # of LLM configs, cases, ras, & treatments.
         self._prod = list(product(
-            self.llms, self.llm_configs, self.cases, self.ras, self.treatments
+            self.llm_configs, self.cases, self.ras, self.treatments
         ))
         
         self.test_paths = self._generate_test_paths()
@@ -63,8 +63,8 @@ class IntraModel(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        
-        # Tests are in directorys: .../outputs/intra_model/
+
+        # Test paths are in directory: .../outputs/cross_model/
         test_dir = self.output_path / self.test_type
         current_test = self._get_max_test_number(test_dir)
         test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
@@ -72,12 +72,12 @@ class IntraModel(IRPDBase):
     
     def _generate_configs(self):
         for idx, prod in enumerate(self._prod):
-            llm, llm_config, case, ra, treatment = prod
+            llm_config, case, ra, treatment = prod
             config = IRPDConfig(
                 case=case,
                 ra=ra,
                 treatment=treatment,
-                llms=llm,
+                llms=self.llms,
                 llm_config=llm_config,
                 max_instances=self.max_instances,
                 test_type=self.test_type,
@@ -90,3 +90,4 @@ class IntraModel(IRPDBase):
             self.configs[config.id] = config
             self.outputs[config.id] = OutputManager(config)
         return None
+    

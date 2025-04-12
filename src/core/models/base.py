@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from helpers.utils import get_env_var, to_list
 from logger import LoggerManager
 from types.irpd_config import IRPDConfig
-from core.irpd.test_runner import TestRunner
+from core.test_runner import TestRunner
 
 
 log = logging.getLogger(__name__)
