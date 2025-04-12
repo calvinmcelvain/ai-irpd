@@ -11,8 +11,9 @@ from datetime import datetime
 
 from helpers.utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
 from core.irpd.functions import categories_to_txt, output_attrb
-from core.irpd.managers.config_manager import ConfigManager
-from types.irpd_output import StageOutput, ModelInfo, StageInfo, SubsetInfo, TestMeta
+from core.irpd.config_manager import ConfigManager
+from types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
+from types.stage_output import StageOutput
 
 
 log = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class OutputProcesser:
     ):
         self.outputs = stage_outputs
         self.config_manager = config_manager
-        self.test_config = config_manager.config
+        self.irpd_config = config_manager.config
         self.stage_name = stage_outputs[0].stage_name
         self.stages = config_manager.stages
         self.total_replications = config_manager.total_replications
@@ -165,7 +166,7 @@ class OutputProcesser:
                     )
         return None
     
-    def _stage_meta_info(self, meta: TestMeta):
+    def _stage_meta_info(self, meta: IRPDMeta):
         """
         Creates the stage specific meta info.
         """
@@ -196,20 +197,20 @@ class OutputProcesser:
     
     def write_meta(self):
         """
-        Writes the TestMeta object for a given StageOutput obj.
+        Writes the IRPDMeta object for a given StageOutput obj.
         
         Written as a JSON in the subpath dir.
         """
         # Load meta if exists. Else, create TestMeta obj.
         if self.meta_path.exists():
-            meta = load_json_n_validate(self.meta_path, TestMeta)
+            meta = load_json_n_validate(self.meta_path, IRPDMeta)
         else:
             model_info = ModelInfo(
                 model=self.llm_instance.model,
                 parameters=self.llm_instance.configs.model_dump()
             )
             stages = {stage: StageInfo() for stage in self.config_manager.stages}
-            meta = TestMeta(
+            meta = IRPDMeta(
                 model_info=model_info,
                 test_info=self.config_manager.config.convert_to_dict(),
                 stages=stages
@@ -225,8 +226,8 @@ class OutputProcesser:
         
         log.info(
             f"\nMeta data successully written for:"
-            f"\n\t config: {self.test_config.id}"
-            f"\n\t case: {self.test_config.case}"
+            f"\n\t config: {self.irpd_config.id}"
+            f"\n\t case: {self.irpd_config.case}"
             f"\n\t llm: {self.llm_str}"
             f"\n\t replicate: {self.replication} of {self.total_replications}"
             f"\n\t stage: {self.stage_name}"

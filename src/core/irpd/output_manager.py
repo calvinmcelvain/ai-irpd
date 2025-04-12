@@ -5,13 +5,14 @@ Contains the functional OutputManager model.
 """
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Optional, Union
 
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
 from types.irpd_config import IRPDConfig
-from types.irpd_output import TestOutput, StageOutput, TestMeta
+from types.stage_output import StageOutput
+from types.irpd_meta import IRPDMeta
 from core.irpd.output_processer import OutputProcesser
 from core.irpd.config_manager import ConfigManager
 
@@ -48,37 +49,34 @@ class OutputManager:
         }
         self.generate_llm_instance = self.config_manager.generate_llm_instance
         
-        self.test_outputs = self._initialize_test_outputs()
+        self.irpd_outputs = self._initialize_irpd_outputs()
         
         # Checking current test path (and batch) for outputs on initialization.
         self._check_test_directory()
         self._check_batch()
         
-    def _initialize_test_outputs(self):
+    def _initialize_irpd_outputs(self):
         """
-        Initializes TestOutput and StageOutput objects.
+        Initializes StageOutput objects.
         
-        Note: The number of StageOutput objects within a TestOutput should be 
-        the same across TestOutputs.
+        Note: IRPD outputs stored by LLM.
         """
-        test_outputs = {}
+        irpd_outputs = {}
         for llm_str in self.irpd_config.llms:
-            # Creating a TestOuput object for each LLM.
-            test_output = TestOutput(llm_str=llm_str,)
+            irpd_outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
                 for stage in self.stages:
                     subsets = self.config_manager.get_subsets(stage)
                     for subset in subsets:
                         # Creates a StageOutput object for each replication,
                         # stage, and subset.
-                        test_output.stage_outputs.append(StageOutput(
+                        irpd_outputs[llm_str].append(StageOutput(
                             stage_name=stage,
                             subset=subset,
                             llm_str=llm_str,
                             replication=n
                         ))
-            test_outputs[llm_str] = test_output
-        return test_outputs
+        return irpd_outputs
     
     def _check_test_directory(self):
         """
@@ -86,9 +84,8 @@ class OutputManager:
         
         Note: This method is run before `_check_batch` method.
         """
-        for llm_str, test_output in self.test_outputs.items():
-            test_output: TestOutput
-            for stage_output in test_output.stage_outputs:
+        for llm_str, test_output in self.irpd_outputs.items():
+            for stage_output in test_output:
                 stage_name = stage_output.stage_name
                 subset = stage_output.subset
                 
@@ -110,27 +107,22 @@ class OutputManager:
                 ]
                 
                 self.store_completion(stage_output, outputs)
-                
-                # Checking if TestOutput object is complete.
-                test_output.check_test_complete()
         return None
     
     def _check_batch(self):
         """
         Checks the Batch status if outputs don't exist in directory.
         """
-        for llm_str, test_output in self.test_outputs.items():
-            test_output: TestOutput
+        for llm_str, stage_outputs in self.irpd_outputs.items():
+            complete = self.check_irpd_test_completion(llm_str)
             
-            # Check to see if the TestOutput object was already marked complete.
-            # Note: If output found in directory, object should be marked as 
-            # complete.
-            if not test_output.complete:
+            # Check to see if the outputs are complete already.
+            if not complete:
                 meta_path = self.config_manager.generate_meta_path(llm_str, 1)
                 
                 # Checking to see if meta path exists & Test include batches.
                 if self.irpd_config.batches and meta_path.exists():
-                    meta: TestMeta = load_json_n_validate(meta_path, TestMeta)
+                    meta: IRPDMeta = load_json_n_validate(meta_path, IRPDMeta)
                     
                     # Initializing LLM to check batches (if exist).
                     llm = self.generate_llm_instance(llm_str)
@@ -150,7 +142,7 @@ class OutputManager:
                         else:
                             # Storing the batch ID and path in the StageOutput 
                             # objects if they exist.
-                            for stage_output in test_output.stage_outputs:
+                            for stage_output in stage_outputs:
                                 stage_output.batch_id = batch_id
                                 stage_output.batch_path = Path(batch_path)
                         
@@ -172,25 +164,15 @@ class OutputManager:
                         # for retry loop in waiting for batch.
                         log.info(f"Batch - {batch_id}, was skipped from being stored.")
                     
-                    # Checking to see if TestOutput object is complete.
-                    test_output.check_test_complete()
-                    
-                    # Re-storing the TestOutput object.
-                    self.test_outputs[llm_str] = test_output
+                    # Re-storing the outputs.
+                    self.irpd_outputs[llm_str] = stage_outputs
         return None
     
     def _get_output_index(self, stage_output: StageOutput):
         """
-        Returns the index of a given StageOutput object within TestOutput object.
+        Returns the index of a given StageOutput object within irpd_outputs.
         """
-        return self.test_outputs[stage_output.llm_str].stage_outputs.index(stage_output)
-    
-    def _check_stage_completion(self, llm_str: str, stage_name: str, n: int):
-        """
-        Checks whether a stage is complete.
-        """
-        all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
-        return all(output.complete for output in all_stage_ouptuts)
+        return self.irpd_outputs[stage_output.llm_str].index(stage_output)
     
     def _log_stored_completion(self, stage_output: StageOutput):
         """
@@ -208,6 +190,24 @@ class OutputManager:
         )
         return None
     
+    def check_stage_completion(self, llm_str: str, stage_name: str, n: int):
+        """
+        Checks whether a stage is complete.
+        """
+        all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
+        return all(output.complete for output in all_stage_ouptuts)
+    
+    def check_irpd_test_completion(self, llms: Union[str, List[str]]):
+        """
+        Checks if all outputs for an LLM(s) are complete. Returns a boolean.
+        """
+        llm_strs = to_list(llms)
+        for llm_str in llm_strs:
+            llm_output: List[StageOutput] = self.irpd_outputs[llm_str]
+            complete = all(stage_output.complete for stage_output in llm_output)
+            if not complete: return False
+        return True
+    
     def retrieve(
         self,
         llm_str: Optional[str] = None,
@@ -218,9 +218,9 @@ class OutputManager:
         """
         Retrieves output(s).
         """
-        outputs: Dict[str, TestOutput] = self.test_outputs
+        outputs = self.irpd_outputs
         if llm_str:
-            outputs: List[StageOutput] = outputs[llm_str].stage_outputs
+            outputs: List[StageOutput] = outputs[llm_str]
             if n is not None:
                 outputs: List[StageOutput] = list(filter(lambda output: output.replication == n, outputs))
             if stage_name:
@@ -240,11 +240,7 @@ class OutputManager:
             return None
         return to_list(outputs)
     
-    def store_completion(
-        self,
-        stage_output: StageOutput,
-        outputs: Union[RequestOut, List[RequestOut]]
-    ):
+    def store_completion(self, stage_output: StageOutput):
         """
         Stores a chat completion request.
         """
@@ -253,12 +249,12 @@ class OutputManager:
         stage_name = stage_output.stage_name
         subset = stage_output.subset
         
-        output: TestOutput = self.retrieve(llm_str, n, stage_name, subset)[0]
+        output: StageOutput = self.retrieve(llm_str, n, stage_name, subset)[0]
         idx = self._get_output_index(output)
         
-        output.outputs = to_list(outputs)
+        output.outputs = to_list(stage_output.outputs)
         output.complete = True
-        self.test_outputs[stage_output.llm_str].stage_outputs[idx] = output
+        self.irpd_outputs[stage_output.llm_str][idx] = output
         
         # Writing output
         self.write_output(output)
@@ -299,7 +295,7 @@ class OutputManager:
                 stage_output.batch_id = batch_out.batch_id
                 stage_output.batch_path = batch_file_path
             
-            self.test_outputs[llm_str].stage_outputs[idx] = stage_output
+            self.irpd_outputs[llm_str][idx] = stage_output
             
             # Writing output
             self.write_output(stage_output)
@@ -309,7 +305,7 @@ class OutputManager:
     
     def write_output(self, stage_output: StageOutput):
         """
-        Writes output
+        Writes output.
         """
         self.processor(to_list(stage_output), self.config_manager).process()
         
@@ -319,7 +315,7 @@ class OutputManager:
         
         # Checking to see if stage is complete. If so, writing the final form
         # outputs (e.g., category pdfs & classification CSVs).
-        stage_complete = self._check_stage_completion(llm_str, stage_name, n)
+        stage_complete = self.check_stage_completion(llm_str, stage_name, n)
         if stage_complete:
             all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
             self.processor(to_list(all_stage_ouptuts), self.config_manager).process(True)

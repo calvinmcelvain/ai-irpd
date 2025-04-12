@@ -10,10 +10,10 @@ from time import sleep
 from helpers.utils import to_list, create_directory
 from core.llms.clients.base import BaseLLM
 from core.irpd.output_processer import OutputProcesser
-from core.irpd.test_prompts import TestPrompts
+from core.irpd.prompt_manager import PromptManager
 from core.irpd.config_manager import ConfigManager
 from core.irpd.output_manager import OutputManager
-from types.irpd_output import TestOutput, StageOutput
+from types.stage_output import  StageOutput
 from types.batch_output import BatchOut
 from types.irpd_config import IRPDConfig
 from types.prompts import Prompts
@@ -70,7 +70,7 @@ class TestRunner:
                 subset = stage_output.subset
                 n = stage_output.replication
                 
-                test_prompts = TestPrompts(
+                test_prompts = PromptManager(
                     llm_str=llm_str,
                     stage_name=stage,
                     replication=n,
@@ -212,20 +212,19 @@ class TestRunner:
             
             # Storing & writing outputs.
             stage_output.outputs = outputs
-            self.output_manger.store_completion(stage_output, outputs)
+            self.output_manger.store_completion(stage_output)
         return True
     
     def run(self):
         """
-        Runs each stage of a TestConfig.
+        Runs each stage of a IRPDConfig.
         """
         # Should probably make this an async method.
         for llm_str in self.llms:
-            test_output: TestOutput = self.output_manger.test_outputs[llm_str]
             llm_instance: BaseLLM = self.generate_llm_instance(llm_str, self.print_response)
             
             # Skipping if the test
-            if test_output.complete:
+            if self.output_manger.check_irpd_test_completion(llm_str):
                 continue
             
             for stage_name in self.stages:
@@ -237,7 +236,7 @@ class TestRunner:
                 # Checking whether the stage has already been complete for the 
                 # given LLM and stage.
                 if not all(output.complete for output in stage_outputs):
-                    # Just because a TestConfig is specified for `batches`, not 
+                    # Just because a IRPDConfig is specified for `batches`, not 
                     # all LLMs support batches. This adjusts for that.
                     if self.irpd_config.batches and llm_instance.batches:
                         complete = self._run_batch(
@@ -251,9 +250,5 @@ class TestRunner:
                             stage_outputs, stage_name, llm_instance
                         )
                     if not complete: break
-            
-            # Re-storing the TestOutput object after checking if complete.
-            test_output.check_test_complete()
-            self.output_manger.test_outputs[llm_str] = test_output
         
         return self.output_manger

@@ -11,7 +11,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from helpers.utils import get_env_var, to_list
-from logger import clear_logger
+from logger import LoggerManager
 from types.irpd_config import IRPDConfig
 from core.irpd.test_runner import TestRunner
 
@@ -152,7 +152,9 @@ class IRPDBase(ABC):
             each chat completion request. If batch, this arg. is null. Defaults 
             to False.
         """
-        clear_logger(app=False)
+        log_manager = LoggerManager()
+        log_manager.clear_logs()
+        
         irpd_configs: Dict[str, IRPDConfig] = self._get_test_configs(config_ids=config_ids)
         
         for config_id, config in irpd_configs.items():

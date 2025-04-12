@@ -1,7 +1,7 @@
 """
-Test prompts module.
+IRPD prompt manager module.
 
-Contains the TestPrompts module and its corresponding methods.
+Contains the PromptManager module and its corresponding methods.
 """
 import logging
 import pandas as pd
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 
 
-class TestPrompts:
+class PromptManager:
     """
-    TestPrompts model.
+    PromptManager model.
     
     Gets the user and system prompts for a given stage, replication, and subset.
     """
@@ -34,18 +34,18 @@ class TestPrompts:
         self.replication = replication
         self.subset = subset
         self.llm_str = llm_str
-        self.test_config = output_manager.test_config
-        self.case = self.test_config.case
-        self.cases = self.test_config.cases
-        self.treatment = self.test_config.treatment
-        self.ra = self.test_config.ra
+        self.irpd_config = output_manager.irpd_config
+        self.case = self.irpd_config.case
+        self.cases = self.irpd_config.cases
+        self.treatment = self.irpd_config.treatment
+        self.ra = self.irpd_config.ra
         self.output_manager = output_manager
         
         # Categories are fixed for stages 2 & 3 if a 'replication' test type.
-        self.fixed = self.test_config.test_type in {"cross_model", "intra_model"}
+        self.fixed = self.irpd_config.test_type in {"cross_model", "intra_model"}
         
-        self.data_path = self.test_config.data_path
-        self.prompts_path = self.test_config.prompts_path
+        self.data_path = self.irpd_config.data_path
+        self.prompts_path = self.irpd_config.prompts_path
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
         
@@ -152,7 +152,7 @@ class TestPrompts:
             # Almost always will use Stage 1c categories, but if skipped, this 
             # should adjust the appended categories to include all stage 1r 
             # subset categories.
-            if "1c" in self.test_config.stages:
+            if "1c" in self.irpd_config.stages:
                 context = self.output_manager.retrieve(
                     self.llm_str, self.replication, "1c", "full"
                 )
@@ -172,7 +172,7 @@ class TestPrompts:
         Sets the user attrb. as (all) user prompt(s).
         """
         # Getting the correct RA summary data if a data dependent stage.
-        if "0" not in self.test_config.stages and self.stage not in {"1", "1r"}:
+        if "0" not in self.irpd_config.stages and self.stage not in {"1", "1r"}:
             # Loading RA summary data.
             summary_path = self.data_path / "ra_summaries.csv"
             df = pd.read_csv(summary_path)
@@ -228,8 +228,8 @@ class TestPrompts:
             )
             
             # Adjusting for max instances if specified.
-            if self.test_config.max_instances:
-                df = df[:self.test_config.max_instances]
+            if self.irpd_config.max_instances:
+                df = df[:self.irpd_config.max_instances]
             
             # Adjusting for completed classifications in output. Really only 
             # adjusted if test wasn't complete or failed before.
