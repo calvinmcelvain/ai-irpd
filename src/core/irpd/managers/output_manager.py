@@ -5,16 +5,15 @@ Contains the functional OutputManager model.
 """
 import logging
 from pathlib import Path
-from time import sleep
 from typing import List, Dict, Optional, Union
 
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
-from models.irpd.output_processer import OutputProcesser
-from models.irpd.test_config import TestConfig
-from models.irpd.config_manager import ConfigManager
-from models.irpd.test_outputs import TestOutput, StageOutput, TestMeta
+from types.irpd_config import TestConfig
+from types.irpd_output import TestOutput, StageOutput, TestMeta
+from core.irpd.processors.output_processer import OutputProcesser
+from core.irpd.managers.config_manager import ConfigManager
 
 
 log = logging.getLogger(__name__)
