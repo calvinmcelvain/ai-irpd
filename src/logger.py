@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Dict
 from pathlib import Path
 
-from utils import load_config
+from helpers.utils import load_config
 
 
 

@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from logger import LoggerManager
-from utils import is_tail_running
+from helpers.utils import is_tail_running
 from models.irpd_model import IRPDTestClass
 
 
