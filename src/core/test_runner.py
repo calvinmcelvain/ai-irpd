@@ -12,7 +12,7 @@ from core.llms.clients.base import BaseLLM
 from core.output_processer import OutputProcesser
 from core.prompt_manager import PromptManager
 from core.managers.config_manager import ConfigManager
-from core.output_manager import OutputManager
+from core.managers.output_manager import OutputManager
 from types.stage_output import  StageOutput
 from types.batch_output import BatchOut
 from types.irpd_config import IRPDConfig

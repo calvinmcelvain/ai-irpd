@@ -8,7 +8,7 @@ from typing import Optional, List, Union
 from pathlib import Path
 
 from core.models.base import IRPDBase
-from core.output_manager import OutputManager
+from core.managers.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 

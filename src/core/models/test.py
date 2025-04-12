@@ -10,7 +10,7 @@ from pathlib import Path
 
 from helpers.utils import to_list
 from core.models.base import IRPDBase
-from core.output_manager import OutputManager
+from core.managers.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 
