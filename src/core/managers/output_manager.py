@@ -15,13 +15,14 @@ from types.stage_output import StageOutput
 from types.irpd_meta import IRPDMeta
 from core.output_processer import OutputProcesser
 from core.managers.config_manager import ConfigManager
+from core.managers.base import Manager
 
 
 log = logging.getLogger(__name__)
 
 
 
-class OutputManager:
+class OutputManager(Manager):
     """
     OutputManager model.
     
@@ -35,6 +36,7 @@ class OutputManager:
     OutputProcessor model to write a subset of outputs.
     """
     def __init__(self, irpd_config: IRPDConfig):
+        super.__init__(self, irpd_config)
         self.config_manager = ConfigManager(irpd_config)
         self.irpd_config = irpd_config
         self.processor = OutputProcesser
@@ -47,7 +49,6 @@ class OutputManager:
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
-        self.generate_llm_instance = self.config_manager.generate_llm_instance
         
         self.irpd_outputs = self._initialize_irpd_outputs()
         
@@ -66,7 +67,7 @@ class OutputManager:
             irpd_outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
                 for stage in self.stages:
-                    subsets = self.config_manager.get_subsets(stage)
+                    subsets = self.get_subsets(stage)
                     for subset in subsets:
                         # Creates a StageOutput object for each replication,
                         # stage, and subset.
@@ -89,7 +90,7 @@ class OutputManager:
                 stage_name = stage_output.stage_name
                 subset = stage_output.subset
                 
-                sub_path = self.config_manager.generate_subpath(
+                sub_path = self.generate_subpath(
                     stage_output.replication, stage_output.llm_str
                 )
                 stage_string = f"stage_{stage_name}"
@@ -118,7 +119,7 @@ class OutputManager:
             
             # Check to see if the outputs are complete already.
             if not complete:
-                meta_path = self.config_manager.generate_meta_path(llm_str, 1)
+                meta_path = self.generate_meta_path(llm_str, 1)
                 
                 # Checking to see if meta path exists & Test include batches.
                 if self.irpd_config.batches and meta_path.exists():

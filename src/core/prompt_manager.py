@@ -8,7 +8,7 @@ import pandas as pd
 
 from helpers.utils import file_to_string, to_list
 from core.functions import categories_to_txt, output_attrb
-from core.output_manager import OutputManager
+from core.managers.output_manager import OutputManager
 from types.prompts import Prompts
 
 
