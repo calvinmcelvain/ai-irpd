@@ -1,7 +1,7 @@
 """
-Test config module.
+IRPD config module.
 
-Contains the TestConfig model & it's dataclass methods.
+Contains the IRPDConfig model & it's dataclass methods.
 """
 from dataclasses import dataclass, asdict
 from typing import List, Optional
@@ -11,7 +11,7 @@ from uuid import uuid4
 
 
 @dataclass
-class TestConfig:
+class IRPDConfig:
     case: str = None
     ra: str = None
     treatment: str = None

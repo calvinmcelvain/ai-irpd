@@ -8,7 +8,7 @@ import pandas as pd
 
 from helpers.utils import file_to_string, to_list
 from core.irpd.functions import categories_to_txt, output_attrb
-from core.irpd.managers.output_manager import OutputManager
+from core.irpd.output_manager import OutputManager
 from types.prompts import Prompts
 
 

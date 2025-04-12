@@ -15,7 +15,7 @@ from core.irpd.config_manager import ConfigManager
 from core.irpd.output_manager import OutputManager
 from types.irpd_output import TestOutput, StageOutput
 from types.batch_output import BatchOut
-from types.test_config import TestConfig
+from types.irpd_config import IRPDConfig
 from types.prompts import Prompts
 
 
@@ -32,20 +32,20 @@ class TestRunner:
     """
     def __init__(
         self,
-        test_config: TestConfig,
+        irpd_config: IRPDConfig,
         output_manager: OutputManager,
         print_response: bool = False
     ):
-        self.config_manager = ConfigManager(test_config)
+        self.config_manager = ConfigManager(irpd_config)
         self.output_manger = output_manager
         self.print_response = print_response
         self.processor = OutputProcesser
         self.generate_llm_instance = self.config_manager.generate_llm_instance
         
-        self.test_config = test_config
-        self.llms = test_config.llms
-        self.stages = test_config.stages
-        self.test_path = test_config.test_path
+        self.irpd_config = irpd_config
+        self.llms = irpd_config.llms
+        self.stages = irpd_config.stages
+        self.test_path = irpd_config.test_path
     
     def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         """
@@ -119,11 +119,11 @@ class TestRunner:
             
             log.info(
                 f"\n Requesting batch for:"
-                f"\n\t config: {self.test_config.id}"
-                f"\n\t case: {self.test_config.case}"
+                f"\n\t config: {self.irpd_config.id}"
+                f"\n\t case: {self.irpd_config.case}"
                 f"\n\t llm: {llm_str}"
                 f"\n\t stage: {stage_name}"
-                f"\n\t replications: {self.test_config.total_replications}"
+                f"\n\t replications: {self.irpd_config.total_replications}"
                 f"\n\t batch_id: {batch_id}"
             )
             
@@ -200,10 +200,10 @@ class TestRunner:
                 
                 log.info(
                     f"\n Requesting completion for:"
-                    f"\n\t config: {self.test_config.id}"
-                    f"\n\t case: {self.test_config.case}"
+                    f"\n\t config: {self.irpd_config.id}"
+                    f"\n\t case: {self.irpd_config.case}"
                     f"\n\t llm: {llm_str}"
-                    f"\n\t replicate: {replication} of {self.test_config.total_replications}"
+                    f"\n\t replicate: {replication} of {self.irpd_config.total_replications}"
                     f"\n\t stage: {stage_name}"
                     f"\n\t subset: {subset}"
                     f"\n\t prompt: {len(outputs) + 1} of {len(agg_prompts)}"
@@ -239,12 +239,12 @@ class TestRunner:
                 if not all(output.complete for output in stage_outputs):
                     # Just because a TestConfig is specified for `batches`, not 
                     # all LLMs support batches. This adjusts for that.
-                    if self.test_config.batches and llm_instance.batches:
+                    if self.irpd_config.batches and llm_instance.batches:
                         complete = self._run_batch(
                             stage_outputs, stage_name, llm_instance
                         )
                     else:
-                        if self.test_config.batches: log.info(
+                        if self.irpd_config.batches: log.info(
                             f"Note that {llm_str} does not support batches."
                         )
                         complete = self._run_completions(

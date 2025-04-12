@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 
 from helpers.utils import get_env_var, to_list
 from logger import clear_logger
-from types.test_config import TestConfig
+from types.irpd_config import IRPDConfig
 from core.irpd.test_runner import TestRunner
 
 
@@ -92,7 +92,7 @@ class IRPDBase(ABC):
     
     def _get_test_configs(self, config_ids: Union[str, List[str]]):
         """
-        Returns dictionary of test configs based on a list of config ids. 
+        Returns dictionary of IRPD configs based on a list of config ids. 
         Otherwise returns configs attrb.
         """
         if config_ids:
@@ -101,15 +101,15 @@ class IRPDBase(ABC):
         else:
             return self.configs
 
-    def add_configs(self, configs: Union[TestConfig, List[TestConfig]]):
+    def add_configs(self, configs: Union[IRPDConfig, List[IRPDConfig]]):
         """
-        Method to add test configs to configs attrb.
+        Method to add IRPD configs to configs attrb.
         """
         configs = to_list(configs)
         for config in configs:
-            if not isinstance(config, TestConfig):
+            if not isinstance(config, IRPDConfig):
                 log.error(
-                    f"Test config {config} was not a TestConfig instance."
+                    f"Test config {config} was not a IRPDConfig instance."
                     " Did not add."
                 )
                 continue
@@ -124,14 +124,14 @@ class IRPDBase(ABC):
     @abstractmethod
     def _generate_test_paths(self):
         """
-        Generates test paths for each test config. Different for each test type.
+        Generates test paths for each IRPD config. Different for each test type.
         """
         pass
     
     @abstractmethod
     def _generate_configs(self):
         """
-        Generates the test configs based on instance args. Difference for each
+        Generates the IRPD configs based on instance args. Difference for each
         test type.
         """
         pass
@@ -153,9 +153,9 @@ class IRPDBase(ABC):
             to False.
         """
         clear_logger(app=False)
-        test_configs: Dict[str, TestConfig] = self._get_test_configs(config_ids=config_ids)
+        irpd_configs: Dict[str, IRPDConfig] = self._get_test_configs(config_ids=config_ids)
         
-        for config_id, config in test_configs.items():
+        for config_id, config in irpd_configs.items():
             output_manager = self.outputs[config_id]
             
             test_runner = TestRunner(config, output_manager, print_response)

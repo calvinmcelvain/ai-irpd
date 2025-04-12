@@ -10,7 +10,7 @@ from pathlib import Path
 
 from core.irpd.models.base import IRPDBase
 from core.irpd.output_manager import OutputManager
-from types.test_config import TestConfig
+from types.irpd_config import IRPDConfig
 
 
 log = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class CrossModel(IRPDBase):
     def _generate_configs(self):
         for idx, prod in enumerate(self._prod):
             llm_config, case, ra, treatment = prod
-            config = TestConfig(
+            config = IRPDConfig(
                 case=case,
                 ra=ra,
                 treatment=treatment,

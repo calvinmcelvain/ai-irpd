@@ -10,7 +10,7 @@ from typing import List, Dict, Optional, Union
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
-from types.test_config import TestConfig
+from types.irpd_config import IRPDConfig
 from types.irpd_output import TestOutput, StageOutput, TestMeta
 from core.irpd.output_processer import OutputProcesser
 from core.irpd.config_manager import ConfigManager
@@ -33,15 +33,15 @@ class OutputManager:
     Also contains method `write_output` that creates instance of the 
     OutputProcessor model to write a subset of outputs.
     """
-    def __init__(self, test_config: TestConfig):
-        self.config_manager = ConfigManager(test_config)
-        self.test_config = test_config
+    def __init__(self, irpd_config: IRPDConfig):
+        self.config_manager = ConfigManager(irpd_config)
+        self.irpd_config = irpd_config
         self.processor = OutputProcesser
-        self.test_path = test_config.test_path
-        self.total_replications = test_config.total_replications
-        self.stages = test_config.stages
-        self.llms = test_config.llms
-        self.llm_config = test_config.llm_config
+        self.test_path = irpd_config.test_path
+        self.total_replications = irpd_config.total_replications
+        self.stages = irpd_config.stages
+        self.llms = irpd_config.llms
+        self.llm_config = irpd_config.llm_config
         self.schemas = {
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
@@ -62,7 +62,7 @@ class OutputManager:
         the same across TestOutputs.
         """
         test_outputs = {}
-        for llm_str in self.test_config.llms:
+        for llm_str in self.irpd_config.llms:
             # Creating a TestOuput object for each LLM.
             test_output = TestOutput(llm_str=llm_str,)
             for n in range(1, self.total_replications + 1):
@@ -129,12 +129,12 @@ class OutputManager:
                 meta_path = self.config_manager.generate_meta_path(llm_str, 1)
                 
                 # Checking to see if meta path exists & Test include batches.
-                if self.test_config.batches and meta_path.exists():
+                if self.irpd_config.batches and meta_path.exists():
                     meta: TestMeta = load_json_n_validate(meta_path, TestMeta)
                     
                     # Initializing LLM to check batches (if exist).
                     llm = self.generate_llm_instance(llm_str)
-                    for stage_name in self.test_config.stages:
+                    for stage_name in self.irpd_config.stages:
                         # If stage name is not in meta, then breaks loop (since
                         # stages are sequential).
                         if not stage_name in meta.stages.keys():
@@ -198,8 +198,8 @@ class OutputManager:
         """
         log.info(
             "\nOutputs stored successfully for:"
-            f"\n\t config: {self.test_config.id}"
-            f"\n\t case: {self.test_config.case}"
+            f"\n\t config: {self.irpd_config.id}"
+            f"\n\t case: {self.irpd_config.case}"
             f"\n\t llm: {stage_output.llm_str}"
             f"\n\t replicate: {stage_output.replication} of {self.total_replications}"
             f"\n\t stage: {stage_output.stage_name}"
@@ -230,10 +230,10 @@ class OutputManager:
         if outputs is None:
             log.warning(
                 "\nOutputs not found for:"
-                f"\n\t case: {self.test_config.case}"
-                f"\n\t config: {self.test_config.id}"
+                f"\n\t case: {self.irpd_config.case}"
+                f"\n\t config: {self.irpd_config.id}"
                 f"\n\t llm: {llm_str}"
-                f"\n\t replicate: {n} of {self.test_config.total_replications}"
+                f"\n\t replicate: {n} of {self.irpd_config.total_replications}"
                 f"\n\t stage: {stage_name}"
                 f"\n\t subset: {subset}"
             )
