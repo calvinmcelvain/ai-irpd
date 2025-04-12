@@ -85,6 +85,13 @@ class BaseLLM(ABC):
         )
     
     @abstractmethod
+    def _translate_config(self):
+        """
+        Translates generic config names to client specific config names.
+        """
+        pass
+    
+    @abstractmethod
     def _prep_messages(self, user: str, system: str):
         """
         Prepares messages for LLM.
