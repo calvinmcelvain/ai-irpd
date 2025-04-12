@@ -11,7 +11,7 @@ from datetime import datetime
 
 from helpers.utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
 from core.functions import categories_to_txt, output_attrb
-from core.config_manager import ConfigManager
+from core.managers.config_manager import ConfigManager
 from types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
 from types.stage_output import StageOutput
 

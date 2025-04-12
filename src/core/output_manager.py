@@ -14,7 +14,7 @@ from types.irpd_config import IRPDConfig
 from types.stage_output import StageOutput
 from types.irpd_meta import IRPDMeta
 from core.output_processer import OutputProcesser
-from core.config_manager import ConfigManager
+from core.managers.config_manager import ConfigManager
 
 
 log = logging.getLogger(__name__)

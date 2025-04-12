@@ -8,29 +8,20 @@ import logging
 from helpers.utils import create_directory
 from core.functions import instance_types
 from core.llms.llm_models import LLMModel
-from types.irpd_config import IRPDConfig
+from core.managers.base import Manager
 
 
 log = logging.getLogger(__name__)
 
 
 
-class ConfigManager:
+class ConfigManager(Manager):
     """
     ConfigManger model.
     
     Used to generate subpaths, meta-paths, subsets, and llm instances for a 
     given IRPDConfig.
     """
-    def __init__(self, irpd_config: IRPDConfig):
-        self.config = irpd_config
-        self.stages = irpd_config.stages
-        self.cases = irpd_config.cases
-        self.test_path = irpd_config.test_path
-        self.llms = irpd_config.llms
-        self.llm_config = irpd_config.llm_config
-        self.total_replications = irpd_config.total_replications
-    
     def generate_subpath(self, n: int, llm_str: str):
         """
         Generates a subpath for a given replication and LLM. 
