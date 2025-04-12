@@ -6,14 +6,13 @@ Contains the OutputProcessor model.
 import logging
 import json
 import pandas as pd
-from pathlib import Path
 from typing import List
 from datetime import datetime
 
 from helpers.utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
 from core.irpd.functions import categories_to_txt, output_attrb
-from models.irpd.test_outputs import StageOutput, ModelInfo, StageInfo, SubsetInfo, TestMeta
-from models.irpd.config_manager import ConfigManager
+from core.irpd.managers.config_manager import ConfigManager
+from types.irpd_output import StageOutput, ModelInfo, StageInfo, SubsetInfo, TestMeta
 
 
 log = logging.getLogger(__name__)

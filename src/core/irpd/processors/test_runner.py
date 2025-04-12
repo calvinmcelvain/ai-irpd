@@ -7,17 +7,16 @@ import logging
 from typing import List
 from time import sleep
 
-from helpers.utils import load_json_n_validate, to_list, create_directory
-from types.prompts import Prompts
-from models.llms.base_llm import BaseLLM
-from models.irpd.output_processer import OutputProcesser
-from models.irpd.test_prompts import TestPrompts
-from models.irpd.test_outputs import TestOutput, TestMeta
+from helpers.utils import to_list, create_directory
+from core.llms.base import BaseLLM
+from core.irpd.processors.output_processer import OutputProcesser
+from core.irpd.processors.test_prompts import TestPrompts
+from core.irpd.managers.config_manager import ConfigManager
+from core.irpd.managers.output_manager import OutputManager
+from types.irpd_output import TestOutput, StageOutput
 from types.batch_output import BatchOut
-from models.irpd.test_outputs import StageOutput
-from models.irpd.test_config import TestConfig
-from models.irpd.config_manager import ConfigManager
-from models.irpd.output_manager import OutputManager
+from types.irpd_config import TestConfig
+from types.prompts import Prompts
 
 
 log = logging.getLogger(__name__)
