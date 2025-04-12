@@ -8,7 +8,6 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from types.llm_config import LLMConfig
 from types.batch_output import BatchOut
 from types.prompts import Prompts
 from types.request_output import RequestOut, MetaOut
