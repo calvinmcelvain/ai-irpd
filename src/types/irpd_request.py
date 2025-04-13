@@ -11,8 +11,8 @@ from types.request_output import RequestOut
 
 @dataclass
 class IRPDRequest:
-    prompts: Prompts
-    prompt_id: str
-    prompt_path: Path
-    response_path: Path
     output: RequestOut
+    prompts: Prompts = None
+    prompt_id: str = None
+    prompt_path: Path = None
+    response_path: Path = None

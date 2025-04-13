@@ -29,8 +29,8 @@ class MetaOut:
 
 @dataclass
 class RequestOut:
+    parsed: BaseModel
     text: str = None
-    parsed: BaseModel = None
     prompts: Prompts = None
     meta: MetaOut = None
     

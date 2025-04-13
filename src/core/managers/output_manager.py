@@ -9,6 +9,7 @@ from typing import List, Optional, Union
 
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
 from types.batch_output import BatchOut
+from types.irpd_request import IRPDRequest
 from types.request_output import RequestOut
 from types.irpd_config import IRPDConfig
 from types.stage_output import StageOutput
@@ -103,7 +104,9 @@ class OutputManager(Manager):
                     continue
                 
                 outputs = [
-                    RequestOut(parsed=load_json_n_validate(path, self.schemas[stage_name]))
+                    IRPDRequest(output=RequestOut(
+                        parsed=load_json_n_validate(path, self.schemas[stage_name])
+                    ))
                     for path in responses_path.iterdir()
                 ]
                 
