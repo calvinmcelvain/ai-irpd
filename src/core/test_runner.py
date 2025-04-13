@@ -5,6 +5,7 @@ Contains the functional TestRunner model.
 """
 import logging
 from typing import List
+from pathlib import Path
 from time import sleep
 
 from helpers.utils import to_list, create_directory
@@ -41,7 +42,7 @@ class TestRunner:
         self.irpd_config = irpd_config
         self.llms = irpd_config.llms
         self.stages = irpd_config.stages
-        self.test_path = irpd_config.test_path
+        self.test_path = Path(irpd_config.test_path)
     
     def _generate_llm_instance(self, llm_str: str, print_reponse: bool = False):
         """
