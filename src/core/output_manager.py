@@ -7,9 +7,10 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Union, Dict
 
-from helpers.utils import check_directories, load_json_n_validate, to_list
-from core.functions import generate_llm_instance
-from core.managers.base import Manager
+from helpers.utils import (
+    check_directories, load_json_n_validate, to_list, lazy_import, create_directory
+)
+from core.functions import generate_llm_instance, instance_types
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
 from types.irpd_config import IRPDConfig
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 
-class OutputManager(Manager):
+class OutputManager:
     """
     OutputManager model.
     
@@ -32,7 +33,25 @@ class OutputManager(Manager):
     StageOutputs, as well as `store_batch` for batch requests. 
     """
     def __init__(self, irpd_config: IRPDConfig):
-        super.__init__(self, irpd_config)
+        self.irpd_config = irpd_config
+        self.stages = irpd_config.stages
+        self.cases = irpd_config.cases
+        self.batches = irpd_config.batches
+        self.test_path = Path(irpd_config.test_path)
+        self.llms = irpd_config.llms
+        self.case = irpd_config.case
+        self.ra = irpd_config.ra
+        self.treatment = irpd_config.treatment
+        self.llm_config = irpd_config.llm_config
+        self.total_replications = irpd_config.total_replications
+        self.schemas = {
+            stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
+            for stage in self.stages
+        }
+        self.subsets = {
+            stage: self._get_subsets(stage)
+            for stage in self.stages
+        }
         
         # Initializing StageOutput objects.
         self.irpd_outputs: Dict[str, List[StageOutput]] = self._initialize_irpd_outputs()
@@ -40,6 +59,35 @@ class OutputManager(Manager):
         # Checking current test path (and batch) for outputs on initialization.
         self._check_test_directory()
         if self.batches: self._check_batch()
+        
+    def _generate_subpath(self, n: int, llm_str: str):
+        """
+        Generates a subpath for a given replication and LLM. 
+        
+        For tests w/ more than one LLM, a dir. is made for each LLM. For tests 
+        w/ more than one replication, a dir. is made for each replicaiton (w/ 
+        respect to the LLM dir.)
+        """
+        subpath = self.test_path
+        if len(self.llms) > 1: subpath = subpath / llm_str
+        if self.total_replications > 1: subpath = subpath / f"replication_{n}"
+        if not subpath.exists():
+            create_directory(subpath)
+        return subpath
+    
+    def _get_subsets(self, stage_name: str):
+        """
+        Generates subsets for a given stage.
+        """
+        subsets = ["full"]
+        if stage_name in {"1", "1r"}:
+            prod = [
+                (case, instance_type)
+                for case in self.cases
+                for instance_type in instance_types(case)
+            ]
+            subsets += [f"{c}_{i}" for c, i in prod]
+        return subsets
         
     def _initialize_irpd_outputs(self):
         """
@@ -51,7 +99,7 @@ class OutputManager(Manager):
         for llm_str in self.irpd_config.llms:
             irpd_outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
-                sub_path = self.generate_subpath(n, llm_str)
+                sub_path = self._generate_subpath(n, llm_str)
                 for stage in self.stages:
                     for subset in self.subsets[stage]:
                         output_path = sub_path / f"stage_{stage}" / subset
@@ -65,6 +113,13 @@ class OutputManager(Manager):
                             output_path=output_path
                         ))
         return irpd_outputs
+    
+    def _generate_meta_path(self, n: int, llm_str: str):
+        """
+        Generates the path for 'test' meta. File exists for each subpath.
+        """
+        subpath = self._generate_subpath(n, llm_str)
+        return subpath / "_test_meta.json"
     
     def _check_test_directory(self):
         """
@@ -103,7 +158,7 @@ class OutputManager(Manager):
             
             # Meta paths are different across replications, but all replications 
             # are done in one batch, thus the batch ID in meta is the same.
-            meta_path = self.generate_meta_path(llm_str, 1)
+            meta_path = self._generate_meta_path(llm_str, 1)
             if not meta_path.exists(): continue
                 
             meta: IRPDMeta = load_json_n_validate(meta_path, IRPDMeta)

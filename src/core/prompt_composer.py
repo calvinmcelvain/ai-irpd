@@ -1,14 +1,14 @@
 """
 IRPD prompt module.
 
-Contains the IRPDPrompts module and its corresponding methods.
+Contains the PromptComposer and Data models.
 """
 import logging
 import pandas as pd
 
 from helpers.utils import file_to_string, to_list
 from core.functions import categories_to_txt, output_attrb
-from core.managers.output_manager import OutputManager
+from core.output_manager import OutputManager
 from types.prompts import Prompts
 
 
@@ -16,30 +16,13 @@ log = logging.getLogger(__name__)
 
 
 
-class IRPDPrompts:
+class PromptComposer:
     """
-    IRPDPrompts model.
+    PromptComposer model.
     
     Gets the user and system prompts for a given stage, replication, and subset.
     """
-    def __init__(
-        self,
-        llm_str: str,
-        stage_name: str,
-        replication: int,
-        subset: str,
-        output_manager: OutputManager
-    ):
-        self.stage_name = stage_name
-        self.replication = replication
-        self.subset = subset
-        self.llm_str = llm_str
-        
-        self.irpd_config = output_manager.irpd_config
-        self.case = self.irpd_config.case
-        self.cases = self.irpd_config.cases
-        self.treatment = self.irpd_config.treatment
-        self.ra = self.irpd_config.ra
+    def __init__(self, output_manager: OutputManager):
         self.output_manager = output_manager
         
         # Categories are fixed for stages 2 & 3 if a 'replication' test type.
@@ -49,9 +32,6 @@ class IRPDPrompts:
         self.prompts_path = self.irpd_config.prompts_path
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
-        
-        self._construct_system_prompt()
-        self._construct_user_prompt()
     
     @staticmethod
     def _get_section(section_path, name):
@@ -279,3 +259,13 @@ class IRPDPrompts:
         self._construct_system_prompt()
         self._construct_user_prompt()
         return [Prompts(system=self.system, user=user) for user in self.user]
+    
+
+
+class Data:
+    """
+    Data model.
+    
+    Used to prepare data for prompts.
+    """
+    pass

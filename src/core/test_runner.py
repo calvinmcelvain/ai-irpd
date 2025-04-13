@@ -12,8 +12,8 @@ from helpers.utils import to_list, create_directory
 from core.functions import generate_llm_instance
 from core.llms.clients.base import BaseLLM
 from core.output_processer import OutputProcesser
-from core.irpd_prompts import IRPDPrompts
-from core.managers.output_manager import OutputManager
+from core.prompt_composer import PromptComposer
+from core.output_manager import OutputManager
 from types.stage_output import  StageOutput
 from types.batch_output import BatchOut
 from types.irpd_config import IRPDConfig
@@ -64,7 +64,7 @@ class TestRunner:
                 subset = stage_output.subset
                 n = stage_output.replication
                 
-                test_prompts = IRPDPrompts(
+                test_prompts = PromptComposer(
                     llm_str=llm_str,
                     stage_name=stage,
                     replication=n,
