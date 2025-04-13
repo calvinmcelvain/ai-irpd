@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
-from core.output_processer import OutputProcesser
 from core.managers.base import Manager
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
@@ -30,9 +29,6 @@ class OutputManager(Manager):
     
     This model also has methods `store` to store a StageOutput, or list of 
     StageOutputs, as well as `store_batch` for batch requests. 
-    
-    Also contains method `write_output` that creates instance of the 
-    OutputProcessor model to write a subset of outputs.
     """
     def __init__(self, irpd_config: IRPDConfig):
         super.__init__(self, irpd_config)
@@ -256,9 +252,6 @@ class OutputManager(Manager):
         output.complete = True
         self.irpd_outputs[stage_output.llm_str][idx] = output
         
-        # Writing output
-        self.write_output(output)
-        
         self._log_stored_completion(output)
         return None
     
@@ -297,26 +290,5 @@ class OutputManager(Manager):
             
             self.irpd_outputs[llm_str][idx] = stage_output
             
-            # Writing output
-            self.write_output(stage_output)
-
             self._log_stored_completion(stage_output)
-        return None
-    
-    def write_output(self, stage_output: StageOutput):
-        """
-        Writes output.
-        """
-        OutputProcesser(to_list(stage_output), self.irpd_config).process()
-        
-        llm_str = stage_output.llm_str
-        stage_name = stage_output.stage_name
-        n = stage_output.replication
-        
-        # Checking to see if stage is complete. If so, writing the final form
-        # outputs (e.g., category pdfs & classification CSVs).
-        stage_complete = self.check_stage_completion(llm_str, stage_name, n)
-        if stage_complete:
-            all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
-            OutputProcesser(to_list(all_stage_ouptuts), self.irpd_config).process(True)
         return None
