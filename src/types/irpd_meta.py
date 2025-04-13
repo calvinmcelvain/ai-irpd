@@ -5,7 +5,8 @@ Contains IRPDMeta model (along with its composition objects).
 """
 from pydantic import BaseModel
 from typing import Dict, Optional
-        
+
+from types.irpd_config import IRPDConfig
 
 
 class ModelInfo(BaseModel):
@@ -28,5 +29,5 @@ class StageInfo(BaseModel):
 
 class IRPDMeta(BaseModel):
     model_info: ModelInfo
-    test_info: dict
+    test_info: IRPDConfig = None
     stages: Dict[str, StageInfo] = {}

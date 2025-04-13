@@ -7,6 +7,7 @@ import logging
 import json
 import pandas as pd
 from typing import List
+from pathlib import Path
 from datetime import datetime
 
 from helpers.utils import (
@@ -49,7 +50,7 @@ class OutputProcesser:
         self.cases = irpd_config.cases
         self.treatment = irpd_config.treatment
         self.ra = irpd_config.ra
-        self.data_path = irpd_config.data_path
+        self.data_path = Path(irpd_config.data_path)
         
         self.stage_name = stage_outputs[0].stage_name
         self.replication = stage_outputs[0].replication
@@ -213,10 +214,6 @@ class OutputProcesser:
         # Load meta if exists. Else, create TestMeta obj.
         if self.meta_path.exists():
             meta = load_json_n_validate(self.meta_path, IRPDMeta)
-            
-            # Rewriting TestConfig model in case rerunning test w/o current 
-            # stages.
-            meta.test_info = self.irpd_config.convert_to_dict()
         else:
             model_info = ModelInfo(
                 model=self.llm_model,
@@ -225,11 +222,10 @@ class OutputProcesser:
             stages = {stage: StageInfo() for stage in self.stages}
             meta = IRPDMeta(
                 model_info=model_info,
-                test_info=self.irpd_config.convert_to_dict(),
                 stages=stages
             )
         
-        # Write stage specific meta info.
+        meta.test_info = self.irpd_config
         meta.stages[self.stage_name] = self._stage_meta_info(meta)
         
         # Writing meta.
