@@ -26,7 +26,7 @@ class IRPDConfig:
     total_replications: int = None
     cases: List[str] = None
     max_instances: Optional[int] = None
-    id: Optional[str] = None
+    id: str = None
     
     def __post_init__(self):
         # A config ID is a UUID
