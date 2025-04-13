@@ -9,8 +9,8 @@ from pathlib import Path
 from time import sleep
 
 from helpers.utils import to_list, create_directory
+from core.functions import generate_llm_instance
 from core.llms.clients.base import BaseLLM
-from core.llms.llm_models import LLMModel
 from core.output_processer import OutputProcesser
 from core.irpd_prompts import IRPDPrompts
 from core.managers.output_manager import OutputManager
@@ -31,24 +31,15 @@ class TestRunner:
     Runs a test config. Has methods to run completion and batch. Main `run` 
     method returns the complete OutputManager model.
     """
-    def __init__(
-        self,
-        irpd_config: IRPDConfig,
-        print_response: bool
-    ):
+    def __init__(self, irpd_config: IRPDConfig, print_response: bool):
         self.output_manger = OutputManager(irpd_config)
         self.print_response = print_response
         
         self.irpd_config = irpd_config
+        self.llm_config = irpd_config.llm_config
         self.llms = irpd_config.llms
         self.stages = irpd_config.stages
         self.test_path = Path(irpd_config.test_path)
-    
-    def _generate_llm_instance(self, llm_str: str, print_reponse: bool = False):
-        """
-        Returns the LLM model instance from the /llms package.
-        """
-        return getattr(LLMModel, llm_str).get_llm_instance(self.llm_config, print_reponse)
     
     def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         """
@@ -224,8 +215,8 @@ class TestRunner:
         """
         # Should probably make this an async method.
         for llm_str in self.llms:
-            llm_instance: BaseLLM = self._generate_llm_instance(
-                llm_str, self.print_response
+            llm_instance: BaseLLM = generate_llm_instance(
+                llm_str, self.llm_config, self.print_response
             )
             
             # Skipping if the test
