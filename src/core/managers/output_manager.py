@@ -5,9 +5,10 @@ Contains the functional OutputManager model.
 """
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 
-from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
+from helpers.utils import check_directories, load_json_n_validate, to_list
+from core.functions import generate_llm_instance
 from core.managers.base import Manager
 from types.batch_output import BatchOut
 from types.request_output import RequestOut
@@ -32,22 +33,13 @@ class OutputManager(Manager):
     """
     def __init__(self, irpd_config: IRPDConfig):
         super.__init__(self, irpd_config)
-        self.irpd_config = irpd_config
-        self.test_path = irpd_config.test_path
-        self.total_replications = irpd_config.total_replications
-        self.stages = irpd_config.stages
-        self.llms = irpd_config.llms
-        self.llm_config = irpd_config.llm_config
-        self.schemas = {
-            stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
-            for stage in self.stages
-        }
         
-        self.irpd_outputs = self._initialize_irpd_outputs()
+        # Initializing StageOutput objects.
+        self.irpd_outputs: Dict[str, List[StageOutput]] = self._initialize_irpd_outputs()
         
         # Checking current test path (and batch) for outputs on initialization.
         self._check_test_directory()
-        self._check_batch()
+        if self.batches: self._check_batch()
         
     def _initialize_irpd_outputs(self):
         """
@@ -61,8 +53,8 @@ class OutputManager(Manager):
             for n in range(1, self.total_replications + 1):
                 sub_path = self.generate_subpath(n, llm_str)
                 for stage in self.stages:
-                    subsets = self.get_subsets(stage)
-                    for subset in subsets:
+                    for subset in self.subsets[stage]:
+                        output_path = sub_path / f"stage_{stage}" / subset
                         # Creates a StageOutput object for each replication,
                         # stage, and subset.
                         irpd_outputs[llm_str].append(StageOutput(
@@ -70,7 +62,7 @@ class OutputManager(Manager):
                             subset=subset,
                             llm_str=llm_str,
                             replication=n,
-                            sub_path=sub_path
+                            output_path=output_path
                         ))
         return irpd_outputs
     
@@ -82,88 +74,71 @@ class OutputManager(Manager):
         """
         for llm_str, test_output in self.irpd_outputs.items():
             for stage_output in test_output:
-                stage_name = stage_output.stage_name
-                subset = stage_output.subset
-                
-                sub_path = self.generate_subpath(
-                    stage_output.replication, stage_output.llm_str
-                )
-                stage_string = f"stage_{stage_name}"
-                responses_path = sub_path / stage_string / subset / "responses"
-                prompts_path = sub_path / stage_string / subset / "prompts"
+                responses_path = stage_output.output_path / "responses"
+                prompts_path = stage_output.output_path / "prompts"
                 
                 # If prompts & responses directories don't exist, there are no
                 # outputs to store.
                 if not check_directories([responses_path, prompts_path]):
                     continue
                 
-                outputs = [
+                stage_name = stage_output.stage_name
+                stage_output.outputs = [
                     RequestOut(
                         parsed=load_json_n_validate(path, self.schemas[stage_name])
                     )
                     for path in responses_path.iterdir()
                 ]
                 
-                self.store_completion(stage_output, outputs)
+                self.store_completion(stage_output)
         return None
     
     def _check_batch(self):
         """
         Checks the Batch status if outputs don't exist in directory.
         """
-        for llm_str, stage_outputs in self.irpd_outputs.items():
-            complete = self.check_irpd_test_completion(llm_str)
-            
+        for llm_str in self.llms:
             # Check to see if the outputs are complete already.
-            if not complete:
-                meta_path = self.generate_meta_path(llm_str, 1)
+            if self.check_irpd_test_completion(llm_str): continue
+            
+            # Meta paths are different across replications, but all replications 
+            # are done in one batch, thus the batch ID in meta is the same.
+            meta_path = self.generate_meta_path(llm_str, 1)
+            if not meta_path.exists(): continue
                 
-                # Checking to see if meta path exists & Test include batches.
-                if self.irpd_config.batches and meta_path.exists():
-                    meta: IRPDMeta = load_json_n_validate(meta_path, IRPDMeta)
-                    
-                    # Initializing LLM to check batches (if exist).
-                    llm = self.generate_llm_instance(llm_str)
-                    for stage_name in self.irpd_config.stages:
-                        # If stage name is not in meta, then breaks loop (since
-                        # stages are sequential).
-                        if not stage_name in meta.stages.keys():
-                            break
-                        
-                        batch_id = meta.stages[stage_name].batch_id
-                        batch_path = meta.stages[stage_name].batch_path
-                        
-                        if not (batch_id and batch_path):
-                            # Means the batch hasn't been requested yet. Thus
-                            # subsequent stages haven't.
-                            break
-                        else:
-                            # Storing the batch ID and path in the StageOutput 
-                            # objects if they exist.
-                            for stage_output in stage_outputs:
-                                stage_output.batch_id = batch_id
-                                stage_output.batch_path = Path(batch_path)
-                        
-                        # Checking batch status.
-                        batch_path = Path(batch_path)
-                        schema = self.schemas[stage_name]
-                        batch_out = llm.retreive_batch(
-                            batch_id, schema, batch_path
-                        )
-                        
-                        # If batch complete, it is a BatchOut object.
-                        if isinstance(batch_out, BatchOut):
-                            self.store_batch(
-                                llm_str, stage_name, batch_out, batch_path
-                            )
-                            break
-                        
-                        # If batch incomplete, skipped for now. See TestRunner
-                        # for retry loop in waiting for batch.
-                        log.info(f"Batch - {batch_id}, was skipped from being stored.")
-                    
-                    # Re-storing the outputs.
-                    self.irpd_outputs[llm_str] = stage_outputs
+            meta: IRPDMeta = load_json_n_validate(meta_path, IRPDMeta)
+            
+            # Initializing LLM to check batches.
+            llm = generate_llm_instance(llm_str, self.llm_config)
+            for stage_name in self.stages:
+                # If stage name is not in meta, then breaks loop (since
+                # stages are sequential).
+                if not stage_name in meta.stages.keys():
+                    break
+                
+                batch_id = meta.stages[stage_name].batch_id
+                batch_path = meta.stages[stage_name].batch_path
+                
+                if not (batch_id and batch_path):
+                    # Means the batch hasn't been requested yet. Thus
+                    # subsequent stages haven't.
+                    break
+                
+                # Checking batch status.
+                batch_out = llm.retreive_batch(
+                    batch_id, self.schemas[stage_name], Path(batch_path)
+                )
+                
+                # If batch complete, it is a BatchOut object.
+                if isinstance(batch_out, BatchOut):
+                    self.store_batch(
+                        llm_str, stage_name, batch_out, batch_path
+                    )
+                    break
+                
+                # If batch incomplete, skipped for now. See TestRunner
+                # for retry loop in waiting for batch.
+                log.info(f"Batch - {batch_id}, is {batch_out}.")
         return None
     
     def _get_output_index(self, stage_output: StageOutput):
@@ -218,25 +193,14 @@ class OutputManager(Manager):
         """
         outputs = self.irpd_outputs
         if llm_str:
-            outputs: List[StageOutput] = outputs[llm_str]
+            outputs = outputs[llm_str]
             if n is not None:
-                outputs: List[StageOutput] = list(filter(lambda output: output.replication == n, outputs))
+                outputs = list(filter(lambda output: output.replication == n, outputs))
             if stage_name:
-                outputs: List[StageOutput] = list(filter(lambda output: output.stage_name == stage_name, outputs))
+                outputs = list(filter(lambda output: output.stage_name == stage_name, outputs))
             if subset:
-                outputs: StageOutput = list(filter(lambda output: output.subset == subset, outputs))
-        if outputs is None:
-            log.warning(
-                "\nOutputs not found for:"
-                f"\n\t case: {self.irpd_config.case}"
-                f"\n\t config: {self.irpd_config.id}"
-                f"\n\t llm: {llm_str}"
-                f"\n\t replicate: {n} of {self.irpd_config.total_replications}"
-                f"\n\t stage: {stage_name}"
-                f"\n\t subset: {subset}"
-            )
-            return None
-        return to_list(outputs)
+                outputs = list(filter(lambda output: output.subset == subset, outputs))
+        return outputs
     
     def store_completion(self, stage_output: StageOutput):
         """
@@ -247,11 +211,12 @@ class OutputManager(Manager):
         stage_name = stage_output.stage_name
         subset = stage_output.subset
         
-        output: StageOutput = self.retrieve(llm_str, n, stage_name, subset)[0]
-        idx = self._get_output_index(output)
+        output: StageOutput = self.retrieve(llm_str, n, stage_name, subset)
         
         output.outputs = to_list(stage_output.outputs)
         output.complete = True
+        
+        idx = self._get_output_index(output)
         self.irpd_outputs[stage_output.llm_str][idx] = output
         
         self._log_stored_completion(output)
@@ -273,7 +238,6 @@ class OutputManager(Manager):
             stage_name=stage_name
         )
         for stage_output in stage_outputs:
-            idx = self._get_output_index(stage_output)
             n  = stage_output.replication
             subset = stage_output.subset
             
@@ -290,6 +254,7 @@ class OutputManager(Manager):
                 stage_output.batch_id = batch_out.batch_id
                 stage_output.batch_path = batch_file_path
             
+            idx = self._get_output_index(stage_output)
             self.irpd_outputs[llm_str][idx] = stage_output
             
             self._log_stored_completion(stage_output)

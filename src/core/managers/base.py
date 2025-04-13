@@ -2,10 +2,10 @@
 Base model for manager models.
 """
 from abc import ABC
+from pathlib import Path
 
-from helpers.utils import create_directory
+from helpers.utils import create_directory, lazy_import
 from core.functions import instance_types
-from core.llms.llm_models import LLMModel
 from types.irpd_config import IRPDConfig
 
 
@@ -13,20 +13,24 @@ from types.irpd_config import IRPDConfig
 class Manager(ABC):
     """
     Abstract Manager class for manager inheritance.
-    
-    Fuck composition (jkjkjkjkjk).
     """
-    def __init__(
-        self,
-        irpd_config: IRPDConfig
-    ):
+    def __init__(self, irpd_config: IRPDConfig):
         self.irpd_config = irpd_config
         self.stages = irpd_config.stages
         self.cases = irpd_config.cases
-        self.test_path = irpd_config.test_path
+        self.batches = irpd_config.batches
+        self.test_path = Path(irpd_config.test_path)
         self.llms = irpd_config.llms
         self.llm_config = irpd_config.llm_config
         self.total_replications = irpd_config.total_replications
+        self.schemas = {
+            stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
+            for stage in self.stages
+        }
+        self.subsets = {
+            stage: self.get_subsets(stage)
+            for stage in self.stages
+        }
         
     def generate_subpath(self, n: int, llm_str: str):
         """
