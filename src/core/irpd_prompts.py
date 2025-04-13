@@ -34,6 +34,7 @@ class IRPDPrompts:
         self.replication = replication
         self.subset = subset
         self.llm_str = llm_str
+        
         self.irpd_config = output_manager.irpd_config
         self.case = self.irpd_config.case
         self.cases = self.irpd_config.cases
