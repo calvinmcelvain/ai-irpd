@@ -9,14 +9,20 @@ import pandas as pd
 from typing import List
 from datetime import datetime
 
-from helpers.utils import txt_to_pdf, load_json_n_validate, write_json, write_file, create_directory
+from helpers.utils import (
+    txt_to_pdf, load_json_n_validate, write_json, 
+    write_file, create_directory, load_config
+)
 from core.functions import categories_to_txt, output_attrb
-from core.managers.config_manager import ConfigManager
+from types.irpd_config import IRPDConfig
 from types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
 from types.stage_output import StageOutput
 
 
 log = logging.getLogger(__name__)
+
+
+FILE_NAMES = load_config("irpd.json")["output_file_names"]
 
 
 
@@ -34,26 +40,28 @@ class OutputProcesser:
     def __init__(
         self,
         stage_outputs: List[StageOutput],
-        config_manager: ConfigManager
+        irpd_config: IRPDConfig
     ):
         self.outputs = stage_outputs
-        self.config_manager = config_manager
-        self.irpd_config = config_manager.config
+        self.irpd_config = irpd_config
+        self.stages = irpd_config.stages
+        self.total_replications = irpd_config.total_replications
+        self.cases = irpd_config.cases
+        self.treatment = irpd_config.treatment
+        self.ra = irpd_config.ra
+        self.data_path = irpd_config.data_path
+        
         self.stage_name = stage_outputs[0].stage_name
-        self.stages = config_manager.stages
-        self.total_replications = config_manager.total_replications
         self.replication = stage_outputs[0].replication
         self.llm_str = stage_outputs[0].llm_str
-        self.sub_path = config_manager.generate_subpath(self.replication, self.llm_str)
-        self.meta_path = config_manager.generate_meta_path(self.replication, self.llm_str)
-        self.stage_path = self.sub_path / f"stage_{self.stage_name}"
-        self.cases = config_manager.config.cases
-        self.treatment = config_manager.config.treatment
-        self.ra = config_manager.config.ra
-        self.data_path = config_manager.config.data_path
-        self.llm_instance = config_manager.generate_llm_instance(self.llm_str)
+        self.sub_path = stage_outputs[0].sub_path
         self.batch_id = stage_outputs[0].batch_id
         self.batch_path = stage_outputs[0].batch_path
+        self.llm_model = stage_outputs[0].outputs[0].output.meta.model
+        self.llm_configs = stage_outputs[0].outputs[0].output.meta.configs
+        
+        self.meta_path = self.sub_path / FILE_NAMES["meta"]
+        self.stage_path = self.sub_path / f"stage_{self.stage_name}"
     
     def _build_categories_pdf(self):
         """
@@ -76,7 +84,7 @@ class OutputProcesser:
                 else:
                     pdf += f"## Unified Categories\n\n"
             pdf += categories_to_txt(categories)
-        pdf_path = self.sub_path / f"_stage_{self.stage_name}_categories.pdf"
+        pdf_path = self.sub_path / FILE_NAMES["categories"][self.stage_name]
         txt_to_pdf(pdf, pdf_path)
         return None
     
@@ -124,7 +132,8 @@ class OutputProcesser:
         # Concatenating case dfs, for tests w/ a composition of cases (e.g., 
         # uni_switch case).
         df = pd.concat(dfs, ignore_index=True, sort=False)
-        df.to_csv(self.sub_path / f"_stage_{self.stage_name}_final.csv", index=False)
+        csv_path = self.sub_path / FILE_NAMES["classifications"][self.stage_name]
+        df.to_csv(csv_path, index=False)
         return None
     
     def _write_output(self):
@@ -204,24 +213,26 @@ class OutputProcesser:
         # Load meta if exists. Else, create TestMeta obj.
         if self.meta_path.exists():
             meta = load_json_n_validate(self.meta_path, IRPDMeta)
+            
+            # Rewriting TestConfig model in case rerunning test w/o current 
+            # stages.
+            meta.test_info = self.irpd_config.convert_to_dict()
         else:
             model_info = ModelInfo(
-                model=self.llm_instance.model,
-                parameters=self.llm_instance.configs.model_dump()
+                model=self.llm_model,
+                parameters=self.llm_configs
             )
-            stages = {stage: StageInfo() for stage in self.config_manager.stages}
+            stages = {stage: StageInfo() for stage in self.stages}
             meta = IRPDMeta(
                 model_info=model_info,
-                test_info=self.config_manager.config.convert_to_dict(),
+                test_info=self.irpd_config.convert_to_dict(),
                 stages=stages
             )
         
         # Write stage specific meta info.
         meta.stages[self.stage_name] = self._stage_meta_info(meta)
         
-        # Rewriting TestConfig model in case rerunning test w/o current stages.
-        meta.test_info = self.config_manager.config.convert_to_dict()
-        
+        # Writing meta.
         write_json(self.meta_path, meta.model_dump())
         
         log.info(
