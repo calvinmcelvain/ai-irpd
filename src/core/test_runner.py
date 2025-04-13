@@ -33,10 +33,9 @@ class TestRunner:
     def __init__(
         self,
         irpd_config: IRPDConfig,
-        output_manager: OutputManager,
         print_response: bool = False
     ):
-        self.output_manger = output_manager
+        self.output_manger = OutputManager(irpd_config)
         self.print_response = print_response
         
         self.irpd_config = irpd_config

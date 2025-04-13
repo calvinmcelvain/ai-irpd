@@ -158,8 +158,6 @@ class IRPDBase(ABC):
         irpd_configs: Dict[str, IRPDConfig] = self._get_test_configs(config_ids=config_ids)
         
         for config_id, config in irpd_configs.items():
-            output_manager = self.outputs[config_id]
-            
-            test_runner = TestRunner(config, output_manager, print_response)
+            test_runner = TestRunner(config, print_response)
             self.outputs[config_id] = test_runner.run()
         return None

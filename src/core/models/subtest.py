@@ -10,7 +10,6 @@ from pathlib import Path
 
 from helpers.utils import to_list
 from core.models.base import IRPDBase
-from core.managers.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 
@@ -81,14 +80,13 @@ class Subtest(IRPDBase):
                 llms=to_list(llm),
                 llm_config=llm_config,
                 test_type=self.test_type,
-                max_instances=self.max_instances,
-                test_path=self.test_paths[idx],
-                data_path=self.data_path,
-                prompts_path=self.prompts_path,
+                test_path=self.test_paths[idx].as_posix(),
+                data_path=self.data_path.as_posix(),
+                prompts_path=self.prompts_path.as_posix(),
                 stages=self.stages,
                 batches=self.batch_request,
-                total_replications=1
+                total_replications=1,
+                max_instances=self.max_instances
             )
             self.configs[config.id] = config
-            self.outputs[config.id] = OutputManager(config)
         return None

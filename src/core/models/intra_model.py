@@ -9,7 +9,6 @@ from typing import Optional, List, Union
 from pathlib import Path
 
 from core.models.base import IRPDBase
-from core.managers.output_manager import OutputManager
 from types.irpd_config import IRPDConfig
 
 
@@ -79,14 +78,14 @@ class IntraModel(IRPDBase):
                 treatment=treatment,
                 llms=llm,
                 llm_config=llm_config,
-                max_instances=self.max_instances,
                 test_type=self.test_type,
-                data_path=self.data_path,
-                prompts_path=self.prompts_path,
-                test_path=self.test_paths[idx],
+                test_path=self.test_paths[idx].as_posix(),
+                data_path=self.data_path.as_posix(),
+                prompts_path=self.prompts_path.as_posix(),
+                stages=self.stages,
                 batches=self.batch_request,
-                stages=self.stages
+                total_replications=self.replications,
+                max_instances=self.max_instances
             )
             self.configs[config.id] = config
-            self.outputs[config.id] = OutputManager(config)
         return None
