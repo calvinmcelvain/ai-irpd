@@ -1,0 +1,17 @@
+{
+    "output_file_names": {
+        "meta": "_test_meta.json",
+        "summaries": {
+            "0": "_stage_0_summaries.csv"
+        },
+        "categories": {
+            "1": "_stage_1_categories.pdf",
+            "1r": "_stage_1r_categories.pdf",
+            "1c": "_stage_1c_categories.pdf"
+        },
+        "classifications": {
+            "2": "_stage_2_final.csv",
+            "3": "_stage_3_final.csv"
+        }
+    }
+}
