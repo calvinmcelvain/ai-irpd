@@ -68,8 +68,8 @@ class BaseLLM(ABC):
         """
         return {"role": "user", "content": user}
     
-    @staticmethod
     def _request_out(
+        self,
         input_tokens: int,
         output_tokens: int,
         system: str,
@@ -83,7 +83,9 @@ class BaseLLM(ABC):
         prompts = Prompts(system=system, user=user)
         meta = MetaOut(
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
+            model=self.model,
+            configs=self.configs
         )
         return RequestOut(
             text=content,

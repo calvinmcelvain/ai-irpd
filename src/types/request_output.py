@@ -14,6 +14,8 @@ from types.prompts import Prompts
 class MetaOut:
     input_tokens: int
     output_tokens: int
+    model: str
+    configs: dict
     total_tokens: int = None
     created: int = None
     
