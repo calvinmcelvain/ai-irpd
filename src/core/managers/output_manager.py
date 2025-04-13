@@ -8,15 +8,14 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from helpers.utils import check_directories, load_json_n_validate, lazy_import, to_list
+from core.output_processer import OutputProcesser
+from core.managers.base import Manager
 from types.batch_output import BatchOut
 from types.irpd_request import IRPDRequest
 from types.request_output import RequestOut
 from types.irpd_config import IRPDConfig
 from types.stage_output import StageOutput
 from types.irpd_meta import IRPDMeta
-from core.output_processer import OutputProcesser
-from core.managers.config_manager import ConfigManager
-from core.managers.base import Manager
 
 
 log = logging.getLogger(__name__)
@@ -38,9 +37,7 @@ class OutputManager(Manager):
     """
     def __init__(self, irpd_config: IRPDConfig):
         super.__init__(self, irpd_config)
-        self.config_manager = ConfigManager(irpd_config)
         self.irpd_config = irpd_config
-        self.processor = OutputProcesser
         self.test_path = irpd_config.test_path
         self.total_replications = irpd_config.total_replications
         self.stages = irpd_config.stages
@@ -311,7 +308,7 @@ class OutputManager(Manager):
         """
         Writes output.
         """
-        self.processor(to_list(stage_output), self.config_manager).process()
+        OutputProcesser(to_list(stage_output), self.irpd_config).process()
         
         llm_str = stage_output.llm_str
         stage_name = stage_output.stage_name
@@ -322,5 +319,5 @@ class OutputManager(Manager):
         stage_complete = self.check_stage_completion(llm_str, stage_name, n)
         if stage_complete:
             all_stage_ouptuts = self.retrieve(llm_str, n, stage_name)
-            self.processor(to_list(all_stage_ouptuts), self.config_manager).process(True)
+            OutputProcesser(to_list(all_stage_ouptuts), self.irpd_config).process(True)
         return None
