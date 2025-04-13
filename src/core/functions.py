@@ -7,6 +7,9 @@ import logging
 from typing import List
 from pydantic import BaseModel
 
+from core.llms.llm_models import LLMModel
+from core.llms.clients.base import BaseLLM
+
 
 log = logging.getLogger(__name__)
 
@@ -58,3 +61,14 @@ def output_attrb(output: BaseModel) -> BaseModel:
     # Stage 3
     if hasattr(output, "category_ranking"):
         return output.category_ranking
+
+
+def generate_llm_instance(
+    llm_str: str,
+    llm_config: str,
+    print_reponse: bool = False
+) -> BaseLLM:
+        """
+        Returns the LLM model instance from the /llms package.
+        """
+        return getattr(LLMModel, llm_str).get_llm_instance(llm_config, print_reponse)
