@@ -16,5 +16,6 @@ class StageOutput:
     replication: int
     batch_id: str = None
     batch_path: Path = None
+    sub_path: Path = None
     outputs: List[IRPDRequest] = field(default_factory=list)
     complete: bool = False
