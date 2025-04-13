@@ -9,6 +9,7 @@ from typing import Dict, Optional
 from types.irpd_config import IRPDConfig
 
 
+
 class ModelInfo(BaseModel):
     model: str
     parameters: dict
