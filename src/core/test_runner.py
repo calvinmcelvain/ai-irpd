@@ -12,7 +12,6 @@ from core.llms.clients.base import BaseLLM
 from core.llms.llm_models import LLMModel
 from core.output_processer import OutputProcesser
 from core.irpd_prompts import IRPDPrompts
-from core.managers.config_manager import ConfigManager
 from core.managers.output_manager import OutputManager
 from types.stage_output import  StageOutput
 from types.batch_output import BatchOut
@@ -37,7 +36,6 @@ class TestRunner:
         output_manager: OutputManager,
         print_response: bool = False
     ):
-        self.config_manager = ConfigManager(irpd_config)
         self.output_manger = output_manager
         self.print_response = print_response
         
