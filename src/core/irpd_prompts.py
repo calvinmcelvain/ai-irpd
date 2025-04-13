@@ -1,7 +1,7 @@
 """
-IRPD prompt manager module.
+IRPD prompt module.
 
-Contains the PromptManager module and its corresponding methods.
+Contains the IRPDPrompts module and its corresponding methods.
 """
 import logging
 import pandas as pd
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 
 
-class PromptManager:
+class IRPDPrompts:
     """
-    PromptManager model.
+    IRPDPrompts model.
     
     Gets the user and system prompts for a given stage, replication, and subset.
     """

@@ -10,7 +10,7 @@ from time import sleep
 from helpers.utils import to_list, create_directory
 from core.llms.clients.base import BaseLLM
 from core.output_processer import OutputProcesser
-from core.prompt_manager import PromptManager
+from core.irpd_prompts import IRPDPrompts
 from core.managers.config_manager import ConfigManager
 from core.managers.output_manager import OutputManager
 from types.stage_output import  StageOutput
@@ -70,7 +70,7 @@ class TestRunner:
                 subset = stage_output.subset
                 n = stage_output.replication
                 
-                test_prompts = PromptManager(
+                test_prompts = IRPDPrompts(
                     llm_str=llm_str,
                     stage_name=stage,
                     replication=n,
