@@ -14,7 +14,7 @@ class StageOutput:
     subset: str
     llm_str: str
     replication: int
-    sub_path: Path
+    output_path: Path
     batch_id: str = None
     batch_path: Path = None
     outputs: List[RequestOut] = []
