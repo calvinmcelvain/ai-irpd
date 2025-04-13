@@ -9,6 +9,7 @@ from time import sleep
 
 from helpers.utils import to_list, create_directory
 from core.llms.clients.base import BaseLLM
+from core.llms.llm_models import LLMModel
 from core.output_processer import OutputProcesser
 from core.irpd_prompts import IRPDPrompts
 from core.managers.config_manager import ConfigManager
@@ -39,13 +40,17 @@ class TestRunner:
         self.config_manager = ConfigManager(irpd_config)
         self.output_manger = output_manager
         self.print_response = print_response
-        self.processor = OutputProcesser
-        self.generate_llm_instance = self.config_manager.generate_llm_instance
         
         self.irpd_config = irpd_config
         self.llms = irpd_config.llms
         self.stages = irpd_config.stages
         self.test_path = irpd_config.test_path
+    
+    def _generate_llm_instance(self, llm_str: str, print_reponse: bool = False):
+        """
+        Returns the LLM model instance from the /llms package.
+        """
+        return getattr(LLMModel, llm_str).get_llm_instance(self.llm_config, print_reponse)
     
     def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         """
@@ -133,7 +138,7 @@ class TestRunner:
                 stage_output.batch_path = batch_file_path
             
             # Writing meta so that the ID and path are defined.
-            self.processor(stage_outputs, self.config_manager).write_meta()
+            OutputProcesser(stage_outputs, self.irpd_config).write_meta()
         
         # Retrieving batch
         retries = 0
@@ -221,7 +226,9 @@ class TestRunner:
         """
         # Should probably make this an async method.
         for llm_str in self.llms:
-            llm_instance: BaseLLM = self.generate_llm_instance(llm_str, self.print_response)
+            llm_instance: BaseLLM = self._generate_llm_instance(
+                llm_str, self.print_response
+            )
             
             # Skipping if the test
             if self.output_manger.check_irpd_test_completion(llm_str):

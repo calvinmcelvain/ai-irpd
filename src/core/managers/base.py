@@ -63,9 +63,3 @@ class Manager(ABC):
             ]
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
-    
-    def generate_llm_instance(self, llm_str: str, print_reponse: bool = False):
-        """
-        Returns the LLM model instance from the /llms package.
-        """
-        return getattr(LLMModel, llm_str).get_llm_instance(self.llm_config, print_reponse)
