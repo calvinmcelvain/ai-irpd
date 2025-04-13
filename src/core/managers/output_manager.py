@@ -59,6 +59,7 @@ class OutputManager(Manager):
         for llm_str in self.irpd_config.llms:
             irpd_outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
+                sub_path = self.generate_subpath(n, llm_str)
                 for stage in self.stages:
                     subsets = self.get_subsets(stage)
                     for subset in subsets:
@@ -68,7 +69,8 @@ class OutputManager(Manager):
                             stage_name=stage,
                             subset=subset,
                             llm_str=llm_str,
-                            replication=n
+                            replication=n,
+                            sub_path=sub_path
                         ))
         return irpd_outputs
     
