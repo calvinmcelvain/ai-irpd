@@ -57,8 +57,8 @@ class OutputProcesser:
         self.sub_path = stage_outputs[0].sub_path
         self.batch_id = stage_outputs[0].batch_id
         self.batch_path = stage_outputs[0].batch_path
-        self.llm_model = stage_outputs[0].outputs[0].output.meta.model
-        self.llm_configs = stage_outputs[0].outputs[0].output.meta.configs
+        self.llm_model = stage_outputs[0].outputs[0].meta.model
+        self.llm_configs = stage_outputs[0].outputs[0].meta.configs
         
         self.meta_path = self.sub_path / FILE_NAMES["meta"]
         self.stage_path = self.sub_path / f"stage_{self.stage_name}"
