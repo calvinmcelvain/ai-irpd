@@ -7,12 +7,8 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 
 from types.irpd_config import IRPDConfig
+from types.llm_config import LLMConfig
 
-
-
-class ModelInfo(BaseModel):
-    model: str
-    parameters: dict
 
 
 class SubsetInfo(BaseModel):
@@ -29,6 +25,7 @@ class StageInfo(BaseModel):
 
 
 class IRPDMeta(BaseModel):
-    model_info: ModelInfo
+    model: str
+    configs: LLMConfig
     test_info: IRPDConfig = None
     stages: Dict[str, StageInfo] = {}
