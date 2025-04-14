@@ -1,15 +1,13 @@
 """
-Test runner module.
-
 Contains the functional TestRunner model.
 """
 import logging
 from typing import List
-from pathlib import Path
 from time import sleep
 
 from helpers.utils import to_list, create_directory
 from core.functions import generate_llm_instance
+from core.foundation import FoundationalModel
 from core.llms.clients.base import BaseLLM
 from core.output_processer import OutputProcesser
 from core.prompt_composer import PromptComposer
@@ -24,22 +22,20 @@ log = logging.getLogger(__name__)
 
 
 
-class TestRunner:
+class TestRunner(FoundationalModel):
     """
-    TestRunner model.
+    TestRunner model, inherits the FoundationalModel.
     
     Runs a test config. Has methods to run completion and batch. Main `run` 
     method returns the complete OutputManager model.
     """
     def __init__(self, irpd_config: IRPDConfig, print_response: bool):
-        self.output_manger = OutputManager(irpd_config)
+        super.__init__(self, irpd_config)
         self.print_response = print_response
         
-        self.irpd_config = irpd_config
-        self.llm_config = irpd_config.llm_config
-        self.llms = irpd_config.llms
-        self.stages = irpd_config.stages
-        self.test_path = Path(irpd_config.test_path)
+        self.output_manger = OutputManager(irpd_config)
+        self.output_processor = OutputProcesser(irpd_config)
+        self.prompt_composer = PromptComposer(irpd_config)
     
     def _prompt_id(self, stage: str, subset: str, n: int, user: object):
         """
