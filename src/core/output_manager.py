@@ -132,25 +132,36 @@ class OutputManager:
         
         Note: This method is run before `_check_batch` method.
         """
-        for llm_str, test_output in self.irpd_outputs.items():
-            for stage_output in test_output:
-                responses_path = stage_output.output_path / "responses"
-                prompts_path = stage_output.output_path / "prompts"
-                
-                # If prompts & responses directories don't exist, there are no
-                # outputs to store.
-                if not check_directories([responses_path, prompts_path]):
+        for test_output in self.outputs:
+            for stage_output in test_output.stage_outputs.values():
+                # Skip if stage directory doesn't exist
+                if not stage_output.stage_path.exists():
                     continue
                 
                 stage_name = stage_output.stage_name
-                stage_output.outputs = [
-                    RequestOut(
-                        parsed=load_json_n_validate(path, self.schemas[stage_name])
+                for subset, outputs in stage_output.outputs.items():
+                    subset_path = stage_output.stage_path / subset
+                    responses_path = subset_path / "responses"
+                    prompts_path = subset_path / "prompts"
+                    
+                    # Skip if prompts & responses directories don't exist
+                    if not check_directories([responses_path, prompts_path]):
+                        continue
+                    
+                    # Load and extend outputs for the subset
+                    outputs.extend(
+                        IRPDOutput(
+                            request_out=RequestOut(
+                                parsed=load_json_n_validate(
+                                    path, self.schemas[stage_name]
+                                )
+                            ),
+                            response_path=path,
+                            user_path=None,
+                            system_path=None
+                        )
+                        for path in responses_path.iterdir()
                     )
-                    for path in responses_path.iterdir()
-                ]
-                
-                self.store_completion(stage_output)
         return None
     
     def _check_batch(self):
