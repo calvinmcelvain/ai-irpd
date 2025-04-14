@@ -1,3 +1,6 @@
+"""
+Module contains the FoundationModel.
+"""
 from abc import ABC
 from pathlib import Path
 
