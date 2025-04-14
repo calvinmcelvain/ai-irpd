@@ -59,6 +59,13 @@ class FoundationalModel(ABC):
             create_directory(subpath)
         return subpath
     
+    def _generate_meta_path(self, n: int, llm_str: str):
+        """
+        Generates the path for 'test' meta. File exists for each subpath.
+        """
+        subpath = self._generate_subpath(n, llm_str)
+        return subpath / FILE_NAMES["meta"]
+    
     def _get_subsets(self, stage_name: str):
         """
         Generates subsets for a given stage.
@@ -72,10 +79,3 @@ class FoundationalModel(ABC):
             ]
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
-    
-    def _generate_meta_path(self, n: int, llm_str: str):
-        """
-        Generates the path for 'test' meta. File exists for each subpath.
-        """
-        subpath = self._generate_subpath(n, llm_str)
-        return subpath / FILE_NAMES["meta"]
