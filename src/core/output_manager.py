@@ -15,6 +15,8 @@ from _types.batch_output import BatchOut
 from _types.request_output import RequestOut
 from _types.irpd_config import IRPDConfig
 from _types.stage_output import StageOutput
+from _types.test_output import TestOutput
+from _types.irpd_output import IRPDOutput
 from _types.irpd_meta import IRPDMeta
 
 
@@ -53,12 +55,40 @@ class OutputManager:
             for stage in self.stages
         }
         
-        # Initializing StageOutput objects.
-        self.irpd_outputs: Dict[str, List[StageOutput]] = self._initialize_irpd_outputs()
+        # Initializing output objects.
+        self.outputs: List[TestOutput] = self._initialize_outputs()
         
         # Checking current test path (and batch) for outputs on initialization.
         self._check_test_directory()
         if self.batches: self._check_batch()
+        
+    def _initialize_outputs(self):
+        """
+        Initializes all TestOutput objects.
+        
+        Note: Outputs stored by the LLM string.
+        """
+        outputs = {}
+        for llm_str in self.llms:
+            outputs[llm_str] = [
+                TestOutput(
+                    sub_path=self._generate_subpath(n, llm_str),
+                    meta_path=self._generate_meta_path(n, llm_str),
+                    replication=n,
+                    llm_str=llm_str,
+                    meta=IRPDMeta(),
+                    stage_outputs={
+                        stage: StageOutput(
+                            stage_name=stage,
+                            stage_path=self._generate_subpath(n, llm_str) / f"stage_{stage}",
+                            outputs={subset: [] for subset in self.subsets[stage]}
+                        )
+                        for stage in self.stages
+                    }
+                )
+                for n in range(1, self.total_replications + 1)
+            ]
+        return outputs
         
     def _generate_subpath(self, n: int, llm_str: str):
         """
@@ -88,31 +118,6 @@ class OutputManager:
             ]
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
-        
-    def _initialize_irpd_outputs(self):
-        """
-        Initializes StageOutput objects.
-        
-        Note: IRPD outputs stored by LLM.
-        """
-        irpd_outputs = {}
-        for llm_str in self.irpd_config.llms:
-            irpd_outputs[llm_str] = []
-            for n in range(1, self.total_replications + 1):
-                sub_path = self._generate_subpath(n, llm_str)
-                for stage in self.stages:
-                    for subset in self.subsets[stage]:
-                        output_path = sub_path / f"stage_{stage}" / subset
-                        # Creates a StageOutput object for each replication,
-                        # stage, and subset.
-                        irpd_outputs[llm_str].append(StageOutput(
-                            stage_name=stage,
-                            subset=subset,
-                            llm_str=llm_str,
-                            replication=n,
-                            output_path=output_path
-                        ))
-        return irpd_outputs
     
     def _generate_meta_path(self, n: int, llm_str: str):
         """
