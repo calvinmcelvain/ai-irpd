@@ -1,6 +1,4 @@
 """
-IRPD prompt module.
-
 Contains the PromptComposer and Data models.
 """
 import logging
@@ -8,7 +6,8 @@ import pandas as pd
 
 from helpers.utils import file_to_string, to_list
 from core.functions import categories_to_txt, output_attrb
-from core.output_manager import OutputManager
+from core.foundation import FoundationalModel
+from types.irpd_config import IRPDConfig
 from types.prompts import Prompts
 
 
@@ -16,22 +15,19 @@ log = logging.getLogger(__name__)
 
 
 
-class PromptComposer:
+class PromptComposer(FoundationalModel):
     """
-    PromptComposer model.
+    PromptComposer model, inherits the FoundationalModel.
     
     Gets the user and system prompts for a given stage, replication, and subset.
     """
-    def __init__(self, output_manager: OutputManager):
-        self.output_manager = output_manager
+    def __init__(self, irpd_config: IRPDConfig):
+        super.__init__(self, irpd_config)
+        self.sections_path = self.prompts_path / "sections"
+        self.fixed_path = self.prompts_path / "fixed"
         
         # Categories are fixed for stages 2 & 3 if a 'replication' test type.
         self.fixed = self.irpd_config.test_type in {"cross_model", "intra_model"}
-        
-        self.data_path = self.irpd_config.data_path
-        self.prompts_path = self.irpd_config.prompts_path
-        self.sections_path = self.prompts_path / "sections"
-        self.fixed_path = self.prompts_path / "fixed"
     
     @staticmethod
     def _get_section(section_path, name):
