@@ -11,11 +11,11 @@ from helpers.utils import (
     check_directories, load_json_n_validate, to_list, lazy_import, create_directory
 )
 from core.functions import generate_llm_instance, instance_types
-from types.batch_output import BatchOut
-from types.request_output import RequestOut
-from types.irpd_config import IRPDConfig
-from types.stage_output import StageOutput
-from types.irpd_meta import IRPDMeta
+from _types.batch_output import BatchOut
+from _types.request_output import RequestOut
+from _types.irpd_config import IRPDConfig
+from _types.stage_output import StageOutput
+from _types.irpd_meta import IRPDMeta
 
 
 log = logging.getLogger(__name__)

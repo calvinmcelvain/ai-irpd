@@ -12,12 +12,12 @@ from helpers.utils import to_list, create_directory
 from core.functions import generate_llm_instance
 from core.llms.clients.base import BaseLLM
 from core.output_processer import OutputProcesser
-from core.prompt_composer import PromptComposer
+from configs.prompt_composer import PromptComposer
 from core.output_manager import OutputManager
-from types.stage_output import  StageOutput
-from types.batch_output import BatchOut
-from types.irpd_config import IRPDConfig
-from types.prompts import Prompts
+from _types.stage_output import  StageOutput
+from _types.batch_output import BatchOut
+from _types.irpd_config import IRPDConfig
+from _types.prompts import Prompts
 
 
 log = logging.getLogger(__name__)

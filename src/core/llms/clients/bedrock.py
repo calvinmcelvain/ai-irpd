@@ -12,7 +12,7 @@ import boto3
 from typing import Optional
 from pydantic import BaseModel
 
-from types.prompts import Prompts
+from _types.prompts import Prompts
 from core.llms.clients.base import BaseLLM
 
 

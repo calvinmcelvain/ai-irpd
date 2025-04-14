@@ -4,7 +4,7 @@ Nova module.
 Defines Nova configs.
 """
 from core.llms.clients.bedrock import BedrockClient
-from types.llm_config import LLMConfig
+from _types.llm_config import LLMConfig
 
     
 

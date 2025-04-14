@@ -4,7 +4,7 @@ Models for Batch outputs.
 from typing import List
 from pydantic import BaseModel
 
-from types.request_output import RequestOut
+from _types.request_output import RequestOut
 
 
 

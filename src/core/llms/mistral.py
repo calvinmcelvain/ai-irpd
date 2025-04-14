@@ -4,7 +4,7 @@ Mistral LLM module.
 Contains the Mistral model.
 """
 from core.llms.clients.mistral import MistralClient
-from types.llm_config import LLMConfig
+from _types.llm_config import LLMConfig
 
 
 

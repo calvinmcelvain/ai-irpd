@@ -15,9 +15,9 @@ from helpers.utils import (
     write_file, create_directory, load_config
 )
 from core.functions import categories_to_txt, output_attrb
-from types.irpd_config import IRPDConfig
-from types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
-from types.stage_output import StageOutput
+from _types.irpd_config import IRPDConfig
+from _types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
+from _types.stage_output import StageOutput
 
 
 log = logging.getLogger(__name__)

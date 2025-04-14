@@ -4,7 +4,7 @@ Google's Gemini module.
 Contains Gemini model.
 """
 from core.llms.clients.genai import GenAIClient
-from types.llm_config import LLMConfig
+from _types.llm_config import LLMConfig
 
 
 

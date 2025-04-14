@@ -18,8 +18,8 @@ from anthropic.types.message import Message
 from pydantic import BaseModel
 
 from helpers.utils import write_jsonl, load_jsonl
-from types.batch_output import BatchOut, BatchResponse
-from types.prompts import Prompts
+from _types.batch_output import BatchOut, BatchResponse
+from _types.prompts import Prompts
 from core.llms.clients.base import BaseLLM
 
 

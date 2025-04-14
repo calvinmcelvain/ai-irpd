@@ -4,7 +4,7 @@ OpenAI's GPT module.
 Defines general configs for GPT model.
 """
 from core.llms.clients.openai import OpenAIClient
-from types.llm_config import LLMConfig
+from _types.llm_config import LLMConfig
 
 
 

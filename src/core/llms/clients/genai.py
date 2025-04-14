@@ -13,7 +13,7 @@ from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse
 from google.api_core.exceptions import ResourceExhausted, InternalServerError
 
-from types.prompts import Prompts
+from _types.prompts import Prompts
 from core.llms.clients.base import BaseLLM
 
 

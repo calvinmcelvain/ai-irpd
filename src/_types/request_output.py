@@ -6,7 +6,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from pydantic import BaseModel
 
-from types.prompts import Prompts
+from _types.prompts import Prompts
 
 
 

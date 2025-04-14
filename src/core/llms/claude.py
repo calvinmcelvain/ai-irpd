@@ -4,7 +4,7 @@ Module for Claude model.
 Defines general configs for Claude models.
 """
 from core.llms.clients.anthropic import AnthropicClient
-from types.llm_config import LLMConfig
+from _types.llm_config import LLMConfig
 
     
 

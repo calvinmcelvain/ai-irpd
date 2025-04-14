@@ -9,7 +9,7 @@ from typing import Optional, List, Union
 from pathlib import Path
 
 from core.models.base import IRPDBase
-from types.irpd_config import IRPDConfig
+from _types.irpd_config import IRPDConfig
 
 
 log = logging.getLogger(__name__)

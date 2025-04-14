@@ -3,9 +3,9 @@ Stage output model.
 """
 from pathlib import Path
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from types.request_output import RequestOut
+from _types.request_output import RequestOut
 
 
 @dataclass
@@ -17,5 +17,5 @@ class StageOutput:
     output_path: Path
     batch_id: str = None
     batch_path: Path = None
-    outputs: List[RequestOut] = []
+    outputs: List[RequestOut] = field(default_factory=list)
     complete: bool = False
