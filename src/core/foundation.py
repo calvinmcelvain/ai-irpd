@@ -6,6 +6,8 @@ from pathlib import Path
 
 from helpers.utils import lazy_import, create_directory, load_config
 from core.functions import instance_types
+from core.llms.llm_models import LLMModel
+from core.llms.clients.base import BaseLLM
 from types.irpd_config import IRPDConfig
 
 
@@ -34,6 +36,7 @@ class FoundationalModel(ABC):
         self.prompts_path = Path(irpd_config.prompts_path)
         self.max_instances = irpd_config.max_instances
         self.total_replications = irpd_config.total_replications
+        self.print_response = False # Set in TestRunner model.
         
         self.schemas = {
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
@@ -79,3 +82,11 @@ class FoundationalModel(ABC):
             ]
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
+    
+    def _generate_llm_instance(self, llm_str: str) -> BaseLLM:
+        """
+        Returns the LLM model instance from /llms.
+        """
+        return getattr(LLMModel, llm_str).get_llm_instance(
+            self.llm_config, self.print_reponse
+        )
