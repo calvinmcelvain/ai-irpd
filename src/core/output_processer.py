@@ -1,6 +1,4 @@
 """
-Output processing module.
-
 Contains the OutputProcessor model.
 """
 import logging
@@ -15,6 +13,7 @@ from helpers.utils import (
     write_file, create_directory, load_config
 )
 from core.functions import categories_to_txt, output_attrb
+from core.foundation import FoundationalModel
 from types.irpd_config import IRPDConfig
 from types.irpd_meta import ModelInfo, StageInfo, SubsetInfo, IRPDMeta
 from types.stage_output import StageOutput
@@ -27,9 +26,9 @@ FILE_NAMES = load_config("irpd.json")["output_file_names"]
 
 
 
-class OutputProcesser:
+class OutputProcesser(FoundationalModel):
     """
-    OutputProcessor model.
+    OutputProcessor model, inherits the FoundationalModel.
     
     Takes a list of StageOutput objects and writes outputs and meta data.
     
@@ -38,20 +37,9 @@ class OutputProcesser:
         - Stage 1, 1r, & 1c PDFs.
         - Stage 2 & 3 CSVs.
     """
-    def __init__(
-        self,
-        stage_outputs: List[StageOutput],
-        irpd_config: IRPDConfig
-    ):
+    def __init__(self, irpd_config: IRPDConfig, stage_outputs: List[StageOutput]):
+        super.__init__(self, irpd_config)
         self.outputs = stage_outputs
-        self.irpd_config = irpd_config
-        self.stages = irpd_config.stages
-        self.total_replications = irpd_config.total_replications
-        self.cases = irpd_config.cases
-        self.treatment = irpd_config.treatment
-        self.ra = irpd_config.ra
-        self.data_path = Path(irpd_config.data_path)
-        
         self.stage_name = stage_outputs[0].stage_name
         self.replication = stage_outputs[0].replication
         self.llm_str = stage_outputs[0].llm_str
@@ -61,7 +49,7 @@ class OutputProcesser:
         self.llm_model = stage_outputs[0].outputs[0].meta.model
         self.llm_configs = stage_outputs[0].outputs[0].meta.configs
         
-        self.meta_path = self.sub_path / FILE_NAMES["meta"]
+        self.meta_path = self._generate_meta_path(self.replication, self.llm_str)
         self.stage_path = self.sub_path / f"stage_{self.stage_name}"
     
     def _build_categories_pdf(self):
