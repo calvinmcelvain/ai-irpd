@@ -16,19 +16,19 @@ class ModelInfo(BaseModel):
 
 
 class SubsetInfo(BaseModel):
-    created: str = None
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
+    created: str
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
 
 
 class StageInfo(BaseModel):
-    subsets: Dict[str, SubsetInfo] = {}
-    batch_id: Optional[str] = None
-    batch_path: Optional[str] = None
+    subsets: Dict[str, SubsetInfo]
+    batch_id: Optional[str]
+    batch_path: Optional[str]
 
 
 class IRPDMeta(BaseModel):
-    model_info: ModelInfo
-    test_info: IRPDConfig = None
-    stages: Dict[str, StageInfo] = {}
+    model_info: Optional[ModelInfo]
+    test_info: Optional[IRPDConfig]
+    stages: Optional[Dict[str, StageInfo]]
