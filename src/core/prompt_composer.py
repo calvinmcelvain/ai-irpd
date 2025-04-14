@@ -1,35 +1,37 @@
 """
-IRPD prompt module.
-
-Contains the PromptComposer and Data models.
+Contains the PromptComposer.
 """
 import logging
-import pandas as pd
+from typing import List
 
-from helpers.utils import file_to_string, to_list
+from helpers.utils import file_to_string
 from core.functions import categories_to_txt, output_attrb
-from core.output_manager import OutputManager
-from _types.prompts import Prompts
+from core.foundation import FoundationalModel
+from core.data import Data
+from _types.irpd_prompts import Prompts
+from _types.irpd_prompts import IRPDPrompts
+from _types.irpd_config import IRPDConfig
+from _types.test_output import TestOutput
 
 
 log = logging.getLogger(__name__)
 
 
 
-class PromptComposer:
+class PromptComposer(FoundationalModel):
     """
     PromptComposer model.
     
     Gets the user and system prompts for a given stage, replication, and subset.
     """
-    def __init__(self, output_manager: OutputManager):
-        self.output_manager = output_manager
+    def __init__(self, irpd_config: IRPDConfig):
+        super.__init__(self, irpd_config)
+        
+        self.data = Data(irpd_config)
         
         # Categories are fixed for stages 2 & 3 if a 'replication' test type.
         self.fixed = self.irpd_config.test_type in {"cross_model", "intra_model"}
-        
-        self.data_path = self.irpd_config.data_path
-        self.prompts_path = self.irpd_config.prompts_path
+
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
     
@@ -82,28 +84,39 @@ class PromptComposer:
         section_path = self.sections_path / "constraints" / f"stage_{self.stage_name}.md"
         return self._get_section(section_path, "Constraints")
     
-    def _data_definitions(self):
+    @staticmethod
+    def _prompt_id(stage: str, subset: str, n: int, user: object):
+        """
+        Generates the prompt ID.
+        """
+        prompt_id = f"{n}-{subset}"
+        if stage in {"2", "3"}:
+            prompt_id += f"-{user["window_number"]}"
+        return prompt_id
+    
+    def _data_definitions(self, stage_name: str):
         """
         Returns the 'Data Variable Definitions' section of the system prompt.
         """
+        if stage_name not in {"1", "2", "3"}: return ""
         section_path = self.sections_path / "data_definitions"
-        stage_path = section_path / f"stage_{self.stage_name}"
+        stage_path = section_path / f"stage_{stage_name}"
         
         # Initial prompt section (header).
         section = file_to_string(section_path / "initial.md")
         
         # RA summary context.
-        if self.stage_name not in {"0"}:
+        if stage_name not in {"0"}:
             section += file_to_string(stage_path / f"{self.ra}.md")
         
         # Instance type definition.
-        subset_path = stage_path / "instance_type"
-        section += file_to_string(subset_path / "initial.md")
+        instance_type_path = stage_path / "instance_type"
+        section += file_to_string(instance_type_path / "initial.md")
         for case in self.cases:
-            section += file_to_string(subset_path / f"{case}.md")
+            section += file_to_string(instance_type_path / f"{case}.md")
         
         # Adding definition of category assignment variable.
-        if self.stage_name in {"3"}:
+        if stage_name in {"3"}:
             section += file_to_string(stage_path / f"assignment.md")
         
         # Window number definition.
@@ -111,161 +124,110 @@ class PromptComposer:
         
         return section
     
-    def _construct_system_prompt(self):
+    def _construct_system_prompt(self, test_outputs: List[TestOutput], stage_name: str):
         """
-        Constructs the system prompts & sets as the system attrb.
+        Constructs the system prompts.
         """
         a = self._task_overview()
         b = self._experimental_context()
         c = self._summary_context()
         d = self._task()
         e = self._constraints()
-        prompt = a + b + c + d + e
+        f = self._data_definitions(stage_name)
         
-        # Adding 'Data Variable Definitions' to stages w/ data in user prompt.
-        if self.stage_name in {"1", "2", "3"}:
-            prompt += self._data_definitions()
-        
-        # Appending a 'Categories' section to classification stages.
-        if self.stage_name in {"2", "3"}:
-            prompt += "\n\n## Categories\n\n"
-            
-            # Almost always will use Stage 1c categories, but if skipped, this 
-            # should adjust the appended categories to include all stage 1r 
-            # subset categories.
-            if "1c" in self.irpd_config.stages:
-                context = self.output_manager.retrieve(
-                    self.llm_str, self.replication, "1c", "full"
-                )
-            else:
-                context = self.output_manager.retrieve(
-                    self.llm_str, self.replication, "1r"
-                )
-            for output in context:
-                categories = output_attrb(output.outputs[0].parsed)
-                prompt += categories_to_txt(categories)
-        
-        self.system = prompt
-        return None
-    
-    def _construct_user_prompt(self):
-        """
-        Sets the user attrb. as (all) user prompt(s).
-        """
-        # Getting the correct RA summary data if a data dependent stage.
-        if "0" not in self.irpd_config.stages and self.stage not in {"1", "1r"}:
-            # Loading RA summary data.
-            summary_path = self.data_path / "ra_summaries.csv"
-            df = pd.read_csv(summary_path)
-            
-            # Getting all summary data in cases attrb. (in case of case 
-            # composition).
-            df = df[(df["case"].isin(self.cases))]
-            
-            # Adjusting for the treatment (if not merged).
-            if self.treatment != "merged":
-                df = df[(df["treatment"] == self.treatment)]
-            
-            # Adjusting for a singular RA.
-            if self.ra != "both":
-                ra_cols = [
-                    c for c in df.columns
-                    if c.startswith("summary_") and c != f"summary_{self.ra}"
-                ]
-                df = df.drop(columns=ra_cols)
-            
-            # Dropping unused variables.
-            df = df.drop(columns=["case", "treatment", "subset"])
-        else:
-            log.error("Stage 0 has not been setup yet for prompts.")
-            raise ValueError
-        
-        # Stage 1 is all summary data (in records form).
-        if self.stage_name == "1":
-            self.user = [df.to_dict("records")] # Essentially nested list.
-        
-        # Stage 1r & 1c user prompt is the categories created in prior stage.
-        if self.stage_name in {"1r", "1c"}:
-            # Want all subsets if stage 1c.
-            subset = self.subset if self.stage_name == "1r" else None
-            
-            # Stage 1r uses stage 1 categories, stage 1c uses stage 1r categories.
-            context_stage = "1" if self.stage_name == "1r" else "1r"
-            
-            context = self.output_manager.retrieve(
-                self.llm_str, self.replication, context_stage, subset
-            )
-            
-            prompt = ""
-            for output in context:
-                categories = output_attrb(output.outputs[0].parsed)
-                prompt += categories_to_txt(categories)
-            self.user = to_list(prompt)
-        
-        # Individual summaries for stages 2 & 3.
-        if self.stage_name in {"2", "3"}:
-            current_outputs = self.output_manager.retrieve(
-                self.llm_str, self.replication, self.stage_name, self.subset
-            )
-            
-            # Adjusting for max instances if specified.
-            if self.irpd_config.max_instances:
-                df = df[:self.irpd_config.max_instances]
-            
-            # Adjusting for completed classifications in output. Really only 
-            # adjusted if test wasn't complete or failed before.
-            if current_outputs[0].outputs:
-                window_nums = [
-                    output.parsed.window_number 
-                    for output in current_outputs.outputs
-                ]
-                df = df[~df["window_number"].isin(window_nums)]
-            
-            # Stage 3 adds another variable for the classifications in stage 2.
-            if self.stage_name in {"3"}:
-                stage_2 = self.output_manager.retrieve(
-                    self.llm_str, self.replication, "2", self.subset
-                )
-                for output in stage_2[0].outputs:
-                    assigned_cats = [
-                        cat.category_name
-                        for cat in output.parsed.assigned_categories
-                    ]
+        system_prompts = []
+        for test_output in test_outputs:
+            for subset in test_output.stage_outputs[stage_name]:
+                prompt = a + b + c + d + e + f
+                # Appending a 'Categories' section to classification stages.
+                if stage_name in {"2", "3"}:
+                    prompt += "\n\n## Categories\n\n"
                     
-                    window_number = output.parsed.window_number
-                    df_index = df[df["window_number"] == window_number].index
+                    # Almost always will use Stage 1c categories, but if skipped, this 
+                    # should adjust the appended categories to include all stage 1r 
+                    # subset categories.
+                    if "1c" in self.stages:
+                        context = test_output.stage_outputs["1c"].outputs
+                    else:
+                        context = test_output.stage_outputs["1r"].outputs
                     
-                    df.loc[df_index, "assigned_categories"] = str(assigned_cats)
-            self.user = df.to_dict("records")
-        
-        return None
+                    for output in context.values():
+                        request_out = output[0].request_out
+                        categories = output_attrb(request_out.parsed)
+                        prompt += categories_to_txt(categories)
+                system_prompts.append((
+                    test_output.replication, subset, prompt
+                ))
+        return system_prompts
     
-    def get_prompts(self):
+    def _construct_user_prompt(self, test_outputs: List[TestOutput], stage_name: str):
+        """
+        Returns all user prompt(s).
+        """
+        user_prompts = []
+        for test_output in test_outputs:
+            for subset in test_output.stage_outputs[stage_name]:
+                # Stage 1 is all summary data (in records form).
+                if stage_name == "1":
+                    prompt = self.data.filter_ra_data(subset)
+                    user_prompts.append((
+                        test_output.replication, subset, prompt
+                    ))
+                
+                # Stage 1r user prompt is the categories created in stage 1.
+                if stage_name == "1r":
+                    context = test_output.stage_outputs["1"].outputs[subset]
+                    categories = output_attrb(context[0].request_out.parsed)
+                    prompt = categories_to_txt(categories)
+                
+                # Stage 1c user prompt is all subset categories created in stage 1r.
+                if stage_name == "1c":
+                    context = test_output.stage_outputs["1r"].outputs
+                    prompt = ""
+                    for output in context.values():
+                        request_out = output[0].request_out
+                        categories = output_attrb(request_out.parsed)
+                        prompt += categories_to_txt(categories)
+                
+                # Individual summaries for stages 2 & 3.
+                if self.stage_name in {"2", "3"}:
+                    df = self.data.adjust_for_completed_outputs(test_output, stage_name)
+                    
+                    # Stage 3 adds another variable for the classifications in stage 2.
+                    if self.stage_name == "3":
+                        stage_2_outputs = test_output.stage_outputs["2"].outputs["full"]
+                        for output in stage_2_outputs:
+                            request_out = output.request_out.parsed
+                            assigned_cats = [
+                                cat.category_name
+                                for cat in request_out.assigned_categories
+                            ]
+                            df_index = df[df["window_number"] == request_out.window_number].index
+                            
+                            df.loc[df_index, "assigned_categories"] = str(assigned_cats)
+                    prompt = df.to_dict("records")
+                    
+                user_prompts.append((test_output.replication, subset, prompt))
+        
+        return user_prompts
+
+    def expected_outputs(
+        self,
+        test_outputs: List[TestOutput],
+        stage_name: str
+    ):
+        """
+        Checks the expected number of outputs via the count of user prompts for 
+        a stage, given TestOutput(s).
+        """
+        return len(self._construct_user_prompt(test_outputs, stage_name))
+    
+    def get_prompts(self, test_outputs: List[TestOutput], stage_name: str):
         """
         Returns a list of all prompts.
-        
-        The total number of prompts should be the following:
-            - Stage 0: Length of number of instances in case.
-            - Stage 1: Length of the total number of subsets.
-            - Stage 1r: Length of the total number of subsets.
-            - Stage 1c: One prompt.
-            - Stage 2: Length of number of summaries for case (adjusted for 
-            already completed).
-            - Stage 3: Length of number of summaries for case (adjusted for 
-            already completed).
         """
         if self.fixed:
             return None
-        self._construct_system_prompt()
-        self._construct_user_prompt()
-        return [Prompts(system=self.system, user=user) for user in self.user]
-    
-
-
-class Data:
-    """
-    Data model.
-    
-    Used to prepare data for prompts.
-    """
-    pass
+        
+        system_prompts = self._construct_system_prompt(test_outputs, stage_name)
+        user_prompts = self._construct_user_prompt(test_outputs, stage_name)
