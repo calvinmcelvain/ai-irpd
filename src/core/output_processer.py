@@ -37,19 +37,8 @@ class OutputProcesser(FoundationalModel):
         - Stage 1, 1r, & 1c PDFs.
         - Stage 2 & 3 CSVs.
     """
-    def __init__(self, irpd_config: IRPDConfig, stage_outputs: List[StageOutput]):
+    def __init__(self, irpd_config: IRPDConfig):
         super.__init__(self, irpd_config)
-        self.outputs = stage_outputs
-        self.stage_name = stage_outputs[0].stage_name
-        self.replication = stage_outputs[0].replication
-        self.llm_str = stage_outputs[0].llm_str
-        self.sub_path = stage_outputs[0].sub_path
-        self.batch_id = stage_outputs[0].batch_id
-        self.batch_path = stage_outputs[0].batch_path
-        self.llm_model = stage_outputs[0].outputs[0].meta.model
-        self.llm_configs = stage_outputs[0].outputs[0].meta.configs
-        
-        self.meta_path = self._generate_meta_path(self.replication, self.llm_str)
         self.stage_path = self.sub_path / f"stage_{self.stage_name}"
     
     def _build_categories_pdf(self):
@@ -229,13 +218,29 @@ class OutputProcesser(FoundationalModel):
         )
         return None
         
-    def process(self, stage_complete: bool = False):
+    def process(
+        self,
+        stage_outputs: List[StageOutput],
+        stage_complete: bool = False
+    ):
         """
         Writes outputs & meta. If stage_complete True, writes the final forms
         for the given stage (defined on initialization).
         """
+        self.outputs = stage_outputs
+        self.stage_name = stage_outputs[0].stage_name
+        self.replication = stage_outputs[0].replication
+        self.llm_str = stage_outputs[0].llm_str
+        self.sub_path = stage_outputs[0].sub_path
+        self.batch_id = stage_outputs[0].batch_id
+        self.batch_path = stage_outputs[0].batch_path
+        self.llm_model = stage_outputs[0].outputs[0].meta.model
+        self.llm_configs = stage_outputs[0].outputs[0].meta.configs
+        self.meta_path = self._generate_meta_path(self.replication, self.llm_str)
+        
         self._write_output()
         self.write_meta()
+        
         if stage_complete:
             if self.stage_name in {"1", "1r", "1c"}:
                 self._build_categories_pdf()
