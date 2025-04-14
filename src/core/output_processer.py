@@ -5,7 +5,6 @@ import logging
 import json
 import pandas as pd
 from typing import List
-from pathlib import Path
 from datetime import datetime
 
 from helpers.utils import (
