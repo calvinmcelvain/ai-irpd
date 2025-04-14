@@ -101,8 +101,7 @@ class OutputManager:
         subpath = self.test_path
         if len(self.llms) > 1: subpath = subpath / llm_str
         if self.total_replications > 1: subpath = subpath / f"replication_{n}"
-        if not subpath.exists():
-            create_directory(subpath)
+        if not subpath.exists(): create_directory(subpath)
         return subpath
     
     def _get_subsets(self, stage_name: str):
