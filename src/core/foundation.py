@@ -4,9 +4,12 @@ Module contains the FoundationModel.
 from abc import ABC
 from pathlib import Path
 
-from helpers.utils import lazy_import, create_directory
+from helpers.utils import lazy_import, create_directory, load_config
 from core.functions import instance_types
 from types.irpd_config import IRPDConfig
+
+
+FILE_NAMES = load_config("irpd.json")["output_file_names"]
 
 
 
@@ -75,4 +78,4 @@ class FoundationalModel(ABC):
         Generates the path for 'test' meta. File exists for each subpath.
         """
         subpath = self._generate_subpath(n, llm_str)
-        return subpath / "_test_meta.json"
+        return subpath / FILE_NAMES["meta"]
