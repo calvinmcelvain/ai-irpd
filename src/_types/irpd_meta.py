@@ -10,11 +10,6 @@ from _types.irpd_config import IRPDConfig
 
 
 
-class ModelInfo(BaseModel):
-    model: str
-    parameters: dict
-
-
 class SubsetInfo(BaseModel):
     created: str
     input_tokens: int
@@ -29,6 +24,7 @@ class StageInfo(BaseModel):
 
 
 class IRPDMeta(BaseModel):
-    model_info: Optional[ModelInfo] = None
+    model: Optional[str]
+    configs: Optional[str]
     test_info: Optional[IRPDConfig] = None
     stages: Optional[Dict[str, StageInfo]] = None
