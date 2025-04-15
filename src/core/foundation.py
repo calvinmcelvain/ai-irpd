@@ -2,10 +2,13 @@
 Contains the FoundationalModel
 """
 from abc import ABC
+from pydantic import BaseModel
+from typing import Dict, List
 from pathlib import Path
 
 from helpers.utils import create_directory, lazy_import
 from core.functions import instance_types
+from core.llms.clients.base import BaseLLM
 from core.llms.llm_models import LLMModel
 from _types.irpd_config import IRPDConfig
 
@@ -29,15 +32,15 @@ class FoundationalModel(ABC):
         self.llm_config = irpd_config.llm_config
         self.total_replications = irpd_config.total_replications
         
-        self.schemas = {
+        self.schemas: Dict[str, BaseModel] = {
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
-        self.subsets = {
+        self.subsets: Dict[str, List[str]] = {
             stage: self._get_subsets(stage)
             for stage in self.stages
         }
-        self.llm_instances = {
+        self.llm_instances: Dict[str, BaseLLM] = {
             llm_str: self._generate_llm_instance(llm_str)
             for llm_str in self.llms
         }
