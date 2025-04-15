@@ -2,7 +2,7 @@
 Contains the PromptComposer.
 """
 import logging
-from typing import List
+from typing import List, Tuple
 
 from helpers.utils import file_to_string, to_list
 from core.functions import categories_to_txt, output_attrb
@@ -204,7 +204,7 @@ class PromptComposer(FoundationalModel):
                 
         return to_list(prompt)
 
-    def _expected_outputs(self, stage_name: str):
+    def _expected_outputs(self, stage_name: str) -> int:
         """
         Checks the expected number of outputs via the count of user prompts for 
         a stage.
@@ -213,7 +213,9 @@ class PromptComposer(FoundationalModel):
             return len(self.subsets[stage_name])
         return len(self.data.ra_data.to_dict("records"))
     
-    def get_prompts(self, test_outputs: List[TestOutput], stage_name: str):
+    def get_prompts(
+        self, test_outputs: List[TestOutput], stage_name: str
+    ) -> List[Tuple[str, Prompts]]:
         """
         Returns a list of tuples w/ first element the id, and the second a 
         Prompts object.

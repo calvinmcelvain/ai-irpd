@@ -5,26 +5,23 @@ Contains the functional TestRunner model.
 """
 import logging
 from typing import List
-from pathlib import Path
 from time import sleep
 
-from helpers.utils import to_list, create_directory
-from core.functions import generate_llm_instance
+from helpers.utils import create_directory
+from core.functions import requestout_to_irpdout
+from core.foundation import FoundationalModel
 from core.llms.clients.base import BaseLLM
-from core.output_processer import OutputProcesser
-from core.prompt_composer import PromptComposer
 from core.output_manager import OutputManager
-from _types.stage_output import  StageOutput
+from _types.test_output import TestOutput
 from _types.batch_output import BatchOut
 from _types.irpd_config import IRPDConfig
-from _types.prompts import Prompts
 
 
 log = logging.getLogger(__name__)
 
 
 
-class TestRunner:
+class TestRunner(FoundationalModel):
     """
     TestRunner model.
     
@@ -32,60 +29,16 @@ class TestRunner:
     method returns the complete OutputManager model.
     """
     def __init__(self, irpd_config: IRPDConfig, print_response: bool):
+        super.__init__(self, irpd_config)
+        
         self.output_manger = OutputManager(irpd_config)
+        self.prompt_composer = self.output_manger.prompt_composer
         self.print_response = print_response
-        
-        self.irpd_config = irpd_config
-        self.llm_config = irpd_config.llm_config
-        self.llms = irpd_config.llms
-        self.stages = irpd_config.stages
-        self.test_path = Path(irpd_config.test_path)
-    
-    def _prompt_id(self, stage: str, subset: str, n: int, user: object):
-        """
-        Generates the prompt ID.
-        """
-        prompt_id = f"{n}-{subset}"
-        if stage in {"2", "3"}:
-            prompt_id += f"-{user["window_number"]}"
-        return prompt_id
-        
-    def _compose_prompts(self, stage_outputs: List[StageOutput]):
-        """
-        Returns all prompts for a given stage. For batch completions, this is 
-        the total prompts for a stage for every the replication.
-        """
-        aggregated_prompts = []
-        for stage_output in stage_outputs:
-            # Skipping prompt if StageOutput object is complete.
-            if not stage_output.complete:
-                llm_str = stage_output.llm_str
-                stage = stage_output.stage_name
-                subset = stage_output.subset
-                n = stage_output.replication
-                
-                test_prompts = PromptComposer(
-                    llm_str=llm_str,
-                    stage_name=stage,
-                    replication=n,
-                    subset=subset,
-                    output_manager=self.output_manger
-                )
-                
-                # Creating a tuple for each prompt, where the first element is 
-                # the prompt id, and the second is the Prompts object.
-                for prompt in test_prompts.get_prompts():
-                    string_prompt = Prompts(system=str(prompt.system), user=str(prompt.user))
-                    aggregated_prompts.append(
-                        (self._prompt_id(stage, subset, n, prompt.user), string_prompt)
-                    )
-        
-        return aggregated_prompts
     
     def _run_batch(
         self,
         stage_name: str,
-        stage_outputs: List[StageOutput],
+        test_outputs: List[TestOutput],
         llm_instance: BaseLLM
     ):
         """
@@ -94,40 +47,37 @@ class TestRunner:
         One batch is the requests for the stage for every replication.
         """
         # Structured output schema.
-        schema = self.output_manger.schemas[stage_name]
-        llm_str = stage_outputs[0].llm_str
+        schema = self.schemas[stage_name]
+        llm_str = test_outputs[0].llm_str
         
         # Getting prompts.
-        agg_prompts = self._compose_prompts(stage_outputs)
+        agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
         
         # Composing a batch path in the test directory /_batches. Identified by 
         # the LLM & stage.
         batches_path = self.test_path / "_batches"
-        if not batches_path.exists(): create_directory(batches_path)
+        create_directory(batches_path)
         batch_file_path = batches_path / f"stage_{stage_name}_{llm_str}.jsonl"
         
         # Requesting batch if the batch hasn't been requested yet.
-        if not (stage_outputs[0].batch_id and stage_outputs[0].batch_id):
+        if not batch_file_path.exists():
             # Requesting batch.
             batch_id = llm_instance.request_batch(agg_prompts, schema, batch_file_path)
             
             log.info(
                 f"\n Requesting batch for:"
                 f"\n\t config: {self.irpd_config.id}"
-                f"\n\t case: {self.irpd_config.case}"
+                f"\n\t case: {self.case}"
                 f"\n\t llm: {llm_str}"
                 f"\n\t stage: {stage_name}"
-                f"\n\t replications: {self.irpd_config.total_replications}"
+                f"\n\t replications: {self.total_replications}"
                 f"\n\t batch_id: {batch_id}"
             )
             
-            # Storing the batch ID and path.
-            for stage_output in stage_outputs:
-                stage_output.batch_id = batch_id
-                stage_output.batch_path = batch_file_path
-            
-            # Writing meta so that the ID and path are defined.
-            OutputProcesser(stage_outputs, self.irpd_config).write_meta()
+            # Storing batch ID in meta
+            test_outputs[0].meta.stages[stage_name].batch_id = batch_id
+            test_outputs[0].meta.stages[stage_name].batch_id = batches_path
+            self.output_manger.output_writer.write_meta(test_outputs[0])
         
         # Retrieving batch
         retries = 0
@@ -135,9 +85,7 @@ class TestRunner:
             batch_out = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
             
             if isinstance(batch_out, BatchOut):
-                self.output_manger.store_batch(
-                    llm_str, stage_name, batch_out, batch_file_path
-                )
+                self.output_manger.store_batch(llm_str, stage_name, batch_out)
                 return True
             elif batch_out == "failed":
                 break
@@ -157,7 +105,7 @@ class TestRunner:
     def _run_completions(
         self,
         stage_name: str,
-        stage_outputs: List[StageOutput],
+        test_outputs: List[TestOutput],
         llm_instance: BaseLLM
     ):
         """
@@ -166,47 +114,40 @@ class TestRunner:
         Includes all StageOutputs across all replications.
         """
         # Structured output schema.
-        schema = self.output_manger.schemas[stage_name]
+        schema = self.schemas[stage_name]
+        llm_str = test_outputs[0].llm_str
         
-        for stage_output in stage_outputs:
-            llm_str = stage_output.llm_str
-            replication = stage_output.replication
-            subset = stage_output.subset
+        # Getting prompts.
+        agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
+        
+        # Requests made for each prompt (accounts for iterative stages).
+        outputs = []
+        for prompts in agg_prompts:
+            prompt_id, prompt = prompts
             
-            agg_prompts = self._compose_prompts(to_list(stage_output))
+            id_list = prompt_id.split("-")
+            n = int(id_list[0])
+            subset = id_list
             
-            # Revalidating whether a StageOutput is complete. Because when 
-            # storing completed requests in the initialization of the 
-            # OutputManager, its not necessarily true that it was all outputs 
-            # (e.g., could have missed a subset or summary classifications).
-            if len(agg_prompts) == len(stage_output.outputs) or not agg_prompts:
-                stage_output.complete = True
-                self.output_manger.store_completion(stage_output, stage_output.outputs)
-                self.output_manger.write_output(stage_output)
-                continue
-            else:
-                stage_output.complete = False
+            stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
+            subset_path = stage_output.stage_path / subset
             
-            # Requests made for each prompt (accounts for iterative stages).
-            outputs = []
-            for p in agg_prompts:
-                _, prompts = p
-                
-                log.info(
-                    f"\n Requesting completion for:"
-                    f"\n\t config: {self.irpd_config.id}"
-                    f"\n\t case: {self.irpd_config.case}"
-                    f"\n\t llm: {llm_str}"
-                    f"\n\t replicate: {replication} of {self.irpd_config.total_replications}"
-                    f"\n\t stage: {stage_name}"
-                    f"\n\t subset: {subset}"
-                    f"\n\t prompt: {len(outputs) + 1} of {len(agg_prompts)}"
-                )
-                outputs.append(llm_instance.request(prompts, schema))
+            log.info(
+                f"\n Requesting completion for:"
+                f"\n\t config: {self.irpd_config.id}"
+                f"\n\t case: {self.case}"
+                f"\n\t llm: {llm_str}"
+                f"\n\t replicate: {n} of {self.total_replications}"
+                f"\n\t stage: {stage_name}"
+                f"\n\t subset: {subset}"
+                f"\n\t prompt: {len(outputs) + 1} of {len(agg_prompts)}"
+            )
             
-            # Storing & writing outputs.
-            stage_output.outputs = outputs
-            self.output_manger.store_completion(stage_output)
+            output = llm_instance.request(prompt, schema)
+            irpd_output = requestout_to_irpdout(
+                stage_name, subset, subset_path, output)
+            
+            self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
         return True
     
     def run(self):
@@ -214,37 +155,31 @@ class TestRunner:
         Runs each stage of a IRPDConfig.
         """
         # Should probably make this an async method.
-        for llm_str in self.llms:
-            llm_instance: BaseLLM = generate_llm_instance(
-                llm_str, self.llm_config, self.print_response
-            )
+        for llm_str, llm_instance in self.llm_instances.items():
+            # Getting all TestOutputs for a given LLM.
+            test_outputs = self.output_manger.retrieve(llm_str)
             
-            # Skipping if the test
-            if self.output_manger.check_irpd_test_completion(llm_str):
-                continue
+            # Skipping if all outputs complete.
+            if all(m.complete for m in test_outputs): continue
             
             for stage_name in self.stages:
-                # Getting all StageOutputs for a given LLM and stage.
-                stage_outputs: List[StageOutput] = self.output_manger.retrieve(
-                    llm_str=llm_str, stage_name=stage_name
-                )
+                # Skipping if all outputs complete.
+                if all(m.stage_outputs[stage_name] for m in test_outputs): continue
                 
-                # Checking whether the stage has already been complete for the 
-                # given LLM and stage.
-                if not all(output.complete for output in stage_outputs):
-                    # Just because a IRPDConfig is specified for `batches`, not 
-                    # all LLMs support batches. This adjusts for that.
-                    if self.irpd_config.batches and llm_instance.batches:
-                        complete = self._run_batch(
-                            stage_outputs, stage_name, llm_instance
-                        )
-                    else:
-                        if self.irpd_config.batches: log.info(
-                            f"Note that {llm_str} does not support batches."
-                        )
-                        complete = self._run_completions(
-                            stage_outputs, stage_name, llm_instance
-                        )
-                    if not complete: break
-        
-        return self.output_manger
+                # Some LLMs don't support batches.
+                if self.batches and llm_instance.batches:
+                    complete = self._run_batch(
+                        stage_name, test_outputs, llm_instance
+                    )
+                else:
+                    if self.batches: log.info(
+                        f"Note that {llm_str} does not support batches."
+                    )
+                    
+                    complete = self._run_completions(
+                        stage_name, test_outputs, llm_instance
+                    )
+                
+                # Breaks if batches couldn't be retrieved in 6 trys.
+                if not complete: break
+        return self.output_manger.outputs

@@ -164,7 +164,7 @@ class OutputManager(FoundationalModel):
         llm_str: str,
         n: int,
         stage_name: str
-    ) -> List[IRPDOutput]: ...
+    ) -> StageOutput: ...
 
     @overload
     def retrieve(
@@ -187,7 +187,7 @@ class OutputManager(FoundationalModel):
         llm_str: Optional[str] = None,
         n: Optional[int] = None,
         stage_name: Optional[str] = None
-    ) -> Union[TestOutput, List[TestOutput], List[IRPDOutput]]:
+    ) -> Union[TestOutput, List[TestOutput], StageOutput]:
         """
         Retrieves output(s). If stage_name is defined, returns a list of 
         IRPDOutput object. Otherwise returns TestOuput object(s).
