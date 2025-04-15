@@ -13,7 +13,7 @@ import yaml
 import logging
 import configs
 import importlib.resources as pkg_resources
-from typing import List, Union, TypeVar, Type
+from typing import List, Dict, Union, TypeVar, Type, Any
 from pathlib import Path
 from dotenv import load_dotenv 
 from yaml import YAMLError
@@ -25,9 +25,10 @@ from pydantic import BaseModel, ValidationError
 log = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+B = TypeVar("B")
 
 
-def to_list(arg: Union[object, List[object]]):
+def to_list(arg: Union[object, List[Type[T]]]) -> List[T]:
     """
     Returns listed arg.
     """
@@ -71,18 +72,18 @@ def create_directory(paths: List[Union[str, Path]]) -> None:
     return None
 
 
-def lazy_import(module_name: str, class_name: str) -> object:
+def dynamic_import(module_name: str, class_name: str) -> Any:
     """
-    Function found from:
-    https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/utils.py
+    Dynamically imports and returns a class or object from a module.
     """
-    def importer():
+    if module_name in importlib.sys.modules:
+        module = importlib.sys.modules[module_name]
+    else:
         module = importlib.import_module(module_name)
-        return getattr(module, class_name)
-    return importer()
+    return getattr(module, class_name)
 
 
-def load_config(config: str) -> dict:
+def load_config(config: str) -> Dict:
     """
     Load a YAML or JSON config file.
     """
@@ -92,9 +93,9 @@ def load_config(config: str) -> dict:
     if not config.endswith((".yml", ".yaml", ".json")):
         log.warning(
             f"Config file '{config}' missing .yml, .yaml, or .json extension."
-            " Appending .yml extension by default."
+            " Appending .json extension by default."
         )
-        config += ".yml"
+        config += ".json"
 
     try:
         with pkg_resources.open_text(configs, config) as f:
@@ -113,7 +114,9 @@ def load_config(config: str) -> dict:
         raise
 
 
-def load_json(file_path: Union[str, Path], dumps: bool = False) -> dict | str:
+def load_json(
+    file_path: Union[str, Path], dumps: bool = False
+) -> Union[str, Dict]:
     """
     Returns the JSON object (or string) from a JSON file.
     """
@@ -125,7 +128,9 @@ def load_json(file_path: Union[str, Path], dumps: bool = False) -> dict | str:
     return json.dumps(json_data) if dumps else json_data
 
 
-def load_jsonl(file_path: Union[str, Path], dumps: bool = False) -> List[dict] | str:
+def load_jsonl(
+    file_path: Union[str, Path], dumps: bool = False
+) -> Union[str, List[Dict]]:
     """
     Returns a list of JSON objects (or a JSON string) from a JSONL file.
     """
@@ -138,7 +143,7 @@ def load_jsonl(file_path: Union[str, Path], dumps: bool = False) -> List[dict] |
     return json.dumps(json_data) if dumps else json_data
 
 
-def validate_json(json_data: dict, schema: Type[T]) -> T | None:
+def validate_json(json_data: dict, schema: Type[T]) -> T:
     """
     Returns the object from json schema validation.
     """
@@ -150,27 +155,45 @@ def validate_json(json_data: dict, schema: Type[T]) -> T | None:
             f"Validation error for schema '{schema.__name__}': {e}\n"
             f"JSON data: {json.dumps(json_data, indent=2)}"
         )
-        return None
+    except Exception as e:
+        log.error(f"Unexpected error in validate_json: {e}")
+        raise
 
 
-def load_json_n_validate(file_path: Union[str, Path], schema: Type[T]) -> T | None:
+def load_json_n_validate(file_path: Union[str, Path], schema: Type[T]) -> T:
     """
     Loads json file and validates for schema.
     """
-    json_data = load_json(file_path)
-    return validate_json(json_data, schema)
+    try:
+        json_data = load_json(file_path)
+        return validate_json(json_data, schema)
+    except FileNotFoundError:
+        log.error(f"File not found: {file_path}")
+        raise
+    except JSONDecodeError as e:
+        log.error(f"Error decoding JSON from file '{file_path}': {e}")
+        raise
+    except ValidationError as e:
+        log.error(f"Validation error for schema '{schema.__name__}': {e}")
+        raise
+    except Exception as e:
+        log.error(f"Unexpected error in load_json_n_validate: {e}")
+        raise
 
 
-def validate_json_string(json_str: str, schema: Type[T]) -> T | None:
+def validate_json_string(json_str: str, schema: Type[T]) -> T:
     """
     Returns the object from json schema validation.
     """
     try:
         schema_obj = schema.model_validate_json(json_str)
         return schema_obj
+    except ValidationError as e:
+        log.error(f"Validation error for schema '{schema.__name__}': {e}")
+        raise
     except Exception as e:
-        log.exception(f"Error in model validation': {e}\n")
-        return None
+        log.error(f"Error in model validation': {e}\n")
+        raise
 
 
 def file_to_string(file_path: Union[str, Path]) -> str:
@@ -196,7 +219,9 @@ def write_file(
     """
     file_paths = to_list(file_paths)
     file_writes = to_list(file_writes)
-    assert len(file_paths) == len(file_writes), "`file_paths` and `file_writes` must be same length."
+    assert len(file_paths) == len(file_writes), (
+        "`file_paths` and `file_writes` must be same length."
+    )
     for idx, path in enumerate(file_paths):
         path = Path(path)
         try:
@@ -207,18 +232,26 @@ def write_file(
         
 
 def write_jsonl(
-    file_path: Union[str, Path],
-    json_obj: Union[dict, List[dict]]
-):
+    file_path: Union[str, Path], json_obj: Union[dict, List[dict]]
+) -> None:
     """
-    Writes jsonl file from json/dict object.
+    Writes a JSONL file from a JSON/dict object.
     """
-    json_obj = to_list(json_obj)
-    write_file(file_paths=file_path, file_writes="")
-    with open(Path(file_path), "w") as f:
-        for line in json_obj:
-            json.dump(line, f)
-            f.write("\n")
+    try:
+        json_obj = to_list(json_obj)
+        if not all(isinstance(item, dict) for item in json_obj):
+            raise TypeError("All items in `json_obj` must be dictionaries.")
+
+        with open(Path(file_path), "w") as f:
+            for line in json_obj:
+                json.dump(line, f)
+                f.write("\n")
+    except TypeError as e:
+        log.error(f"Type error while writing JSONL file: {e}")
+        raise
+    except Exception as e:
+        log.error(f"Error writing JSONL file to '{file_path}': {e}")
+        raise
 
 
 def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None:
@@ -235,7 +268,9 @@ def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None
         raise
 
 
-def check_directories(paths: Union[Union[str, Path], List[Union[str, Path]]]) -> bool:
+def check_directories(
+    paths: Union[Union[str, Path], List[Union[str, Path]]]
+) -> bool:
     """
     Check if all given directories exist.
     """
@@ -247,7 +282,7 @@ def check_directories(paths: Union[Union[str, Path], List[Union[str, Path]]]) ->
         return False
 
 
-def find_named_parent(path: Path, target: str) -> Path | None:
+def find_named_parent(path: Path, target: str) -> Path:
     """
     Finds the nearest parent directory with the given name.
     """
@@ -262,7 +297,7 @@ def find_named_parent(path: Path, target: str) -> Path | None:
         return None
 
 
-def get_nested_attr(obj: object, attr_path: str) -> object:
+def get_nested_attr(obj: Type[B], attr_path: str) -> B:
     """
     Gets nested attribute.
     """
