@@ -4,9 +4,12 @@ Functions module.
 Contains useful functions specific to IRPD testing.
 """
 import logging
+from pathlib import Path
 from typing import List
 from pydantic import BaseModel
 
+from _types.request_output import RequestOut
+from _types.irpd_output import IRPDOutput
 from _types.stage_schemas import Category
 
 
@@ -60,3 +63,24 @@ def output_attrb(output: BaseModel) -> BaseModel:
     # Stage 3
     if hasattr(output, "category_ranking"):
         return output.category_ranking
+    
+
+def requestout_to_irpdout(
+    stage_name: str, subset: str, subset_path: Path, request_out: RequestOut
+) -> IRPDOutput:
+    prefix = f"{subset}_"
+    if stage_name in {"2", "3"}:
+        user_path = f"{prefix}{request_out.parsed.window_number}_user_prompt.txt"
+        response_path = f"{prefix}{request_out.parsed.window_number}_response.txt"
+    else:
+        user_path = f"{prefix}stg_{stage_name}_user_prompt.txt"
+        response_path = f"{prefix}stg_{stage_name}_response.txt"
+    system_path = f"{prefix}stg_{stage_name}_system_prompt.txt"
+    
+    return IRPDOutput(
+        request_out=request_out,
+        subset=subset,
+        response_path=subset_path / "responses" / response_path,
+        user_path=subset_path / "prompts" / user_path,
+        system_path=subset_path / "prompts" / system_path
+    )

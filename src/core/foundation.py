@@ -32,7 +32,7 @@ class FoundationalModel(ABC):
         self.total_replications = irpd_config.total_replications
         
         self.schemas = {
-            stage: dynamic_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
+            stage: dynamic_import("_types.stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
         self.subsets = {
@@ -72,13 +72,6 @@ class FoundationalModel(ABC):
             ]
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
-    
-    def _generate_meta_path(self, n: int, llm_str: str) -> Path:
-        """
-        Generates the path for 'test' meta. File exists for each subpath.
-        """
-        subpath = self._generate_subpath(n, llm_str)
-        return subpath / self.file_names["meta"]
     
     def _generate_llm_instance(self, llm_str: str) -> BaseLLM:
             """

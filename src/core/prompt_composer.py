@@ -8,8 +8,7 @@ from helpers.utils import file_to_string
 from core.functions import categories_to_txt, output_attrb
 from core.foundation import FoundationalModel
 from core.data import Data
-from _types.irpd_prompts import Prompts
-from _types.irpd_prompts import IRPDPrompts
+from _types.prompts import Prompts
 from _types.irpd_config import IRPDConfig
 from _types.test_output import TestOutput
 
@@ -34,6 +33,11 @@ class PromptComposer(FoundationalModel):
 
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
+        
+        self.expected_outputs = {
+            stage: self._expected_outputs(stage)
+            for stage in self.stages
+        }
     
     @staticmethod
     def _get_section(section_path, name):
@@ -211,16 +215,14 @@ class PromptComposer(FoundationalModel):
         
         return user_prompts
 
-    def expected_outputs(
-        self,
-        test_outputs: List[TestOutput],
-        stage_name: str
-    ):
+    def _expected_outputs(self, stage_name: str):
         """
         Checks the expected number of outputs via the count of user prompts for 
-        a stage, given TestOutput(s).
+        a stage.
         """
-        return len(self._construct_user_prompt(test_outputs, stage_name))
+        if stage_name in {"1", "1r", "1c"}:
+            return len(self.subsets[stage_name])
+        return len(self.data.ra_data.to_dict("records"))
     
     def get_prompts(self, test_outputs: List[TestOutput], stage_name: str):
         """

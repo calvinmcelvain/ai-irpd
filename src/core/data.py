@@ -20,7 +20,7 @@ class Data(FoundationalModel):
         
         self.ra_data = self._pre_filter()
     
-    def _pre_filter(self):
+    def _pre_filter(self) -> pd.DataFrame:
         """
         Pre-filters RA data for the IRPDConfig.
         """
@@ -42,7 +42,7 @@ class Data(FoundationalModel):
         
         return df
         
-    def filter_ra_data(self, subset: str):
+    def filter_ra_data(self, subset: str) -> pd.DataFrame:
         """
         Filter's the RA data for a given subset & drops unneeded columns.
         """
@@ -55,7 +55,7 @@ class Data(FoundationalModel):
         self,
         test_output: TestOutput,
         stage_name: str
-    ):
+    ) -> pd.DataFrame:
         """
         Adjusts data for requests/outputs that have already been made. Used
         for iterative stages (stage 0, 2, & 3).

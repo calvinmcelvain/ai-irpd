@@ -10,3 +10,4 @@ class StageOutput:
     stage_name: str
     stage_path: Path
     outputs: Dict[str, List[IRPDOutput]]
+    complete: bool = False

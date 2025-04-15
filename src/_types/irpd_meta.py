@@ -6,16 +6,16 @@ from _types.irpd_config import IRPDConfig
 
 
 class SubsetInfo(BaseModel):
-    created: str
-    input_tokens: int
-    output_tokens: int
-    total_tokens: int
+    created: str = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
 
 
 class StageInfo(BaseModel):
-    subsets: Dict[str, SubsetInfo]
-    batch_id: Optional[str]
-    batch_path: Optional[str]
+    subsets: Dict[str, SubsetInfo] = None
+    batch_id: Optional[str] = None
+    batch_path: Optional[str] = None
 
 
 class IRPDMeta(BaseModel):
