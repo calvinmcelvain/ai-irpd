@@ -29,6 +29,6 @@ class StageInfo(BaseModel):
 
 
 class IRPDMeta(BaseModel):
-    model_info: Optional[ModelInfo]
-    test_info: Optional[IRPDConfig]
-    stages: Optional[Dict[str, StageInfo]]
+    model_info: Optional[ModelInfo] = None
+    test_info: Optional[IRPDConfig] = None
+    stages: Optional[Dict[str, StageInfo]] = None
