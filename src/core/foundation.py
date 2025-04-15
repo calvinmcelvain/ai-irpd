@@ -2,8 +2,7 @@
 Contains the FoundationalModel
 """
 from abc import ABC
-from pydantic import BaseModel
-from typing import Dict, List
+from typing import List
 from pathlib import Path
 
 from helpers.utils import create_directory, lazy_import
@@ -32,20 +31,20 @@ class FoundationalModel(ABC):
         self.llm_config = irpd_config.llm_config
         self.total_replications = irpd_config.total_replications
         
-        self.schemas: Dict[str, BaseModel] = {
+        self.schemas = {
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
-        self.subsets: Dict[str, List[str]] = {
+        self.subsets = {
             stage: self._get_subsets(stage)
             for stage in self.stages
         }
-        self.llm_instances: Dict[str, BaseLLM] = {
+        self.llm_instances = {
             llm_str: self._generate_llm_instance(llm_str)
             for llm_str in self.llms
         }
         
-    def _generate_subpath(self, n: int, llm_str: str):
+    def _generate_subpath(self, n: int, llm_str: str) -> Path:
         """
         Generates a subpath for a given replication and LLM. 
         
@@ -59,7 +58,7 @@ class FoundationalModel(ABC):
         if not subpath.exists(): create_directory(subpath)
         return subpath
     
-    def _get_subsets(self, stage_name: str):
+    def _get_subsets(self, stage_name: str) -> List[str]:
         """
         Generates subsets for a given stage.
         """
@@ -73,14 +72,14 @@ class FoundationalModel(ABC):
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
     
-    def _generate_meta_path(self, n: int, llm_str: str):
+    def _generate_meta_path(self, n: int, llm_str: str) -> Path:
         """
         Generates the path for 'test' meta. File exists for each subpath.
         """
         subpath = self._generate_subpath(n, llm_str)
         return subpath / "_test_meta.json"
     
-    def _generate_llm_instance(self, llm_str: str):
+    def _generate_llm_instance(self, llm_str: str) -> BaseLLM:
             """
             Returns the LLM model instance from the /llms package.
             """
