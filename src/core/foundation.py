@@ -5,7 +5,7 @@ from abc import ABC
 from typing import List
 from pathlib import Path
 
-from helpers.utils import create_directory, dynamic_import
+from helpers.utils import create_directory, dynamic_import, load_config
 from core.functions import instance_types
 from core.llms.clients.base import BaseLLM
 from core.llms.llm_models import LLMModel
@@ -43,6 +43,7 @@ class FoundationalModel(ABC):
             llm_str: self._generate_llm_instance(llm_str)
             for llm_str in self.llms
         }
+        self.file_names = load_config("irpd.json")["output_file_names"]
         
     def _generate_subpath(self, n: int, llm_str: str) -> Path:
         """
@@ -77,7 +78,7 @@ class FoundationalModel(ABC):
         Generates the path for 'test' meta. File exists for each subpath.
         """
         subpath = self._generate_subpath(n, llm_str)
-        return subpath / "_test_meta.json"
+        return subpath / self.file_names["meta"]
     
     def _generate_llm_instance(self, llm_str: str) -> BaseLLM:
             """
