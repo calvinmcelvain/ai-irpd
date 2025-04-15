@@ -28,6 +28,7 @@ class FoundationalModel(ABC):
         self.treatment = irpd_config.treatment
         self.llm_config = irpd_config.llm_config
         self.total_replications = irpd_config.total_replications
+        
         self.schemas = {
             stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
@@ -35,6 +36,10 @@ class FoundationalModel(ABC):
         self.subsets = {
             stage: self._get_subsets(stage)
             for stage in self.stages
+        }
+        self.llm_instances = {
+            llm_str: self._generate_llm_instance(llm_str)
+            for llm_str in self.llms
         }
         
     def _generate_subpath(self, n: int, llm_str: str):
