@@ -13,7 +13,7 @@ import yaml
 import logging
 import configs
 import importlib.resources as pkg_resources
-from typing import List, Union
+from typing import List, Union, TypeVar, Type
 from pathlib import Path
 from dotenv import load_dotenv 
 from yaml import YAMLError
@@ -24,6 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 log = logging.getLogger(__name__)
 
+T = TypeVar("T", bound=BaseModel)
 
 
 def to_list(arg: Union[object, List[object]]):
@@ -137,7 +138,7 @@ def load_jsonl(file_path: Union[str, Path], dumps: bool = False) -> List[dict] |
     return json.dumps(json_data) if dumps else json_data
 
 
-def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
+def validate_json(json_data: dict, schema: Type[T]) -> T | None:
     """
     Returns the object from json schema validation.
     """
@@ -152,10 +153,7 @@ def validate_json(json_data: dict, schema: BaseModel) -> BaseModel | None:
         return None
 
 
-def load_json_n_validate(
-    file_path: Union[str, Path],
-    schema: BaseModel
-) -> BaseModel | None:
+def load_json_n_validate(file_path: Union[str, Path], schema: Type[T]) -> T | None:
     """
     Loads json file and validates for schema.
     """
@@ -163,7 +161,7 @@ def load_json_n_validate(
     return validate_json(json_data, schema)
 
 
-def validate_json_string(json_str: str, schema: BaseModel) -> BaseModel | None:
+def validate_json_string(json_str: str, schema: Type[T]) -> T | None:
     """
     Returns the object from json schema validation.
     """
