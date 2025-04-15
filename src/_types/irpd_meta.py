@@ -1,8 +1,3 @@
-"""
-IRPD meta  module.
-
-Contains IRPDMeta model (along with its composition objects).
-"""
 from pydantic import BaseModel
 from typing import Dict, Optional
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict
 from datetime import datetime
 
 
@@ -8,7 +9,7 @@ class MetaOut:
     input_tokens: int
     output_tokens: int
     model: str
-    configs: dict
+    configs: Dict
     total_tokens: int = None
     created: int = None
     

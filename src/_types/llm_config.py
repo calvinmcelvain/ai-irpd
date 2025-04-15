@@ -4,9 +4,6 @@ from typing import Optional
 
 
 class LLMConfig(BaseModel):
-    """
-    Generic LLM config.
-    """
     max_tokens: Optional[int]
     temperature: Optional[float]
     top_p: Optional[float]

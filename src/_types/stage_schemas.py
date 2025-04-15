@@ -1,6 +1,4 @@
 """
-Schemas module.
-
 Contains the Pydantic output schemas for all stages. Used for JSON structured 
 outputs of LLMs.
 """

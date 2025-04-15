@@ -1,8 +1,3 @@
-"""
-IRPD config module.
-
-Contains the IRPDConfig model & it's dataclass methods.
-"""
 from dataclasses import dataclass
 from typing import List, Optional
 from uuid import uuid4

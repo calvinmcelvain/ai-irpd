@@ -1,6 +1,3 @@
-"""
-Prompts Model.
-"""
 from pydantic import BaseModel
 
 

@@ -1,6 +1,3 @@
-"""
-Module for RequestOut and MetaOut models.
-"""
 import json
 from dataclasses import dataclass
 from pydantic import BaseModel
