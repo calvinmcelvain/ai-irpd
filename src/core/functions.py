@@ -7,12 +7,14 @@ import logging
 from typing import List
 from pydantic import BaseModel
 
+from _types.stage_schemas import Category
+
 
 log = logging.getLogger(__name__)
 
 
 
-def categories_to_txt(categories: BaseModel) -> str:
+def categories_to_txt(categories: List[Category]) -> str:
     """
     Function that takes categories, and outputs format for pdf/prompt.
     """
