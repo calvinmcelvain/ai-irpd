@@ -2,17 +2,19 @@
 Models for Batch outputs.
 """
 from typing import List
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 from _types.request_output import RequestOut
 
 
 
-class BatchResponse(BaseModel):
+@dataclass
+class BatchResponse:
     response_id: str
     response: RequestOut
 
 
-class BatchOut(BaseModel):
+@dataclass
+class BatchOut:
     batch_id: str
     responses: List[BatchResponse]
