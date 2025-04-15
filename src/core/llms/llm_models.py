@@ -9,7 +9,7 @@ from typing import Literal
 from dataclasses import dataclass, field
 from functools import cached_property
 
-from helpers.utils import lazy_import, get_env_var
+from helpers.utils import dynamic_import, get_env_var
 
 
 
@@ -20,7 +20,7 @@ class LLMModelClassContainer:
 
     @cached_property
     def impl(self):
-        model_class = lazy_import(self.module, self.model_class)
+        model_class = dynamic_import(self.module, self.model_class)
         return model_class
 
 

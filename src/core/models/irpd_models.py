@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from helpers.utils import lazy_import, to_list
+from helpers.utils import dynamic_import, to_list
 
 
 # Specifying the arguments for test models.
@@ -40,7 +40,7 @@ class TestClassContainer:
     
     @cached_property
     def impl(self):
-        return lazy_import(self.module, self.test_class)
+        return dynamic_import(self.module, self.test_class)
     
 
 class IRPDTestClass(TestClassContainer, Enum):

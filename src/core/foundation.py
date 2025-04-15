@@ -5,7 +5,7 @@ from abc import ABC
 from typing import List
 from pathlib import Path
 
-from helpers.utils import create_directory, lazy_import
+from helpers.utils import create_directory, dynamic_import
 from core.functions import instance_types
 from core.llms.clients.base import BaseLLM
 from core.llms.llm_models import LLMModel
@@ -32,7 +32,7 @@ class FoundationalModel(ABC):
         self.total_replications = irpd_config.total_replications
         
         self.schemas = {
-            stage: lazy_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
+            stage: dynamic_import("types.irpd_stage_schemas", f"Stage{stage}Schema")
             for stage in self.stages
         }
         self.subsets = {
