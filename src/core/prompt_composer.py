@@ -49,11 +49,11 @@ class PromptComposer(FoundationalModel):
             log.warning(f"{name} was empty.")
         return section + "\n"
     
-    def _task_overview(self):
+    def _task_overview(self, stage_name: str):
         """
         Returns the 'Task Overview' section of system prompt.
         """
-        section_path = self.sections_path / "task_overview" / f"stage_{self.stage_name}.md"
+        section_path = self.sections_path / "task_overview" / f"stage_{stage_name}.md"
         return self._get_section(section_path, "Task Overview")
 
     def _experimental_context(self):
@@ -70,22 +70,22 @@ class PromptComposer(FoundationalModel):
         section_path = self.sections_path / "summary_context" / f"{self.case}_{self.ra}.md"
         return self._get_section(section_path, "Summary Context")
     
-    def _task(self):
+    def _task(self, stage_name: str):
         """
         Returns the stasge task section(s) of the system prompt.
         
         Essentially just the instructions for the stage.
         """
-        section_path = self.sections_path / "task" / f"stage_{self.stage_name}.md"
+        section_path = self.sections_path / "task" / f"stage_{stage_name}.md"
         return self._get_section(section_path, "Task")
     
-    def _constraints(self):
+    def _constraints(self, stage_name: str):
         """
         Returns the 'Constraints' section of the system prompt.
         
         Apart of the stage specific instructions.
         """
-        section_path = self.sections_path / "constraints" / f"stage_{self.stage_name}.md"
+        section_path = self.sections_path / "constraints" / f"stage_{stage_name}.md"
         return self._get_section(section_path, "Constraints")
     
     @staticmethod
@@ -132,11 +132,11 @@ class PromptComposer(FoundationalModel):
         """
         Constructs the system prompt.
         """
-        a = self._task_overview()
+        a = self._task_overview(stage_name)
         b = self._experimental_context()
         c = self._summary_context()
-        d = self._task()
-        e = self._constraints()
+        d = self._task(stage_name)
+        e = self._constraints(stage_name)
         f = self._data_definitions(stage_name)
         
         prompt = a + b + c + d + e + f
