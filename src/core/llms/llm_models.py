@@ -5,11 +5,15 @@ Aggregates all LLM models. Structure strongly follows:
 https://github.com/TIGER-AI-Lab/MEGA-Bench/blob/main/megabench/models/model_type.py
 """
 from enum import Enum
-from typing import Literal
+from typing import Literal, Type, TypeVar
 from dataclasses import dataclass, field
 from functools import cached_property
 
 from helpers.utils import dynamic_import, get_env_var
+from core.llms.clients.base_llm import BaseLLM
+
+
+T = TypeVar("T", bound=BaseLLM)
 
 
 
@@ -19,8 +23,8 @@ class LLMModelClassContainer:
     model_class: str
 
     @cached_property
-    def impl(self):
-        model_class = dynamic_import(self.module, self.model_class)
+    def impl(self) -> Type[T]:
+        model_class: Type[T] = dynamic_import(self.module, self.model_class)
         return model_class
 
 
@@ -164,7 +168,7 @@ class LLMModel(LLMModelContainer, Enum):
         return model_class(
             api_key=get_env_var(self.api_key),
             model=self.model_name,
-            configs=config,
+            config=config,
             print_response=print_response,
             json_tool=self.other_args.json_tool,
             region=self.other_args.region,
