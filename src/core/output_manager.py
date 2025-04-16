@@ -249,7 +249,7 @@ class OutputManager(FoundationalModel):
 
         output_meta = irpd_output.request_out.meta
 
-        subset_meta.created = datetime.fromtimestamp(output_meta.created)
+        subset_meta.created = str(datetime.fromtimestamp(output_meta.created))
         subset_meta.input_tokens += output_meta.input_tokens
         subset_meta.output_tokens += output_meta.output_tokens
         subset_meta.total_tokens += output_meta.total_tokens
