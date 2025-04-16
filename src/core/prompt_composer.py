@@ -211,7 +211,7 @@ class PromptComposer(FoundationalModel):
         """
         if stage_name in {"1", "1r", "1c"}:
             return len(self.subsets[stage_name])
-        return len(self.data.ra_data.to_dict("records"))
+        return len(self.data.ra_data[:self.max_instances].to_dict("records"))
     
     def get_prompts(
         self, test_outputs: List[TestOutput], stage_name: str
