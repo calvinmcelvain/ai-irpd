@@ -42,7 +42,7 @@ class OutputWriter(FoundationalModel):
             prompt_paths = [output.user_path, output.system_path]
             prompt_writes = [prompts.user, prompts.system]
             write_file(prompt_paths, prompt_writes)
-            write_json(output.response_path, request_out.parsed)
+            write_json(output.response_path, request_out.parsed.model_dump())
         
         if stage_output.complete: Builder(test_output).build(stage_name)
         
