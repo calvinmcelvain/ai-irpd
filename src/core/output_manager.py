@@ -50,12 +50,11 @@ class OutputManager(FoundationalModel):
         Note: Outputs stored by the LLM string.
         """
         log.debug("Initializing TestOutput objects.")
-        outputs = {}
+        outputs = []
         for llm_str, llm_instance in self.llm_instances.items():
-            outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
                 sub_path = self._generate_subpath(n, llm_str)
-                outputs[llm_str].append(TestOutput(
+                outputs.append(TestOutput(
                     sub_path=sub_path,
                     meta_path=sub_path / self.file_names["meta"],
                     replication=n,
