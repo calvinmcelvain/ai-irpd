@@ -19,19 +19,12 @@
             "level": "INFO",
             "formatter": "detailed",
             "encoding": "utf-8"
-        },
-        "debug_file": {
-            "class": "logging.FileHandler",
-            "filename": "../logs/debug.log",
-            "level": "DEBUG",
-            "formatter": "detailed",
-            "encoding": "utf-8"
         }
     },
     "loggers": {
         "app": {
             "level": "DEBUG",
-            "handlers": ["console", "app_file", "debug_file"],
+            "handlers": ["console", "app_file"],
             "propagate": false
         }
     },
