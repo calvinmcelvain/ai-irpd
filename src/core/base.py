@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
-    configs: Dict[str, IRPDConfig]
-    outputs: Dict[str, OutputManager]
+    configs: Dict[str, IRPDConfig] = {}
+    outputs: Dict[str, OutputManager] = {}
     
     def __init__(
         self, 
