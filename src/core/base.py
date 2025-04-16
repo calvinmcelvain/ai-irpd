@@ -31,6 +31,8 @@ class IRPDBase(ABC):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int,
+        context_before: int = 5,
+        context_after: int = 5,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -48,6 +50,10 @@ class IRPDBase(ABC):
         self.llm_configs = to_list(llm_configs)
         self.test_paths = to_list(test_paths or [])
         self.batch_request = batch
+        
+        assert context_after >=1 and context_before >=1, "Context must be greater than 1."
+        self.context_before = context_before
+        self.context_after = context_after
         
         if max_instances:
             assert max_instances >= 1, "`max_instances` must be greater than 0."
