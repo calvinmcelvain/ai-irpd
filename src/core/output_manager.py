@@ -49,7 +49,7 @@ class OutputManager(FoundationalModel):
         
         Note: Outputs stored by the LLM string.
         """
-        log.info("Initializing TestOutput objects.")
+        log.debug("Initializing TestOutput objects.")
         outputs = []
         for llm_str, llm_instance in self.llm_instances.items():
             for n in range(1, self.total_replications + 1):
@@ -72,7 +72,7 @@ class OutputManager(FoundationalModel):
                         for stage in self.stages
                     }
                 ))
-        log.info("TestOutput objects initialized successfully.")
+        log.debug("TestOutput objects initialized successfully.")
         return outputs
     
     def _check_test_directory(self) -> None:
