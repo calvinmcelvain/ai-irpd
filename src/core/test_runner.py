@@ -41,14 +41,12 @@ class TestRunner(FoundationalModel):
         test_outputs: List[TestOutput],
         llm_instance: BaseLLM
     ):
-        """
-        Runs the batch request for a given stage and LLM.
-        
-        One batch is the requests for the stage for every replication.
-        """
         # Structured output schema.
         schema = self.schemas[stage_name]
         llm_str = test_outputs[0].llm_str
+        
+        log.info(
+            f"Starting batch run for stage '{stage_name}' with LLM '{llm_str}'.")
         
         # Getting prompts.
         agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
@@ -61,8 +59,14 @@ class TestRunner(FoundationalModel):
         
         # Requesting batch if the batch hasn't been requested yet.
         if not batch_file_path.exists():
+            log.info(
+                f"Batch file '{batch_file_path}' does not exist. Requesting"
+                " batch."
+            )
+            
             # Requesting batch.
-            batch_id = llm_instance.request_batch(agg_prompts, schema, batch_file_path)
+            batch_id = llm_instance.request_batch(
+                agg_prompts, schema, batch_file_path)
             
             with tqdm(total=1, desc="Requesting batch", unit="batch") as progress_bar:
                 progress_bar.set_postfix({
@@ -75,6 +79,9 @@ class TestRunner(FoundationalModel):
                 })
                 progress_bar.update(1)
             
+            log.info(
+                f"Batch requested with ID '{batch_id}' for stage '{stage_name}'.")
+            
             # Storing batch ID in meta
             test_outputs[0].meta.stages[stage_name].batch_id = batch_id
             test_outputs[0].meta.stages[stage_name].batch_id = batches_path
@@ -82,14 +89,22 @@ class TestRunner(FoundationalModel):
         
         # Retrieving batch
         retries = 0
+        log.info(
+            f"Retrieving batch for stage '{stage_name}' with a maximum of"
+            " 6 retries."
+        )
         with tqdm(total=6, desc="Retrieving batch", unit="retry") as progress_bar:
             while retries < 6:
                 batch_out = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
                 
                 if isinstance(batch_out, BatchOut):
+                    log.info(
+                        f"Batch successfully retrieved for stage '{stage_name}'.")
+                    
                     self.output_manger.store_batch(llm_str, stage_name, batch_out)
                     return True
                 elif batch_out == "failed":
+                    log.error(f"Batch retrieval failed for stage '{stage_name}'.")
                     break
                 
                 # If batch not ready, wait 10 seconds + 10 seconds for every retry 
@@ -111,20 +126,22 @@ class TestRunner(FoundationalModel):
         test_outputs: List[TestOutput],
         llm_instance: BaseLLM
     ):
-        """
-        Requests a chat completion for each StageOutput object for a given stage.
-        
-        Includes all StageOutputs across all replications.
-        """
         # Structured output schema.
         schema = self.schemas[stage_name]
         llm_str = test_outputs[0].llm_str
+        
+        log.info(
+            f"Starting completions for stage '{stage_name}' with LLM {llm_str}")
         
         # Getting prompts.
         agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
         
         # Requests made for each prompt (accounts for iterative stages).
-        with tqdm(agg_prompts, desc=f"Processing completions for {stage_name}", unit="prompt") as progress_bar:
+        with tqdm(
+            agg_prompts,
+            desc=f"Processing completions for {stage_name}",
+            unit="prompt"
+        ) as progress_bar:
             for idx, (prompt_id, prompt) in enumerate(progress_bar, start=1):
                 id_list = prompt_id.split("-")
                 n = int(id_list[0])
@@ -147,14 +164,14 @@ class TestRunner(FoundationalModel):
                     stage_name, subset, subset_path, output)
                 
                 self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
+        log.info(f"All completions processed for stage '{stage_name}'.")
         return True
     
     def run(self):
-        """
-        Runs each stage of a IRPDConfig.
-        """
+        log.info("Starting TestRunner execution.")
         # Should probably make this an async method.
         for llm_str, llm_instance in self.llm_instances.items():
+            log.info(f"Processing LLM '{llm_str}'.")
             # Getting all TestOutputs for a given LLM.
             test_outputs = self.output_manger.retrieve(llm_str)
             
@@ -162,6 +179,7 @@ class TestRunner(FoundationalModel):
             if all(m.complete for m in test_outputs): continue
             
             for stage_name in self.stages:
+                log.info(f"Processing stage '{stage_name}' for LLM '{llm_str}'.")
                 # Skipping if all outputs complete.
                 if all(m.stage_outputs[stage_name] for m in test_outputs): continue
                 
@@ -180,5 +198,11 @@ class TestRunner(FoundationalModel):
                     )
                 
                 # Breaks if batches couldn't be retrieved in 6 trys.
-                if not complete: break
+                if not complete:
+                    log.error(
+                        f"Stage '{stage_name}' could not be completed for LLM"
+                        f" '{llm_str}'. Aborting."
+                    )
+                    break
+        log.info("TestRunner execution completed.")
         return self.output_manger.outputs
