@@ -6,6 +6,7 @@ Contains the functional OutputManager model.
 import logging
 from pathlib import Path
 from datetime import datetime
+from dataclasses import asdict
 from typing import List, Union, Optional, overload
 
 from helpers.utils import check_directories, load_json_n_validate
@@ -61,7 +62,8 @@ class OutputManager(FoundationalModel):
                     llm_str=llm_str,
                     meta=IRPDMeta(
                         model=llm_instance.model,
-                        configs=llm_instance.configs
+                        configs=llm_instance.configs,
+                        test_info=asdict(self.irpd_config)
                     ),
                     stage_outputs={
                         stage: StageOutput(

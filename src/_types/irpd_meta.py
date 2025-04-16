@@ -13,7 +13,7 @@ class SubsetInfo(BaseModel):
 
 
 class StageInfo(BaseModel):
-    subsets: Dict[str, SubsetInfo] = None
+    subsets: Dict[str, SubsetInfo] = {}
     batch_id: Optional[str] = None
     batch_path: Optional[str] = None
 
@@ -21,5 +21,5 @@ class StageInfo(BaseModel):
 class IRPDMeta(BaseModel):
     model: Optional[str]
     configs: Optional[Dict]
-    test_info: IRPDConfig = None
-    stages: Dict[str, StageInfo] = None
+    test_info: IRPDConfig
+    stages: Dict[str, StageInfo] = {}

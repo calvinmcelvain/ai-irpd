@@ -54,7 +54,7 @@ class OutputWriter(FoundationalModel):
         Writes the meta for given TestOutput object.
         """
         meta_path = test_output.meta_path
-        meta = test_output.meta
+        meta = test_output.meta.model_dump()
         
         write_json(meta_path, meta)
         
