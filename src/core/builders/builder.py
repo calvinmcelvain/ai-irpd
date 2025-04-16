@@ -17,7 +17,7 @@ class Builder:
 
         
     def build(self, stage_name: str) -> None:
-        if stage_name in {"1", "2r", "1c"}:
+        if stage_name in {"1", "1r", "1c"}:
             builder.PDF(self.test_output).build(stage_name)
         else:
             builder.CSV(self.test_output).build(stage_name)
