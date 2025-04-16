@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 
@@ -18,6 +18,7 @@ class IRPDConfig:
     stages: List[str]
     batches: bool
     total_replications: int
+    context: Optional[Tuple[int, int]]
     max_instances: Optional[int]
     cases: List[str] = None
     id: str = uuid4().hex

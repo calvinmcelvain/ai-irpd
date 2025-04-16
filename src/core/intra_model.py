@@ -5,7 +5,7 @@ Contains the IntraModel model.
 """
 import logging
 from itertools import product
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 from pathlib import Path
 
 from core.base import IRPDBase
@@ -24,6 +24,7 @@ class IntraModel(IRPDBase):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int,
+        context: Optional[Tuple[int, int]] = None,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -39,6 +40,7 @@ class IntraModel(IRPDBase):
             treatments,
             stages,
             N,
+            context,
             llms,
             llm_configs,
             max_instances,

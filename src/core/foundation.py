@@ -19,6 +19,7 @@ class FoundationalModel(ABC):
         self.irpd_config = irpd_config
         self.stages = irpd_config.stages
         self.cases = irpd_config.cases
+        self.context = irpd_config.context
         self.batches = irpd_config.batches
         self.test_path = Path(irpd_config.test_path)
         self.data_path = Path(irpd_config.data_path)

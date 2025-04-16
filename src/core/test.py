@@ -5,7 +5,7 @@ Contains the Test model.
 """
 import logging
 from itertools import product
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 from pathlib import Path
 
 from helpers.utils import to_list
@@ -25,8 +25,7 @@ class Test(IRPDBase):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int = 1,
-        context_before: int = 5,
-        context_after: int = 5,
+        context: Optional[Tuple[int, int]] = None,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -42,8 +41,7 @@ class Test(IRPDBase):
             treatments,
             stages,
             N,
-            context_before,
-            context_after,
+            context,
             llms,
             llm_configs,
             max_instances,

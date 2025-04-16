@@ -6,7 +6,7 @@ methods.
 """
 import re
 import logging
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -31,8 +31,7 @@ class IRPDBase(ABC):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int,
-        context_before: int = 5,
-        context_after: int = 5,
+        context: Optional[Tuple[int, int]] = None,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -51,9 +50,16 @@ class IRPDBase(ABC):
         self.test_paths = to_list(test_paths or [])
         self.batch_request = batch
         
-        assert context_after >=1 and context_before >=1, "Context must be greater than 1."
-        self.context_before = context_before
-        self.context_after = context_after
+        if context:
+            assert context[0] >=1 and context[1] >=1, "`context` values must be greater than 0."
+            if "0" not in stages:
+                log.warning("Stage 0 not in `stages`, `context` is null.")
+            else: 
+                self.context = context
+        else:
+            if "0" in stages:
+                log.warning(f"`context` defaulted to (5, 5).")
+                self.context = (5, 5)
         
         if max_instances:
             assert max_instances >= 1, "`max_instances` must be greater than 0."

@@ -4,7 +4,7 @@ The sample splitting test module.
 Contains the SampleSplitting model.
 """
 import logging
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 from pathlib import Path
 
 from core.base import IRPDBase
@@ -23,8 +23,7 @@ class SampleSplitting(IRPDBase):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int,
-        context_before: int = 5,
-        context_after: int = 5,
+        context: Optional[Tuple[int, int]] = None,
         llms: Optional[Union[List[str], str]] = None,
         llm_configs: Optional[Union[List[str], str]] = None,
         max_instances: Optional[int] = None,
@@ -40,8 +39,7 @@ class SampleSplitting(IRPDBase):
             treatments,
             stages,
             N,
-            context_before,
-            context_after,
+            context,
             llms,
             llm_configs,
             max_instances,

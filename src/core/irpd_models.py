@@ -6,7 +6,7 @@ and SampleSplitting.
 """
 import logging
 from pathlib import Path
-from typing import List, Union, Literal, Optional
+from typing import List, Union, Literal, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -17,9 +17,9 @@ from helpers.utils import dynamic_import, to_list
 # Specifying the arguments for test models.
 # Also makes it easier when creating an instance w/ autofill.
 CASES = Literal["uni", "switch", "uniresp", "first", "uni_switch"]
-RAS = Literal["ra1", "ra2", "both"]
+RAS = Literal["ra1", "ra2", "both", "exp"]
 TREATMENTS = Literal["imperfect", "perfect", "merged"]
-STAGES = Literal["1", "1r", "1c", "2", "3"]
+STAGES = Literal["0", "1", "1r", "1c", "2", "3"]
 LLMS = Literal[
     "GPT_4O_0806", "GPT_4O_1120", "GPT_4O_MINI_0718", "GPT_O1_1217",
     "GPT_O1_MINI_0912", "GPT_O3_MINI_0131", "GROK_2_1212", 
@@ -57,6 +57,7 @@ class IRPDTestClass(TestClassContainer, Enum):
         treatments: Union[List[TREATMENTS], TREATMENTS],
         stages: Union[List[STAGES], STAGES],
         N: int = 1,
+        context: Optional[Tuple[int, int]] = None,
         llms: Union[List[LLMS], LLMS] = "GPT_4O_1120",
         llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = "base",
         max_instances: Optional[int] = None,
@@ -85,6 +86,11 @@ class IRPDTestClass(TestClassContainer, Enum):
             
             N (int, optional): The number of replications. Only used if test
             type is IntraModel or CrossModel. Defaults to 1.
+            
+            context (Tuple[int, int], optional): The number of stagegames before 
+            (the first value) and after (the second value) for each instance to 
+            use as context for Stage 0. Defaults to [5, 5] if Stage 0, else 
+            defaults to None.
             
             llms (Union[List[LLMS], LLMS], optional): The LLM models to be used
             in tests. Defaults to `GPT_4O_1120`.
@@ -122,6 +128,7 @@ class IRPDTestClass(TestClassContainer, Enum):
             treatments=treatments,
             stages=stages,
             N=N,
+            context=context,
             llms=llms,
             llm_configs=llm_configs,
             max_instances=max_instances,
