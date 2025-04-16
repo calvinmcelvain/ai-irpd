@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 from typing import List
 
-from core.builders.base import BaseBuilder
+from core.builders.base_builder import BaseBuilder
 
 
 log = logging.getLogger(__name__)

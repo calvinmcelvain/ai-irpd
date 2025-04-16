@@ -4,7 +4,7 @@ Contains the PDF model
 import logging
 
 from helpers.utils import txt_to_pdf
-from core.builders.base import BaseBuilder
+from core.builders.base_builder import BaseBuilder
 from core.functions import categories_to_txt
 
 
