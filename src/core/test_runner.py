@@ -180,8 +180,9 @@ class TestRunner(FoundationalModel):
             
             for stage_name in self.stages:
                 log.info(f"Processing stage '{stage_name}' for LLM '{llm_str}'.")
+                
                 # Skipping if all outputs complete.
-                if all(m.stage_outputs[stage_name] for m in test_outputs): continue
+                if all(m.stage_outputs[stage_name].complete for m in test_outputs): continue
                 
                 # Some LLMs don't support batches.
                 if self.batches and llm_instance.batches:
