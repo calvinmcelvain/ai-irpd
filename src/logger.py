@@ -23,7 +23,7 @@ class LoggerManager:
     def __init__(
         self,
         config_file: str = "logger.json",
-        debug_file: bool = False
+        debug_file: bool = True
     ):
         self.logs_path = Path("src").resolve().parents[1] / "logs"
         self.logs_path.mkdir(exist_ok=True)
