@@ -65,15 +65,16 @@ class TestRunner(FoundationalModel):
             # Requesting batch.
             batch_id = llm_instance.request_batch(agg_prompts, schema, batch_file_path)
             
-            log.info(
-                f"\n Requesting batch for:"
-                f"\n\t config: {self.irpd_config.id}"
-                f"\n\t case: {self.case}"
-                f"\n\t llm: {llm_str}"
-                f"\n\t stage: {stage_name}"
-                f"\n\t replications: {self.total_replications}"
-                f"\n\t batch_id: {batch_id}"
-            )
+            with tqdm(total=1, desc="Requesting batch", unit="batch") as progress_bar:
+                progress_bar.set_postfix({
+                    "config": self.irpd_config.id,
+                    "case": self.case,
+                    "llm": llm_str,
+                    "stage": stage_name,
+                    "replications": self.total_replications,
+                    "batch_id": batch_id
+                })
+                progress_bar.update(1)
             
             # Storing batch ID in meta
             test_outputs[0].meta.stages[stage_name].batch_id = batch_id
@@ -82,25 +83,27 @@ class TestRunner(FoundationalModel):
         
         # Retrieving batch
         retries = 0
-        while retries < 6:
-            batch_out = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
-            
-            if isinstance(batch_out, BatchOut):
-                self.output_manger.store_batch(llm_str, stage_name, batch_out)
-                return True
-            elif batch_out == "failed":
-                break
-            
-            # If batch not ready, wait 10 seconds + 10 seconds for every retry 
-            # after the first.
-            retries += 1
-            if retries < 6:
-                time_to_wait = 10 + (retries - 1) * 10
-                log.info(f"Waiting {time_to_wait} seconds.")
-                sleep(time_to_wait)
-            else:
-                log.warning(f"Retries exhausted.")
-                break
+        with tqdm(total=6, desc="Retrieving batch", unit="retry") as progress_bar:
+            while retries < 6:
+                batch_out = llm_instance.retreive_batch(batch_id, schema, batch_file_path)
+                
+                if isinstance(batch_out, BatchOut):
+                    self.output_manger.store_batch(llm_str, stage_name, batch_out)
+                    return True
+                elif batch_out == "failed":
+                    break
+                
+                # If batch not ready, wait 10 seconds + 10 seconds for every retry 
+                # after the first.
+                retries += 1
+                progress_bar.update(1)
+                if retries < 6:
+                    time_to_wait = 10 + (retries - 1) * 10
+                    progress_bar.set_postfix({"waiting_time": f"{time_to_wait} seconds"})
+                    sleep(time_to_wait)
+                else:
+                    progress_bar.set_postfix({"status": "Retries exhausted"})
+                    break
         return False
     
     def _run_completions(
