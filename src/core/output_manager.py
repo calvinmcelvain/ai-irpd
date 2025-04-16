@@ -49,12 +49,13 @@ class OutputManager(FoundationalModel):
         
         Note: Outputs stored by the LLM string.
         """
+        log.debug("Initializing TestOutput objects.")
         outputs = {}
-        for llm_str in self.llms:
-            llm_instance = self.llm_instances[llm_str]
+        for llm_str, llm_instance in self.llm_instances.items():
+            outputs[llm_str] = []
             for n in range(1, self.total_replications + 1):
                 sub_path = self._generate_subpath(n, llm_str)
-                outputs[llm_str] = [TestOutput(
+                outputs[llm_str].append(TestOutput(
                     sub_path=sub_path,
                     meta_path=sub_path / self.file_names["meta"],
                     replication=n,
@@ -71,7 +72,8 @@ class OutputManager(FoundationalModel):
                         )
                         for stage in self.stages
                     }
-                )]
+                ))
+        log.debug("TestOutput objects initialized successfully.")
         return outputs
     
     def _check_test_directory(self) -> None:
@@ -80,10 +82,15 @@ class OutputManager(FoundationalModel):
         
         Note: This method is run before `_check_batch` method.
         """
+        log.info("Checking test directories for existing outputs.")
         for test_output in self.outputs:
             for stage_output in test_output.stage_outputs.values():
-                # Skip if stage directory doesn't exist
-                if not stage_output.stage_path.exists(): continue
+                if not stage_output.stage_path.exists():
+                    log.debug(
+                        f"Stage path {stage_output.stage_path} does not exist."
+                        " Skipping."
+                    )
+                    continue
                 
                 stage_name = stage_output.stage_name
                 
@@ -92,11 +99,13 @@ class OutputManager(FoundationalModel):
                     responses_path = subset_path / "responses"
                     prompts_path = subset_path / "prompts"
                     
-                    # Skip if prompts & responses directories don't exist
                     if not check_directories([responses_path, prompts_path]):
+                        log.debug(
+                            f"Required directories for subset {subset} are"
+                            " missing. Skipping."
+                        )
                         continue
                     
-                    # Load and extend outputs for the subset
                     outputs.extend(
                         requestout_to_irpdout(
                             stage_name,
@@ -110,26 +119,44 @@ class OutputManager(FoundationalModel):
                         for path in responses_path.iterdir()
                     )
                 self.check_output_completion(stage_output)
-        
+        log.info("Test directory check completed.")
         return None
     
     def _check_batch(self) -> None:
         """
         Checks the Batch status if outputs don't exist in directory.
         """
+        log.info("Checking batch status for outputs.")
         for llm_str, llm_instance in self.llm_instances.items():
             test_outputs = self.retrieve(llm_str)
             if all(self.check_output_completion(test) for test in test_outputs):
+                log.debug(
+                    f"All outputs for LLM {llm_str} are complete. Skipping"
+                    " batch check."
+                )
                 continue
             
-            if not test_outputs[0].meta_path.exists(): continue
+            if not test_outputs[0].meta_path.exists():
+                log.debug(
+                    f"Meta path {test_outputs[0].meta_path} does not exist."
+                    " Skipping."
+                )
+                continue
 
             for stage_name in self.stages:
                 stage_meta = test_outputs[0].meta.stages.get(stage_name)
-                if not stage_meta: break
+                if not stage_meta:
+                    log.debug(
+                        f"No metadata found for stage {stage_name}. Breaking.")
+                    break
 
                 batch_id, batch_path = stage_meta.batch_id, stage_meta.batch_path
-                if not (batch_id and batch_path): break
+                if not (batch_id and batch_path):
+                    log.debug(
+                        f"Batch ID or path missing for stage {stage_name}."
+                        " Breaking."
+                    )
+                    break
 
                 batch_out = llm_instance.retreive_batch(
                     batch_id, self.schemas[stage_name], Path(batch_path)
@@ -140,6 +167,7 @@ class OutputManager(FoundationalModel):
                     break
 
                 log.info(f"Batch - {batch_id}, is {batch_out}.")
+        log.info("Batch check completed.")
         return None 
     
     def check_output_completion(
@@ -152,10 +180,14 @@ class OutputManager(FoundationalModel):
         if isinstance(output, StageOutput):
             stage_name = output.stage_name
             expected_outputs = self.prompt_composer.expected_outputs[stage_name]
-            total_outputs = len(output.outputs.values())
+            total_outputs = sum(
+                len(subset_outputs) for subset_outputs in output.outputs.values())
             output.complete = total_outputs == expected_outputs
+            log.debug(f"Stage {stage_name} completion status: {output.complete}.")
             return output.complete
-        output.complete = all(stage.complete for stage in output.stage_outputs.values())
+        output.complete = all(
+            stage.complete for stage in output.stage_outputs.values())
+        log.debug(f"TestOutput completion status: {output.complete}.")
         return output.complete
 
     @overload
@@ -194,9 +226,11 @@ class OutputManager(FoundationalModel):
         """
         outputs = self.outputs
         if llm_str:
-            outputs = list(filter(lambda output: output.llm_str == llm_str, outputs))
+            outputs = list(
+                filter(lambda output: output.llm_str == llm_str, outputs))
             if n is not None:
-                outputs = list(filter(lambda output: output.replication == n, outputs))[0]
+                outputs = list(
+                    filter(lambda output: output.replication == n, outputs))[0]
                 if stage_name:
                     outputs = outputs.stage_outputs[stage_name]
         return outputs
@@ -207,8 +241,10 @@ class OutputManager(FoundationalModel):
         """
         Updates test meta given an output
         """
-        stage_meta = test_output.meta.stages.setdefault(stage_name, StageInfo(subsets={}))
-        subset_meta = stage_meta.subsets.setdefault(irpd_output.subset, SubsetInfo())
+        stage_meta = test_output.meta.stages.setdefault(
+            stage_name, StageInfo(subsets={}))
+        subset_meta = stage_meta.subsets.setdefault(
+            irpd_output.subset, SubsetInfo())
 
         output_meta = irpd_output.request_out.meta
 
@@ -251,11 +287,12 @@ class OutputManager(FoundationalModel):
         """
         Stores a batch request.
         """
+        log.info(f"Storing batch outputs for LLM {llm_str}, stage {stage_name}.")
         outputs = batch_out.responses
         test_outputs = self.retrieve(llm_str)
         
         for test_output in test_outputs:
-            n  = test_output.replication
+            n = test_output.replication
             stage_output = test_output.stage_outputs[stage_name]
             
             for subset, irpd_output in stage_output.outputs.items():
@@ -271,7 +308,9 @@ class OutputManager(FoundationalModel):
                     if output.response_id.startswith(f"{n}-{subset}")
                 ])
             self.check_output_completion(stage_output)
-            
             self.output_writer.write_output(test_output, stage_name)
-            
+        log.info(
+            f"Batch outputs stored successfully for LLM {llm_str},"
+            f" stage {stage_name}."
+        )
         return None
