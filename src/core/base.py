@@ -148,6 +148,7 @@ class IRPDBase(ABC):
             config_ids (Union[str, List[str]], optional): If specified, will 
             only run the config ids defined. Otherwise runs all test configs. 
             Defaults to None.
+            
             print_response (bool, optional): If True, prints the LLM request for
             each chat completion request. If batch, this arg. is null. Defaults 
             to False.
