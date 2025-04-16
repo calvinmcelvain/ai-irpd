@@ -225,6 +225,7 @@ def write_file(
     )
     for idx, path in enumerate(file_paths):
         path = Path(path)
+        path.parent.mkdir(exist_ok=True, parents=True)
         try:
             path.write_text(file_writes[idx])
         except Exception as e:
