@@ -14,6 +14,7 @@ from helpers.utils import get_env_var, to_list
 from logger import LoggerManager
 from _types.irpd_config import IRPDConfig
 from core.test_runner import TestRunner
+from core.output_manager import OutputManager
 
 
 log = logging.getLogger(__name__)
@@ -21,6 +22,9 @@ log = logging.getLogger(__name__)
 
 
 class IRPDBase(ABC):
+    configs: Dict[str, IRPDConfig]
+    outputs: Dict[str, OutputManager]
+    
     def __init__(
         self, 
         cases: Union[List[str], str],
@@ -57,12 +61,8 @@ class IRPDBase(ABC):
         self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = Path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = Path(data_path or get_env_var("DATA_PATH"))
-        
-        # Initializing configs and outputs attrbs.
-        self.configs = {}
-        self.outputs = {}
     
-    def _validate_test_paths(self):
+    def _validate_test_paths(self) -> List[Path]:
         """
         Ensures all test paths are Path objects and ensures that the number of
         test paths specified are the same length as the calculated number of
@@ -79,7 +79,7 @@ class IRPDBase(ABC):
         return test_paths
 
     @staticmethod
-    def _get_max_test_number(directory: Path, prefix: str = "test_"):
+    def _get_max_test_number(directory: Path, prefix: str = "test_") -> int:
         """
         Gets the maximum test number for a given test directory.
         """
@@ -90,7 +90,9 @@ class IRPDBase(ABC):
         )
         return max(map(int, matches), default=0)
     
-    def _get_test_configs(self, config_ids: Union[str, List[str]]):
+    def _get_test_configs(
+        self, config_ids: Union[str, List[str]]
+    ) -> Dict[str, IRPDConfig]:
         """
         Returns dictionary of IRPD configs based on a list of config ids. 
         Otherwise returns configs attrb.
@@ -101,7 +103,7 @@ class IRPDBase(ABC):
         else:
             return self.configs
 
-    def add_configs(self, configs: Union[IRPDConfig, List[IRPDConfig]]):
+    def add_configs(self, configs: Union[IRPDConfig, List[IRPDConfig]]) -> None:
         """
         Method to add IRPD configs to configs attrb.
         """
@@ -122,14 +124,14 @@ class IRPDBase(ABC):
             self.configs[config.id] = config
 
     @abstractmethod
-    def _generate_test_paths(self):
+    def _generate_test_paths(self) -> None:
         """
         Generates test paths for each IRPD config. Different for each test type.
         """
         pass
     
     @abstractmethod
-    def _generate_configs(self):
+    def _generate_configs(self) -> None:
         """
         Generates the IRPD configs based on instance args. Difference for each
         test type.
@@ -140,7 +142,7 @@ class IRPDBase(ABC):
         self,
         config_ids: Union[str, List[str]] = None,
         print_response: bool = False
-    ):
+    ) -> None:
         """
         Runs IRPD based on the defined test configs.
 
@@ -156,7 +158,7 @@ class IRPDBase(ABC):
         log_manager = LoggerManager()
         log_manager.clear_logs()
         
-        irpd_configs: Dict[str, IRPDConfig] = self._get_test_configs(config_ids=config_ids)
+        irpd_configs = self._get_test_configs(config_ids=config_ids)
         
         for config_id, config in irpd_configs.items():
             test_runner = TestRunner(config, print_response)
