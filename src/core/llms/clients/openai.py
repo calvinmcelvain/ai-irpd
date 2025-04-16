@@ -63,8 +63,8 @@ class OpenAIClient(BaseLLM):
         request_load = {"model": self.model}
         request_load.update(self.configs)
         request_load.update(self._prep_messages(user, system))
-        request_load.update(self._json_tool_call(schema)) if self.json_tool else {}
-        request_load.update({"response_format": schema}) if schema else {}
+        request_load.update(self._json_tool_call(schema) if self.json_tool else {})
+        request_load.update({"response_format": schema} if schema else {})
         return request_load
         
     def _format_batch(
