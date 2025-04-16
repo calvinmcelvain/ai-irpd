@@ -8,7 +8,7 @@ from itertools import product
 from typing import Optional, List, Union
 from pathlib import Path
 
-from core.models.base import IRPDBase
+from core.base import IRPDBase
 from _types.irpd_config import IRPDConfig
 
 
