@@ -2,6 +2,7 @@
 Contains the Data model.
 """
 import pandas as pd
+from typing import List, Dict
 
 from core.foundation import FoundationalModel
 from _types.irpd_config import IRPDConfig
@@ -18,9 +19,10 @@ class Data(FoundationalModel):
     def __init__(self, irpd_config: IRPDConfig):
         super().__init__(irpd_config)
         
-        self.ra_data = self._pre_filter()
+        self.ra_data = self._pre_filter_ra()
+        self.raw_data = self._pre_filter_raw()
     
-    def _pre_filter(self) -> pd.DataFrame:
+    def _pre_filter_ra(self) -> pd.DataFrame:
         """
         Pre-filters RA data for the IRPDConfig.
         """
@@ -41,6 +43,88 @@ class Data(FoundationalModel):
             df = df.drop(columns=ra_cols_to_drop, errors="ignore")
         
         return df
+    
+    def _pre_filter_raw(self) -> pd.DataFrame:
+        """
+        Pre-filters Raw data for IRPDConfig.
+        """
+        # importing raw data.
+        df = pd.read_csv(self.data_path / "exp.csv", index_col=0)
+        
+        # Filter for treatment.
+        df = df[(
+            (self.treatment == "merged") | (df["treatment"] == self.treatment)
+        )]
+        
+        return df
+    
+    def get_list_of_raw_instances(self) -> List[List[Dict]]:
+        """
+        Returns a list of instances, given the context.
+        """
+        df = self.raw_data
+        
+        # Getting all windows.
+        window_numbers = df.loc[
+            df["case"].isin(self.cases), "window_number"].dropna().tolist()
+        
+        raw_instances = []
+        for window_number in window_numbers:
+            start_idx = df[df["window_number"] == window_number].index[0]
+            ref_team = df.loc[start_idx, 'team']
+            
+            # Get the starting point's super_game and stage_game.
+            stage_forward = 0
+            end_idx = start_idx
+            prev_super = df.loc[start_idx, 'super_game']
+            prev_stage = df.loc[start_idx, 'stage_game']
+
+            # Getting context forward.
+            while stage_forward < self.context[1] and end_idx < len(df) - 1:
+                end_idx += 1
+                row = df.loc[end_idx]
+                if row['team'] != ref_team:
+                    end_idx -= 1
+                    break
+
+                curr_super = row['super_game']
+                curr_stage = row['stage_game']
+
+                if (curr_super != prev_super) or (curr_stage != prev_stage):
+                    stage_forward += 1
+                    prev_super = curr_super
+                    prev_stage = curr_stage
+
+            stage_backward = 0
+            back_idx = start_idx
+            prev_super = df.loc[start_idx, 'super_game']
+            prev_stage = df.loc[start_idx, 'stage_game']
+
+            # Getting context backward.
+            while stage_backward < self.context[0] and back_idx > 0:
+                back_idx -= 1
+                row = df.loc[back_idx]
+                if row['team'] != ref_team:
+                    back_idx += 1
+                    break
+
+                curr_super = row['super_game']
+                curr_stage = row['stage_game']
+
+                if (curr_super != prev_super) or (curr_stage != prev_stage):
+                    stage_backward += 1
+                    prev_super = curr_super
+                    prev_stage = curr_stage
+            
+            subset_df = df.loc[back_idx:end_idx]
+            subset_df = subset_df[[
+                "window_number", "chat", "super_game", "stage_game", "payoff",
+                "team", "opponent", "sender", "receiver"
+            ]]
+            
+            raw_instances.append(subset_df.to_dict("records"))
+        return raw_instances
+        
         
     def filter_ra_data(self, subset: str) -> pd.DataFrame:
         """
@@ -75,7 +159,8 @@ class Data(FoundationalModel):
             df = df[~df["window_number"].isin(window_nums)]
         
         return df
-        
+    
+    
         
         
         
