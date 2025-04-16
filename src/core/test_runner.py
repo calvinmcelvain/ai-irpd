@@ -145,7 +145,7 @@ class TestRunner(FoundationalModel):
             for idx, (prompt_id, prompt) in enumerate(progress_bar, start=1):
                 id_list = prompt_id.split("-")
                 n = int(id_list[0])
-                subset = id_list
+                subset = id_list[1]
                 
                 stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
                 subset_path = stage_output.stage_path / subset
