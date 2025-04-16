@@ -261,7 +261,9 @@ def write_json(file_path: Union[str, Path], data: dict, indent: int = 4) -> None
     Write JSON data to a file at the given path.
     """
     try:
-        Path(file_path).write_text(json.dumps(data, indent=indent))
+        path = Path(file_path)
+        path.parent.mkdir(exist_ok=True, parents=True)
+        path.write_text(json.dumps(data, indent=indent))
     except TypeError as e:
         log.error(f"Error serializing JSON data: {e}")
         raise
