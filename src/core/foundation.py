@@ -78,4 +78,4 @@ class FoundationalModel(ABC):
             Returns the LLM model instance from the /llms package.
             """
             return getattr(LLMModel, llm_str).get_llm_instance(
-                self.llm_config, self.print_reponse)
+                self.llm_config, self.print_response)
