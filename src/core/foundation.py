@@ -7,7 +7,7 @@ from pathlib import Path
 
 from helpers.utils import create_directory, dynamic_import, load_config
 from core.functions import instance_types
-from core.llms.clients.base import BaseLLM
+from core.llms.clients.base_llm import BaseLLM
 from core.llms.llm_models import LLMModel
 from _types.irpd_config import IRPDConfig
 

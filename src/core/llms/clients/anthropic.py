@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from helpers.utils import write_jsonl, load_jsonl
 from _types.batch_output import BatchOut, BatchResponse
 from _types.prompts import Prompts
-from core.llms.clients.base import BaseLLM
+from core.llms.clients.base_llm import BaseLLM
 
 
 log = logging.getLogger(__name__)

@@ -10,7 +10,7 @@ from time import sleep
 from helpers.utils import create_directory
 from core.functions import requestout_to_irpdout
 from core.foundation import FoundationalModel
-from core.llms.clients.base import BaseLLM
+from core.llms.clients.base_llm import BaseLLM
 from core.output_manager import OutputManager
 from _types.test_output import TestOutput
 from _types.batch_output import BatchOut
