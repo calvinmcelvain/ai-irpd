@@ -31,7 +31,7 @@ class OutputManager(FoundationalModel):
     OutputManager model, inherits the FoundationalModel.
     """
     def __init__(self, irpd_config: IRPDConfig):
-        super.__init__(self, irpd_config)
+        super().__init__(self, irpd_config)
         
         self.prompt_composer = PromptComposer(irpd_config)
         self.output_writer = OutputWriter(irpd_config)

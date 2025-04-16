@@ -30,7 +30,7 @@ class TestRunner(FoundationalModel):
     method returns the complete OutputManager model.
     """
     def __init__(self, irpd_config: IRPDConfig, print_response: bool):
-        super.__init__(self, irpd_config)
+        super().__init__(self, irpd_config)
         
         self.output_manger = OutputManager(irpd_config)
         self.prompt_composer = self.output_manger.prompt_composer

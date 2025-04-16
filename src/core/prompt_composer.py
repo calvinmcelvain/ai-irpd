@@ -24,7 +24,7 @@ class PromptComposer(FoundationalModel):
     Gets the user and system prompts for a given stage, replication, and subset.
     """
     def __init__(self, irpd_config: IRPDConfig):
-        super.__init__(self, irpd_config)
+        super().__init__(self, irpd_config)
         
         self.data = Data(irpd_config)
         
