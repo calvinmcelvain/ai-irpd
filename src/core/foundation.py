@@ -14,8 +14,8 @@ from _types.irpd_config import IRPDConfig
 
 
 class FoundationalModel(ABC):
-    def __init__(self, irpd_config: IRPDConfig):
-        self.print_response = False # TestRunner sets this again.
+    def __init__(self, irpd_config: IRPDConfig, print_response: bool = False):
+        self.print_response = print_response # TestRunner sets this.
         self.irpd_config = irpd_config
         self.stages = irpd_config.stages
         self.cases = irpd_config.cases
