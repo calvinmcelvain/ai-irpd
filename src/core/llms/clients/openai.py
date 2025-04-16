@@ -188,6 +188,7 @@ class OpenAIClient(BaseLLM):
         attempt_n = 0
         while response is None and attempt_n < max_attempts:
             try:
+                log.debug(request_load)
                 if schema and not self.json_tool:
                     response = client.beta.chat.completions.parse(**request_load)
                 else:

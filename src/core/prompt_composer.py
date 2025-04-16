@@ -167,7 +167,7 @@ class PromptComposer(FoundationalModel):
         """
         # Stage 1 is all summary data (in records form).
         if stage_name == "1":
-            prompt = self.data.filter_ra_data(subset)
+            prompt = [self.data.filter_ra_data(subset).to_dict("records")]
         
         # Stage 1r user prompt is the categories created in stage 1.
         if stage_name == "1r":
@@ -237,7 +237,7 @@ class PromptComposer(FoundationalModel):
                 prompts.extend([
                     (
                         self._prompt_id(stage_name, subset, n, user),
-                        Prompts(system=system_prompt, user=user)
+                        Prompts(system=str(system_prompt), user=str(user))
                     )
                     for user in user_prompts
                 ])
