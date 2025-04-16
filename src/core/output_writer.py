@@ -39,6 +39,9 @@ class OutputWriter(FoundationalModel):
             request_out = output.request_out
             prompts = request_out.prompts
             
+            # Previous prompts are not stored if re-running test.
+            if not prompts: continue
+            
             prompt_paths = [output.user_path, output.system_path]
             prompt_writes = [prompts.user, prompts.system]
             write_file(prompt_paths, prompt_writes)
