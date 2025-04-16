@@ -8,7 +8,7 @@ from typing import List
 from core.builders.base_builder import BaseBuilder
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

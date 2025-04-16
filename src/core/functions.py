@@ -13,7 +13,7 @@ from _types.irpd_output import IRPDOutput
 from _types.stage_schemas import Category
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

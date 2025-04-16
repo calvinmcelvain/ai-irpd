@@ -11,7 +11,7 @@ from core.base import IRPDBase
 from _types.irpd_config import IRPDConfig
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

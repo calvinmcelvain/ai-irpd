@@ -22,7 +22,7 @@ from _types.irpd_output import IRPDOutput
 from _types.irpd_meta import IRPDMeta, StageInfo, SubsetInfo
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

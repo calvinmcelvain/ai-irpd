@@ -16,7 +16,7 @@ from core.test_runner import TestRunner
 from core.output_manager import OutputManager
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

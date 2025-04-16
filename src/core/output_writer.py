@@ -10,7 +10,7 @@ from _types.irpd_config import IRPDConfig
 from _types.test_output import TestOutput
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

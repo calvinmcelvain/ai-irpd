@@ -8,7 +8,7 @@ from core.builders.base_builder import BaseBuilder
 from core.functions import categories_to_txt
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

@@ -21,7 +21,7 @@ from _types.prompts import Prompts
 from core.llms.clients.base_llm import BaseLLM
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 

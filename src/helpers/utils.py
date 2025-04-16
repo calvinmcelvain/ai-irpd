@@ -22,10 +22,11 @@ from markdown_pdf import MarkdownPdf, Section
 from pydantic import BaseModel, ValidationError
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 T = TypeVar("T", bound=BaseModel)
 B = TypeVar("B")
+
 
 
 def to_list(arg: Union[object, List[Type[T]]]) -> List[T]:

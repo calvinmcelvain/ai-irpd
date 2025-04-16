@@ -29,7 +29,7 @@ LLMS = Literal[
 LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("app")
 
 
 
