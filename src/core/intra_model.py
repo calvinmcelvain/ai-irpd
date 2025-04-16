@@ -87,6 +87,7 @@ class IntraModel(IRPDBase):
                 stages=self.stages,
                 batches=self.batch_request,
                 total_replications=self.replications,
+                context=self.context,
                 max_instances=self.max_instances
             )
             self.configs[config.id] = config

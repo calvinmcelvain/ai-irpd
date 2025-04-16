@@ -88,6 +88,7 @@ class Subtest(IRPDBase):
                 stages=self.stages,
                 batches=self.batch_request,
                 total_replications=1,
+                context=self.context,
                 max_instances=self.max_instances
             )
             self.configs[config.id] = config
