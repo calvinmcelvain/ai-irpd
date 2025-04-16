@@ -6,6 +6,7 @@ Contains the functional TestRunner model.
 import logging
 from typing import List
 from time import sleep
+from tqdm import tqdm
 
 from helpers.utils import create_directory
 from core.functions import requestout_to_irpdout
@@ -121,33 +122,29 @@ class TestRunner(FoundationalModel):
         agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
         
         # Requests made for each prompt (accounts for iterative stages).
-        outputs = []
-        for prompts in agg_prompts:
-            prompt_id, prompt = prompts
-            
-            id_list = prompt_id.split("-")
-            n = int(id_list[0])
-            subset = id_list
-            
-            stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
-            subset_path = stage_output.stage_path / subset
-            
-            log.info(
-                f"\n Requesting completion for:"
-                f"\n\t config: {self.irpd_config.id}"
-                f"\n\t case: {self.case}"
-                f"\n\t llm: {llm_str}"
-                f"\n\t replicate: {n} of {self.total_replications}"
-                f"\n\t stage: {stage_name}"
-                f"\n\t subset: {subset}"
-                f"\n\t prompt: {len(outputs) + 1} of {len(agg_prompts)}"
-            )
-            
-            output = llm_instance.request(prompt, schema)
-            irpd_output = requestout_to_irpdout(
-                stage_name, subset, subset_path, output)
-            
-            self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
+        with tqdm(agg_prompts, desc=f"Processing completions for {stage_name}", unit="prompt") as progress_bar:
+            for idx, (prompt_id, prompt) in enumerate(progress_bar, start=1):
+                id_list = prompt_id.split("-")
+                n = int(id_list[0])
+                subset = id_list
+                
+                stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
+                subset_path = stage_output.stage_path / subset
+                
+                progress_bar.set_postfix({
+                    "config": self.irpd_config.id,
+                    "case": self.case,
+                    "llm": llm_str,
+                    "replicate": f"{n}/{self.total_replications}",
+                    "stage": stage_name,
+                    "prompt": f"{idx}/{len(agg_prompts)}"
+                })
+                
+                output = llm_instance.request(prompt, schema)
+                irpd_output = requestout_to_irpdout(
+                    stage_name, subset, subset_path, output)
+                
+                self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
         return True
     
     def run(self):
