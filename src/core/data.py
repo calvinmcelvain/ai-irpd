@@ -16,7 +16,7 @@ class Data(FoundationalModel):
     Used to filter RA data, build data, & bootstrap summary data.
     """
     def __init__(self, irpd_config: IRPDConfig):
-        super.__init__(irpd_config)
+        super().__init__(irpd_config)
         
         self.ra_data = self._pre_filter()
     
