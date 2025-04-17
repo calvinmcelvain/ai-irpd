@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel
 from dataclasses import dataclass
 
-from helpers.utils import write_file, write_json
+from helpers.utils import write_file
 from _types.prompts import Prompts
 
 
@@ -25,8 +25,8 @@ class IRPDOutput:
     def __post_init__(self):
         self.total_tokens = sum([self.input_tokens, self.output_tokens])
         
-        # If object initialized w/ structured output, text field is filled.
-        if self.parsed and not self.text:
+        # Overwriting text field if parsed available (looks better with indents)/
+        if self.parsed:
             self.text = json.dumps(self.parsed.model_dump(), indent=4)
         
         if not self.created:
@@ -43,16 +43,9 @@ class IRPDOutput:
             self.user_path,
             self.system_path
         ):
-            prompt_paths = [self.user_path, self.system_path]
-            prompt_writes = [self.prompts.user, self.prompts.system]
-            write_file(prompt_paths, prompt_writes)
-            
-            # writes in json form if paresed.
-            if self.parsed:
-                write_json(self.response_path, self.parsed.model_dump())
-            else:
-                write_file(self.response_path, self.text)
-            
+            paths = [self.user_path, self.system_path, self.response_path]
+            writes = [self.prompts.user, self.prompts.system, self.text]
+            write_file(paths, writes)
             return None
         
         
