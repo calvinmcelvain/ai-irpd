@@ -70,14 +70,39 @@ class IRPDBase(ABC):
     
     def _validate_test_parameters(self) -> None:
         """
-        Validates test parameters from `irpd.json` configs file.
+        Validates test parameters from `irpd.json` configs file & reindexes them.
         """
-        for param in PARAMETERS.keys():
+        for param, valid_params in PARAMETERS.items():
             self_param = getattr(self, param)
-            valid_params = PARAMETERS[param]
-            assert self_param in valid_params, f"`{param}` must be from {valid_params}."
+            if not set(self_param).issubset(valid_params):
+                raise ValueError(f"`{param}` must be from {valid_params}.")
+            order = {key: index for index, key in enumerate(valid_params)}
+            setattr(self, param, sorted(self_param, key=order.get))
         return None
     
+    def _validate_stage_index(self) -> None:
+        """
+        Validates the stage index and context values, ensuring prior stages 
+        are included if necessary and defaults are set appropriately.
+        """
+        start_idx = PARAMETERS["stages"].index(self.stages[0])
+        replication_types = PARAMETERS["test_types"]["replication"]
+        if "llm" in self.ras:
+            if "0" not in self.stages:
+                log.warning("Stage 0 required for `llm` in `ras`. Adding '0'.")
+                self.stages = PARAMETERS["stages"][:start_idx]
+            if start_idx > 0 and self.test_type not in replication_types:
+                log.warning("Adding prior stages.")
+                self.stages = PARAMETERS["stages"][:start_idx]
+            self.context = self.context or (5, 5)
+            assert self.context[0] >= 1 and self.context[1] >= 1, (
+                "`context` values must be > 0"
+            )
+        elif start_idx > 1 and self.test_type not in replication_types:
+            log.warning("Adding prior stages.")
+            self.stages = PARAMETERS["stages"][1:start_idx]
+        return None
+                    
     def _validate_test_paths(self) -> List[Path]:
         """
         Ensures all test paths are Path objects and ensures that the number of
@@ -87,10 +112,10 @@ class IRPDBase(ABC):
         test_paths = [Path(path) for path in self.test_paths]
         if not len(self.test_paths) == len(self._prod):
             log.error(
-                "test_paths must be the same length as the number of test configs."
+                "`test_paths` must be the same length as the number of test configs."
             )
             raise ValueError(
-                "test_paths must be the same length as the number of test configs."
+                "`test_paths`must be the same length as the number of test configs."
             )
         return test_paths
 
