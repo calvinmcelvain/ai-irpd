@@ -6,7 +6,7 @@ from helpers.utils import load_config
 from _types.test_output import TestOutput
 
 
-CONFIGS = load_config("irpd.json")["stage_classes"]
+CONFIGS = load_config("irpd.json")
 
 
 
@@ -21,7 +21,7 @@ class Builder:
 
         
     def build(self, stage_name: str) -> None:
-        if stage_name in CONFIGS["categorization"]:
+        if stage_name in CONFIGS["stage_class"]["categorization"]:
             builder.PDF(self.test_output).build(stage_name)
         else:
             builder.CSV(self.test_output).build(stage_name)
