@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-from helpers.utils import dynamic_import, to_list
+from helpers.utils import dynamic_import
+
 
 
 # Specifying the arguments for test models.
@@ -115,14 +116,7 @@ class IRPDTestClass(TestClassContainer, Enum):
                 - prompts_path, output_path: The paths to be used for outputs
                 and/or prompts.
         """
-        # Adjust stages only for Test and Subtest models.
-        if self in {IRPDTestClass.TEST, IRPDTestClass.SUBTEST}:
-            stage_list = STAGES.__args__
-            if len(to_list(stages)) == 1 and stage_list.index(to_list(stages)[0]) != 0:
-                stages = list(stage_list[:stage_list.index(to_list(stages)[0]) + 1])
-        
-        test_class = self.impl
-        return test_class(
+        return self.impl(
             cases=cases,
             ras=ras,
             treatments=treatments,
