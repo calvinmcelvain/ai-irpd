@@ -4,7 +4,7 @@ Contains the PromptComposer.
 import logging
 from typing import List, Tuple
 
-from helpers.utils import file_to_string, to_list
+from helpers.utils import file_to_string, to_list, load_config
 from core.functions import categories_to_txt, output_attrb
 from core.foundation import FoundationalModel
 from core.data import Data
@@ -14,6 +14,9 @@ from _types.test_output import TestOutput
 
 
 log = logging.getLogger("app")
+
+
+CONFIGS = load_config("irpd.json")
 
 
 
@@ -94,7 +97,7 @@ class PromptComposer(FoundationalModel):
         Generates the prompt ID.
         """
         prompt_id = f"{n}-{subset}"
-        if stage in {"2", "3"}:
+        if stage in CONFIGS["stage_class"]["classification"]:
             prompt_id += f"-{user["window_number"]}"
         return prompt_id
     
@@ -109,9 +112,11 @@ class PromptComposer(FoundationalModel):
         # Initial prompt section (header).
         section = file_to_string(section_path / "initial.md")
         
-        # RA summary context.
-        if stage_name not in {"0"}:
+        # RA summary context or Stage 0 data context.
+        if stage_name != "0":
             section += file_to_string(stage_path / f"{self.ra}.md")
+        else:
+            section += file_to_string(stage_path / f"data_{self.treatment}.md")
         
         # Instance type definition.
         instance_type_path = stage_path / "instance_type"
@@ -141,7 +146,7 @@ class PromptComposer(FoundationalModel):
         
         prompt = a + b + c + d + e + f
         # Appending a 'Categories' section to classification stages.
-        if stage_name in {"2", "3"}:
+        if stage_name in CONFIGS["stage_class"]["classification"]:
             prompt += "\n\n## Categories\n\n"
             
             # Almost always will use Stage 1c categories, but if skipped, this 
@@ -165,6 +170,10 @@ class PromptComposer(FoundationalModel):
         """
         Returns user prompt.
         """
+        # Stage 0 prompts are individual instance windows w/r to the context.
+        if stage_name == "0":
+            prompt = self.data.get_list_of_raw_instances()
+        
         # Stage 1 is all summary data (in records form).
         if stage_name == "1":
             prompt = [self.data.filter_ra_data(subset).to_dict("records")]
@@ -185,7 +194,7 @@ class PromptComposer(FoundationalModel):
                 prompt += categories_to_txt(categories)
         
         # Individual summaries for stages 2 & 3.
-        if stage_name in {"2", "3"}:
+        if stage_name in CONFIGS["stage_class"]["classification"]:
             df = self.data.adjust_for_completed_outputs(test_output, stage_name)
             
             # Stage 3 adds another variable for the classifications in stage 2.
@@ -209,7 +218,7 @@ class PromptComposer(FoundationalModel):
         Checks the expected number of outputs via the count of user prompts for 
         a stage.
         """
-        if stage_name in {"1", "1r", "1c"}:
+        if stage_name in CONFIGS["stage_class"]["categorization"]:
             return len(self.subsets[stage_name])
         return len(self.data.ra_data[:self.max_instances].to_dict("records"))
     

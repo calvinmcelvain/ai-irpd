@@ -24,6 +24,7 @@ class FoundationalModel(ABC):
         self.test_path = Path(irpd_config.test_path)
         self.data_path = Path(irpd_config.data_path)
         self.prompts_path = Path(irpd_config.prompts_path)
+        self.max_summaries = irpd_config.max_summaries
         self.max_instances = irpd_config.max_instances
         self.llms = irpd_config.llms
         self.case = irpd_config.case

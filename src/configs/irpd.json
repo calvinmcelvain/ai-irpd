@@ -2,7 +2,7 @@
     "stage_class": {
         "summarization": ["0"],
         "categorization": ["1", "1r", "1c"],
-        "classiffication": ["2", "3"]
+        "classification": ["2", "3"]
     },
     "test_types": {
         "class": {

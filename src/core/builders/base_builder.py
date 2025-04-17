@@ -25,6 +25,8 @@ class BaseBuilder(ABC):
         self.stage_outputs = test_output.stage_outputs
         
         self.irpd_config = self.meta.test_info
+        self.max_instances = self.irpd_config.max_instances
+        self.max_summaries = self.irpd_config.max_summaries
         self.cases = self.irpd_config.cases
         self.treatment = self.irpd_config.treatment
         self.ra = self.irpd_config.ra

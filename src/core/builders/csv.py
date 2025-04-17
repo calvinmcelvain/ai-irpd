@@ -24,19 +24,22 @@ class CSV(BaseBuilder):
         
         Saves to subpath directory.
         """
-        if "0" in self.stage_outputs:
-            log.error("Stage 0 not setup yet.")
-            return
-
         # Get summary data files for each case.
-        og_dfs = self._load_original_data()
+        if self.ra == "llm":
+            og_dfs = self._load_raw_data()
+        else:
+            og_dfs = self._load_original_data()
 
         # Build df from outputs.
         output_df = self._process_stage_outputs(stage_name)
 
         # Merge responses with original summary files.
-        final_df = self._merge_with_original_data(og_dfs, output_df)
-
+        if stage_name == "0":
+            final_df = pd.merge(og_dfs, output_df, on="window_number")
+            csv_path = self.sub_path / self.file_names["summaries"][stage_name]
+        else:
+            final_df = self._merge_with_original_data(og_dfs, output_df)
+            csv_path = self.sub_path / self.file_names["classifications"][stage_name]
         # Save the final DataFrame to a CSV file
         csv_path = self.sub_path / self.file_names["classifications"][stage_name]
         final_df.to_csv(csv_path, index=False)
@@ -48,7 +51,21 @@ class CSV(BaseBuilder):
         og_df_names = [
             f"{case}_{self.treatment}_{self.ra}.csv" for case in self.cases
         ]
+        if self.max_instances: 
+            return [
+                pd.read_csv(self.raw_data_path / name)[:self.max_instances]
+                for name in og_df_names
+            ]
         return [pd.read_csv(self.raw_data_path / name) for name in og_df_names]
+    
+    def _load_raw_data(self) -> List[pd.DataFrame]:
+        """
+        Loads original raw data files.
+        """
+        og_df = pd.read_csv("exp.csv")
+        if self.max_summaries: 
+            return og_df[:self.max_summaries]
+        return og_df
 
     def _process_stage_outputs(self, stage_name: str) -> pd.DataFrame:
         """
@@ -59,14 +76,15 @@ class CSV(BaseBuilder):
 
         for output in outputs:
             output_parsed = output.request_out.parsed
-            response = {
-                "reasoning": output_parsed.reasoning,
-                "window_number": output_parsed.window_number,
-            }
-
-            # Binary classification for stage 2 and rank for stage 3.
-            for category in self.output_attrb(output_parsed):
-                response[category.category_name] = getattr(category, "rank", 1)
+            response = {"window_number": output_parsed.window_number}
+            
+            if stage_name == "0":
+                response.update({"summary": output_parsed.summary})
+            else:
+                response.update({"reasoning": output_parsed.reasoning})
+                # Binary classification for stage 2 and rank for stage 3.
+                for category in self.output_attrb(output_parsed):
+                    response[category.category_name] = getattr(category, "rank", 1)
 
             output_list.append(response)
 
@@ -86,4 +104,10 @@ class CSV(BaseBuilder):
             final_dfs.append(merged_df)
 
         return pd.concat(final_dfs, ignore_index=True, sort=False)
+    
+    def _merge_with_raw_data(
+        self, og_df: pd.DataFrame, output_df: pd.DataFrame
+    ):
+        final_df = pd.merge(og_df, output_df, on="window_number", how="left")
+        keep_columns = [""]
 

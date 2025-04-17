@@ -2,11 +2,16 @@
 Contains the Data model.
 """
 import pandas as pd
+from pathlib import Path
 from typing import List, Dict
 
+from helpers.utils import load_config
 from core.foundation import FoundationalModel
 from _types.irpd_config import IRPDConfig
 from _types.test_output import TestOutput
+
+
+CONFIGS = load_config("irpd.json")
 
 
 
@@ -55,6 +60,9 @@ class Data(FoundationalModel):
         df = df[(
             (self.treatment == "merged") | (df["treatment"] == self.treatment)
         )]
+        
+        # Adjusting for max summaries.
+        if self.max_summaries: df = df[:self.max_summaries]
         
         return df
     
@@ -134,13 +142,17 @@ class Data(FoundationalModel):
         return raw_instances
         
         
-    def filter_ra_data(self, subset: str) -> pd.DataFrame:
+    def filter_summary_data(self, subset: str, sub_path: Path = None) -> pd.DataFrame:
         """
         Filter's the RA data for a given subset & drops unneeded columns.
         """
-        df = self.ra_data
-        if subset != "full": df = df[(df["subset"] == subset)]
-        df = df.drop(columns=["case", "treatment", "subset"])
+        if self.ra == "llm":
+            df = sub_path / CONFIGS["output_file_names"]["summaries"]["0"]
+            
+        else:
+            df = self.ra_data
+            if subset != "full": df = df[(df["subset"] == subset)]
+            df = df.drop(columns=["case", "treatment", "subset"])
         return df
     
     def adjust_for_completed_outputs(
