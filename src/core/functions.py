@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List
 from pydantic import BaseModel
 
-from _types.request_output import RequestOut
 from _types.irpd_output import IRPDOutput
 from _types.stage_schemas import Category
 
@@ -65,22 +64,21 @@ def output_attrb(output: BaseModel) -> BaseModel:
         return output.category_ranking
     
 
-def requestout_to_irpdout(
-    stage_name: str, subset: str, subset_path: Path, request_out: RequestOut
+def complete_irpdout(
+    stage_name: str,subset_path: Path, irpd_output: IRPDOutput
 ) -> IRPDOutput:
-    prefix = f"{subset}_"
+    """
+    Fills the paths in IRPDOutput object.
+    """
+    prefix = f"{subset_path.name}_"
+    system_path = f"{prefix}stg_{stage_name}_system_prompt.txt"
     if stage_name in {"2", "3"}:
-        user_path = f"{prefix}{request_out.parsed.window_number}_user_prompt.txt"
-        response_path = f"{prefix}{request_out.parsed.window_number}_response.txt"
+        user_path = f"{prefix}{irpd_output.parsed.window_number}_user_prompt.txt"
+        response_path = f"{prefix}{irpd_output.parsed.window_number}_response.txt"
     else:
         user_path = f"{prefix}stg_{stage_name}_user_prompt.txt"
         response_path = f"{prefix}stg_{stage_name}_response.txt"
-    system_path = f"{prefix}stg_{stage_name}_system_prompt.txt"
-    
-    return IRPDOutput(
-        request_out=request_out,
-        subset=subset,
-        response_path=subset_path / "responses" / response_path,
-        user_path=subset_path / "prompts" / user_path,
-        system_path=subset_path / "prompts" / system_path
-    )
+    irpd_output.system_path = subset_path / system_path
+    irpd_output.user_path = subset_path / user_path
+    irpd_output.response_path = subset_path / response_path
+    return irpd_output
