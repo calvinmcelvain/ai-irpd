@@ -20,6 +20,7 @@ class IRPDConfig:
     total_replications: int
     context: Optional[Tuple[int, int]]
     max_instances: Optional[int]
+    max_summaries: Optional[int]
     cases: List[str] = None
     id: str = uuid4().hex
     
