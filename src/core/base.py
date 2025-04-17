@@ -10,10 +10,13 @@ from typing import List, Optional, Union, Dict, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from helpers.utils import get_env_var, to_list
+from helpers.utils import get_env_var, to_list, load_config
 from _types.irpd_config import IRPDConfig
 from core.test_runner import TestRunner
 from core.output_manager import OutputManager
+
+
+PARAMETERS: Dict = load_config("irpd.json")["parameters"]
 
 
 log = logging.getLogger("app")
@@ -49,17 +52,9 @@ class IRPDBase(ABC):
         self.llm_configs = to_list(llm_configs)
         self.test_paths = to_list(test_paths or [])
         self.batch_request = batch
+        self.context = context
         
-        if context:
-            assert context[0] >=1 and context[1] >=1, "`context` values must be greater than 0."
-            if "0" not in stages:
-                log.warning("Stage 0 not in `stages`, `context` is null.")
-            else: 
-                self.context = context
-        else:
-            if "0" in stages:
-                log.warning(f"`context` defaulted to (5, 5).")
-                self.context = (5, 5)
+        self._validate_test_parameters()
         
         if max_instances:
             assert max_instances >= 1, "`max_instances` must be greater than 0."
@@ -72,6 +67,16 @@ class IRPDBase(ABC):
         self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = Path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = Path(data_path or get_env_var("DATA_PATH"))
+    
+    def _validate_test_parameters(self) -> None:
+        """
+        Validates test parameters from `irpd.json` configs file.
+        """
+        for param in PARAMETERS.keys():
+            self_param = getattr(self, param)
+            valid_params = PARAMETERS[param]
+            assert self_param in valid_params, f"`{param}` must be from {valid_params}."
+        return None
     
     def _validate_test_paths(self) -> List[Path]:
         """
