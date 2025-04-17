@@ -120,11 +120,10 @@ class AnthropicClient(BaseLLM):
                 system, user = "None"
             
             response_data = response_json["result"]["message"]
-            request_out = self._request_out(
+            request_out = self._irpd_output(
                 input_tokens=response_data["usage"]["input_tokens"],
                 output_tokens=response_data["usage"]["output_tokens"],
-                system=system,
-                user=user,
+                prompts=Prompts(user=user, system=system),
                 content=response_data["content"][0]["text"],
                 schema=schema
             )

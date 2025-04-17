@@ -131,11 +131,10 @@ class OpenAIClient(BaseLLM):
                 system, user = "None"
             
             response_data = response_json["response"]["body"]
-            request_out = self._request_out(
+            request_out = self._irpd_output(
                 input_tokens=response_data["usage"]["prompt_tokens"],
                 output_tokens=response_data["usage"]["completion_tokens"],
-                system=system,
-                user=user,
+                prompts=Prompts(user=user, system=system),
                 content=response_data["choices"][0]["message"]["content"],
                 schema=schema
             )
