@@ -90,7 +90,8 @@ class IntraModel(IRPDBase):
                 batches=self.batch_request,
                 total_replications=self.replications,
                 context=self.context,
-                max_instances=self.max_instances
+                max_instances=self.max_instances,
+                max_summaries=self.max_summaries
             )
-            self.configs[config.id] = config
+            self.configs[config.id] = self._validate_config(config)
         return None
