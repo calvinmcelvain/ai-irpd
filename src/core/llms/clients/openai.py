@@ -202,11 +202,10 @@ class OpenAIClient(BaseLLM):
                 time.sleep(rate_limit_time)
         
             if isinstance(response, ChatCompletion):
-                request_out = self._request_out(
+                request_out = self._irpd_output(
                     input_tokens=response.usage.prompt_tokens,
                     output_tokens=response.usage.completion_tokens,
-                    system=system,
-                    user=user,
+                    prompts=prompts,
                     content=response.choices[0].message.content,
                     schema=schema
                 )

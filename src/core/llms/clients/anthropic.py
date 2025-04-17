@@ -184,11 +184,10 @@ class AnthropicClient(BaseLLM):
                 # Getting the request content
                 # Specified in `tool_use` if structured outputs defined.
                 content = next(i.input if "tool_use" in i.type else i.text for i in response.content)
-                request_out = self._request_out(
+                request_out = self._irpd_output(
                     input_tokens=response.usage.input_tokens,
                     output_tokens=response.usage.output_tokens,
-                    user=user,
-                    system=system,
+                    prompts=prompts,
                     content=content,
                     schema=schema
                 )

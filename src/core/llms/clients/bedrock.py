@@ -128,11 +128,10 @@ class BedrockClient(BaseLLM):
                 time.sleep(rate_limit_time)
             meta_data = response['ResponseMetadata']
             content = self._dump_response(response)
-            request_out = self._request_out(
+            request_out = self._irpd_output(
                 input_tokens=int(meta_data['HTTPHeaders']['x-amzn-bedrock-input-token-count']),
                 output_tokens=int(meta_data['HTTPHeaders']['x-amzn-bedrock-output-token-count']),
-                user=user,
-                system=system,
+                prompts=prompts,
                 content=content,
                 schema=schema
             )

@@ -189,11 +189,10 @@ class MistralClient(BaseLLM):
         
             if isinstance(response, ChatCompletionResponse):
                 content = response.choices[0].message.content
-                request_out = self._request_out(
+                request_out = self._irpd_output(
                     input_tokens=response.usage.prompt_tokens,
                     output_tokens=response.usage.completion_tokens,
-                    user=user,
-                    system=system,
+                    prompts=prompts,
                     content=content,
                     schema=schema
                 )

@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from _types.llm_config import LLMConfig
 from _types.batch_output import BatchOut
 from _types.prompts import Prompts
-from _types.request_output import RequestOut, MetaOut
+from _types.irpd_output import IRPDOutput
 from helpers.utils import validate_json_string, load_config
 
 
@@ -68,30 +68,26 @@ class BaseLLM(ABC):
         """
         return {"role": "user", "content": user}
     
-    def _request_out(
+    def _irpd_output(
         self,
         input_tokens: int,
         output_tokens: int,
-        system: str,
-        user: str,
+        prompts: Prompts,
         content: str,
         schema: str
     ):
         """
-        Outputs a generalized RequestOut object from LLM response.
+        Outputs a IRPDOutput object from LLM response.
         """
-        prompts = Prompts(system=system, user=user)
-        meta = MetaOut(
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            model=self.model,
-            configs=self.configs
-        )
-        return RequestOut(
-            text=content,
+        return IRPDOutput(
             parsed=validate_json_string(content, schema),
+            text=content,
             prompts=prompts,
-            meta=meta
+            response_path=None,
+            user_path=None,
+            system_path=None,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens
         )
     
     @abstractmethod
@@ -159,8 +155,10 @@ class BaseLLM(ABC):
 
         Args:
             batch_id (str): The ID of the batch to be retrieved.
+            
             schema (Optional[BaseModel], optional): The schema of output if 
             requested structured outputs. Defaults to None.
+            
             batch_file_path (Optional[Path], optional): The path to the original
             batch request. Used to output a 'complete' BatchOut object. 
             Defaults to None.
@@ -179,8 +177,10 @@ class BaseLLM(ABC):
 
         Args:
             messages (List[Prompts]): A list of Prompt objects.
+            
             schema (Optional[BaseModel], optional): The output structure/schema. 
             Defaults to None.
+            
             batch_file_path (Optional[Path], optional): The path to save 
             formatted batch. Saves as jsonl. Defaults to None.
         """
@@ -192,17 +192,20 @@ class BaseLLM(ABC):
         prompts: Prompts,
         schema: Optional[BaseModel] = None,
         **kwargs
-    ) -> RequestOut:
+    ) -> IRPDOutput:
         """
-        Requests chat completion from LLM client. Returns a RequestOut
+        Requests chat completion from LLM client. Returns a IRPDOutput
         object.
 
         Args:
             prompts (Prompts): A Prompt object.
+            
             schema (BaseModel, optional): The structure/schema of output. 
             Defaults to None.
+            
             kwargs:
                 - max_attempts: Number of attempts if failure.
+                
                 - rate_limit_time: Time to wait if request limit hit.
         """
         pass
