@@ -52,6 +52,7 @@ class Subtest(IRPDBase):
             batch
         )
         self.test_type = "subtest"
+        self._validate_stage_index()
         
         # The total number of tests is the total combinations of LLMs, LLM
         # configs, cases, RAs, and treatments.

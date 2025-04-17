@@ -51,6 +51,7 @@ class CrossModel(IRPDBase):
             batch
         )
         self.test_type = "cross_model"
+        self._validate_stage_index()
         
         # The number of tests for cross-model tests is the total combinations
         # of LLM configs, cases, ras, & treatments.

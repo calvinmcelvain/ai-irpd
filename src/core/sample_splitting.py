@@ -50,6 +50,7 @@ class SampleSplitting(IRPDBase):
             batch
         )
         self._test_type = "sample_splitting"
+        self._validate_stage_index()
     
     def _generate_test_paths(self):
         pass

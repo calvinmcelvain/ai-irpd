@@ -51,6 +51,7 @@ class IntraModel(IRPDBase):
             batch
         )
         self.test_type = "cross_model"
+        self._validate_stage_index()
         
         # For intra-model tests, the number of tests is the total combinations
         # of LLMs, LLM configs, cases, RAs, and treatments.
