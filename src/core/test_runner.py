@@ -9,7 +9,7 @@ from time import sleep
 from tqdm import tqdm
 
 from helpers.utils import create_directory
-from core.functions import requestout_to_irpdout
+from core.functions import complete_irpdout
 from core.foundation import FoundationalModel
 from core.llms.clients.base_llm import BaseLLM
 from core.output_manager import OutputManager
@@ -161,11 +161,11 @@ class TestRunner(FoundationalModel):
             })
             
             output = llm_instance.request(prompt, schema)
-            irpd_output = requestout_to_irpdout(
-                stage_name, subset, subset_path, output)
+            irpd_output = complete_irpdout(stage_name, subset_path, output)
             
             progress_bar.update(1)
-            self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
+            self.output_manger.store_output(
+                llm_str, n, stage_name, subset, irpd_output)
         progress_bar.close()
         log.info(f"All completions processed for stage '{stage_name}'.")
         return True

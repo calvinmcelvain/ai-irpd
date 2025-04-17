@@ -10,12 +10,11 @@ from dataclasses import asdict, fields
 from typing import List, Union, Optional, overload
 
 from helpers.utils import check_directories, load_json_n_validate
-from core.functions import requestout_to_irpdout
+from core.functions import complete_irpdout
 from core.foundation import FoundationalModel
 from core.prompt_composer import PromptComposer
 from core.output_writer import OutputWriter
 from _types.batch_output import BatchOut
-from _types.request_output import RequestOut
 from _types.irpd_config import IRPDConfig
 from _types.stage_output import StageOutput
 from _types.test_output import TestOutput
@@ -98,6 +97,7 @@ class OutputManager(FoundationalModel):
                     continue
                 
                 stage_name = stage_output.stage_name
+                schema = self.schemas[stage_name]
                 
                 for subset, outputs in stage_output.outputs.items():
                     subset_path = stage_output.stage_path / subset
@@ -111,18 +111,10 @@ class OutputManager(FoundationalModel):
                         )
                         continue
                     
-                    outputs.extend(
-                        requestout_to_irpdout(
-                            stage_name,
-                            subset,
-                            subset_path,
-                            RequestOut(
-                                parsed=load_json_n_validate(
-                                    path, self.schemas[stage_name])
-                            )
-                        )
+                    outputs.extend([
+                        IRPDOutput(parsed=load_json_n_validate(path, schema))
                         for path in responses_path.iterdir()
-                    )
+                    ])
                 self.check_output_completion(stage_output)
         log.info("Test directory check completed.")
         return None
@@ -257,22 +249,23 @@ class OutputManager(FoundationalModel):
         return outputs
     
     def update_meta(
-        self, test_output: TestOutput, stage_name: str, irpd_output: IRPDOutput
+        self,
+        test_output: TestOutput,
+        stage_name: str,
+        subset: str,
+        irpd_output: IRPDOutput
     ) -> None:
         """
         Updates test meta given an output
         """
         stage_meta = test_output.meta.stages.setdefault(
             stage_name, StageInfo(subsets={}))
-        subset_meta = stage_meta.subsets.setdefault(
-            irpd_output.subset, SubsetInfo())
+        subset_meta = stage_meta.subsets.setdefault(subset, SubsetInfo())
 
-        output_meta = irpd_output.request_out.meta
-
-        subset_meta.created = str(datetime.fromtimestamp(output_meta.created))
-        subset_meta.input_tokens += output_meta.input_tokens
-        subset_meta.output_tokens += output_meta.output_tokens
-        subset_meta.total_tokens += output_meta.total_tokens
+        subset_meta.created = str(datetime.fromtimestamp(irpd_output.created))
+        subset_meta.input_tokens += irpd_output.input_tokens
+        subset_meta.output_tokens += irpd_output.output_tokens
+        subset_meta.total_tokens += irpd_output.total_tokens
 
         return None
     
@@ -281,15 +274,15 @@ class OutputManager(FoundationalModel):
         llm_str: str,
         n: int,
         stage_name: str,
+        subset: str,
         irpd_output: IRPDOutput
     ) -> None:
         """
         Stores & writes a IRPDOutput object & updates meta.
         """
         test_output = self.retrieve(llm_str, n)
-        subset = irpd_output.subset
         
-        self.update_meta(test_output, stage_name, irpd_output)
+        self.update_meta(test_output, stage_name, subset, irpd_output)
         
         stage_output = test_output.stage_outputs[stage_name]
         stage_output.outputs[subset].append(irpd_output)
@@ -316,18 +309,18 @@ class OutputManager(FoundationalModel):
             n = test_output.replication
             stage_output = test_output.stage_outputs[stage_name]
             
-            for subset, irpd_output in stage_output.outputs.items():
+            for subset, irpd_output_list in stage_output.outputs.items():
                 subset_path = stage_output.stage_path / subset
-                irpd_output.extend([
-                    requestout_to_irpdout(
-                        stage_name,
-                        subset,
-                        subset_path,
-                        output.response
-                    )
-                    for output in outputs
-                    if output.response_id.startswith(f"{n}-{subset}")
-                ])
+                for output in outputs:
+                    if output.response_id.startswith(f"{n}-{subset}"):
+                        irpd_output = complete_irpdout(
+                            stage_name,
+                            subset_path,
+                            output.response
+                        )
+                        self.update_meta(
+                            test_output, stage_name, subset, irpd_output)
+                        irpd_output_list.append(irpd_output)
             self.check_output_completion(stage_output)
             self.output_writer.write_output(test_output, stage_name)
         log.info(
