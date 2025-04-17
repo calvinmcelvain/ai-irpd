@@ -21,6 +21,7 @@
         "llms": "GPT_4O_1120",
         "llm_configs": "base",
         "max_instances": null,
+        "max_summaries": null,
         "output_path": null,
         "prompts_path": null,
         "data_path": null,

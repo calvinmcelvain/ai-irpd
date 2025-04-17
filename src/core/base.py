@@ -11,9 +11,9 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 from helpers.utils import get_env_var, to_list, load_config
-from _types.irpd_config import IRPDConfig
 from core.test_runner import TestRunner
 from core.output_manager import OutputManager
+from _types.irpd_config import IRPDConfig
 
 
 CONFIGS: Dict = load_config("irpd.json")
@@ -30,19 +30,20 @@ class IRPDBase(ABC):
     
     def __init__(
         self, 
-        cases: Union[List[str], str],
-        ras: Union[List[str], str],
-        treatments: Union[List[str], str],
-        stages: Union[List[str], str],
-        N: int,
-        context: Optional[Tuple[int, int]] = None,
-        llms: Optional[Union[List[str], str]] = None,
-        llm_configs: Optional[Union[List[str], str]] = None,
+        cases: Union[List[str], str] = None,
+        ras: Union[List[str], str] = None,
+        treatments: Union[List[str], str] = None,
+        stages: Union[List[str], str] = None,
+        N: int = None,
+        context: Tuple[int, int] = None,
+        llms: Union[List[str], str] = None,
+        llm_configs: Union[List[str], str] = None,
         max_instances: Optional[int] = None,
+        max_summaries: Optional[int] = None,
         output_path: Optional[Union[str, Path]] = None,
         prompts_path: Optional[Union[str, Path]] = None,
         data_path: Optional[Union[str, Path]] = None,
-        test_paths: Optional[List[str]] = None,
+        test_paths: Optional[Union[List[Union[str, Path]], Union[str, Path]]] = None,
         batch: bool = False
     ):
         self.cases = to_list(cases)
@@ -59,7 +60,10 @@ class IRPDBase(ABC):
         
         if max_instances:
             assert max_instances >= 1, "`max_instances` must be greater than 0."
+        if max_summaries:
+            assert max_summaries >= 1, "`max_summaries` must be greater than 0."
         self.max_instances = max_instances
+        self.max_summaries = max_summaries
         
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
