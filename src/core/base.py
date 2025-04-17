@@ -69,6 +69,8 @@ class IRPDBase(ABC):
         
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
+        
+        self.base_path = CONFIGS["test_types"]["paths"][self.test_type]
 
         # If paths not specified, using env variable.
         self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
@@ -86,6 +88,34 @@ class IRPDBase(ABC):
             order = {key: index for index, key in enumerate(valid_params)}
             setattr(self, param, sorted(self_param, key=order.get))
         return None
+    
+    def _validate_config(self, config: IRPDConfig) -> IRPDConfig:
+        """
+        Validates IRPDConfig by appending missing stages from non-replication
+        type tests.
+        """
+        start_idx = PARAMETERS["stages"].index(config.stages[0])
+        replication_type = CONFIGS["test_types"]["class"]["replication"]
+        if self.test_type not in replication_type:
+            if start_idx > 1:
+                log.debug(
+                    f"`stages` start after stage '1' in config [{config.id}]."
+                    f" Stages {PARAMETERS["stages"][1:start_idx]} appended."
+                )
+                config.stages = PARAMETERS["stages"][1:]
+            if config.ra == "llm" and "0" not in config.stages:
+                log.debug(
+                    f"`stages` did not include stage '0' in config [{config.id}]."
+                    " Appended stage '0'."
+                )
+                config.stages = ["0"] + config.stages
+        if "0" in config.stages and config.ra != "llm":
+            log.debug(
+                f"`ra` in config [{config.id}] not 'llm' and contains stage '0'."
+                " Removed stage '0' from stages"
+            )
+            config.stages = config.stages[1:]
+        return config
                     
     def _validate_test_paths(self) -> List[Path]:
         """
