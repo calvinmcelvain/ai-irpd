@@ -13,7 +13,6 @@ from _types.prompts import Prompts
 @dataclass
 class IRPDOutput:
     parsed: BaseModel
-    subset: str
     prompts: Optional[Prompts]
     response_path: Optional[Path]
     user_path: Optional[Path]
