@@ -116,6 +116,10 @@ class IRPDBase(ABC):
                 " Removed stage '0' from stages"
             )
             config.stages = config.stages[1:]
+        if not config.context and "0" in config.stages:
+            log.info(
+                "`context` was not specified for stage '0'. Defaulted to (5, 5)")
+            config.context = tuple(CONFIGS["defaults"]["context"])
         return config
                     
     def _validate_test_paths(self) -> List[Path]:
