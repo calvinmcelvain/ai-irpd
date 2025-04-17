@@ -69,13 +69,14 @@ class IRPDBase(ABC):
         
         assert N >= 1, "`N` must be greater than 0."
         self.replications = N
-        
-        self.base_path = CONFIGS["test_types"]["paths"][self.test_type]
 
         # If paths not specified, using env variable.
         self.output_path = Path(output_path or get_env_var("OUTPUT_PATH"))
         self.prompts_path = Path(prompts_path or get_env_var("PROMPTS_PATH"))
         self.data_path = Path(data_path or get_env_var("DATA_PATH"))
+        
+        self.base_path = Path(
+            self.output_path / CONFIGS["test_types"]["directories"][self.test_type])
     
     def _validate_test_parameters(self) -> None:
         """

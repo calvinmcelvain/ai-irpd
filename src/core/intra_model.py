@@ -68,7 +68,7 @@ class IntraModel(IRPDBase):
             return self._validate_test_paths()
         
         # Tests are in directorys: .../outputs/intra_model/
-        test_dir = self.output_path / self.test_type
+        test_dir = self.base_path
         current_test = self._get_max_test_number(test_dir)
         test_paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths

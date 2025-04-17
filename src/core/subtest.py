@@ -61,7 +61,9 @@ class Subtest(IRPDBase):
             self.llms, self.llm_configs, self.cases, self.ras, self.treatments
         ))
         
-        assert self.replications == 1, "For test type 'test' or 'subtest', replications `N` must be equal to 1"
+        assert self.replications == 1, (
+            "For test type 'test' or 'subtest', replications `N` must be equal to 1"
+        )
         
         self.test_paths = self._generate_test_paths()
         self._generate_configs()
@@ -69,7 +71,9 @@ class Subtest(IRPDBase):
     def _generate_test_paths(self):
         if self.test_paths:
             return self._validate_test_paths()
-        test_dir = self.output_path / "subtests"
+        
+        # Tests are in directorys: .../outputs/subtests/
+        test_dir = self.base_path
         current_test = self._get_max_test_number(test_dir, "")
         test_paths = [test_dir / f"{i + 1 + current_test}" for i in range(len(self._prod))]
         return test_paths

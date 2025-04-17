@@ -10,12 +10,12 @@
             "replication": ["cross_model", "intra_model"],
             "robustness": ["sample_splitting"]
         },
-        "paths": {
-            "test": "/base_tests",
-            "subtest": "/subtests",
-            "cross_model": "/cross_model",
-            "intra_model": "/intra_model",
-            "sample_splitting": "/sample_splitting"
+        "directories": {
+            "test": "base_tests",
+            "subtest": "subtests",
+            "cross_model": "cross_model",
+            "intra_model": "intra_model",
+            "sample_splitting": "sample_splitting"
         }
     },
     "parameters": {

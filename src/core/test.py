@@ -73,7 +73,7 @@ class Test(IRPDBase):
         
         # Test paths are dependent on the case: .../outputs/base_tests/{case}/
         for case in self.cases:
-            test_dir = self.output_path / "base_tests" / case
+            test_dir = self.base_path / case
             current_test = self._get_max_test_number(test_dir)
             length = int(len(self._prod) / len(self.cases))
             paths = [test_dir / f"test_{i + 1 + current_test}" for i in range(length)]
