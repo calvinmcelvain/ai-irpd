@@ -5,9 +5,18 @@
         "classiffication": ["2", "3"]
     },
     "test_types": {
-        "base": ["test", "subtest"],
-        "replication": ["cross_model", "intra_model"],
-        "robustness": ["sample_splitting"]
+        "classes": {
+            "base": ["test", "subtest"],
+            "replication": ["cross_model", "intra_model"],
+            "robustness": ["sample_splitting"]
+        },
+        "paths": {
+            "test": "/base_tests",
+            "subtest": "/subtests",
+            "cross_model": "/cross_model",
+            "intra_model": "/intra_model",
+            "sample_splitting": "/sample_splitting"
+        }
     },
     "parameters": {
         "stages": ["0", "1", "1r", "1c", "2", "3"],
