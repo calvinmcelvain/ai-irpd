@@ -109,11 +109,10 @@ class GenAIClient(BaseLLM):
         
             if isinstance(response, GenerateContentResponse):
                 content = response.parsed.model_dump_json()
-                request_out = self._request_out(
+                request_out = self._irpd_output(
                     input_tokens=response.usage_metadata.prompt_token_count,
                     output_tokens=response.usage_metadata.candidates_token_count,
-                    system=system,
-                    user=user,
+                    prompts=prompts,
                     content=content,
                     schema=schema
                 )

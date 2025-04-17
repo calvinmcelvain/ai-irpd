@@ -35,17 +35,7 @@ class OutputWriter(FoundationalModel):
         
         stage_output = test_output.stage_outputs[stage_name]
 
-        for output in stage_output.outputs[subset]:
-            request_out = output.request_out
-            prompts = request_out.prompts
-            
-            # Previous prompts are not stored if re-running test.
-            if not prompts: continue
-            
-            prompt_paths = [output.user_path, output.system_path]
-            prompt_writes = [prompts.user, prompts.system]
-            write_file(prompt_paths, prompt_writes)
-            write_json(output.response_path, request_out.parsed.model_dump())
+        for output in stage_output.outputs[subset]: output.write()
         
         if stage_output.complete: Builder(test_output).build(stage_name)
         

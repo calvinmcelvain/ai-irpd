@@ -75,7 +75,7 @@ class CSV(BaseBuilder):
         output_list = []
 
         for output in outputs:
-            output_parsed = output.request_out.parsed
+            output_parsed = output.parsed
             response = {"window_number": output_parsed.window_number}
             
             if stage_name == "0":

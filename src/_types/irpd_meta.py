@@ -19,7 +19,7 @@ class StageInfo(BaseModel):
 
 
 class IRPDMeta(BaseModel):
-    model: Optional[str]
-    configs: Optional[Dict]
+    model: str
+    configs: Dict
     test_info: IRPDConfig
     stages: Dict[str, StageInfo] = {}

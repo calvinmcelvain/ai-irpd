@@ -182,7 +182,7 @@ def load_json_n_validate(file_path: Union[str, Path], schema: Type[T]) -> T:
         raise
 
 
-def validate_json_string(json_str: str, schema: Type[T]) -> T:
+def validate_json_string(json_str: str, schema: Type[T]) -> T | None:
     """
     Returns the object from json schema validation.
     """
@@ -190,11 +190,11 @@ def validate_json_string(json_str: str, schema: Type[T]) -> T:
         schema_obj = schema.model_validate_json(json_str)
         return schema_obj
     except ValidationError as e:
-        log.error(f"Validation error for schema '{schema.__name__}': {e}")
-        raise
+        log.exception(f"Validation error for schema '{schema.__name__}': {e}")
+        return None
     except Exception as e:
-        log.error(f"Error in model validation': {e}\n")
-        raise
+        log.exception(f"Error in model validation': {e}\n")
+        return None
 
 
 def file_to_string(file_path: Union[str, Path]) -> str:

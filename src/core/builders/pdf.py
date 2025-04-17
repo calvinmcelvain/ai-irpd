@@ -40,7 +40,7 @@ class PDF(BaseBuilder):
         outputs = self.stage_outputs[stage_name]
         
         for subset, output in outputs.outputs.items():
-            categories = self.output_attrb(output[0].request_out.parsed)
+            categories = self.output_attrb(output[0].parsed)
             
             if subset != "full":
                 case, instance_type = subset.split("_")

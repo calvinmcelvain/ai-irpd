@@ -158,8 +158,7 @@ class PromptComposer(FoundationalModel):
                 context = test_output.stage_outputs["1r"].outputs
             
             for output in context.values():
-                request_out = output[0].request_out
-                categories = output_attrb(request_out.parsed)
+                categories = output_attrb(output[0].parsed)
                 prompt += categories_to_txt(categories)
 
         return prompt
@@ -181,7 +180,7 @@ class PromptComposer(FoundationalModel):
         # Stage 1r user prompt is the categories created in stage 1.
         if stage_name == "1r":
             context = test_output.stage_outputs["1"].outputs[subset]
-            categories = output_attrb(context[0].request_out.parsed)
+            categories = output_attrb(context[0].parsed)
             prompt = categories_to_txt(categories)
         
         # Stage 1c user prompt is all subset categories created in stage 1r.
@@ -189,8 +188,7 @@ class PromptComposer(FoundationalModel):
             context = test_output.stage_outputs["1r"].outputs
             prompt = ""
             for output in context.values():
-                request_out = output[0].request_out
-                categories = output_attrb(request_out.parsed)
+                categories = output_attrb(output[0].parsed)
                 prompt += categories_to_txt(categories)
         
         # Individual summaries for stages 2 & 3.
@@ -201,12 +199,11 @@ class PromptComposer(FoundationalModel):
             if stage_name == "3":
                 stage_2_outputs = test_output.stage_outputs["2"].outputs["full"]
                 for output in stage_2_outputs:
-                    request_out = output.request_out.parsed
                     assigned_cats = [
                         cat.category_name
-                        for cat in request_out.assigned_categories
+                        for cat in output.parsed.assigned_categories
                     ]
-                    df_index = df[df["window_number"] == request_out.window_number].index
+                    df_index = df[df["window_number"] == output.parsed.window_number].index
                     
                     df.loc[df_index, "assigned_categories"] = str(assigned_cats)
             prompt = df.to_dict("records")
