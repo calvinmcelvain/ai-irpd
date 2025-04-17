@@ -137,33 +137,36 @@ class TestRunner(FoundationalModel):
         agg_prompts = self.prompt_composer.get_prompts(test_outputs, stage_name)
         
         # Requests made for each prompt (accounts for iterative stages).
-        with tqdm(
-            agg_prompts,
+        progress_bar = tqdm(
+            total=len(agg_prompts),
             desc=f"Processing completions for {stage_name}",
             unit="prompt"
-        ) as progress_bar:
-            for idx, (prompt_id, prompt) in enumerate(progress_bar, start=1):
-                id_list = prompt_id.split("-")
-                n = int(id_list[0])
-                subset = id_list[1]
-                
-                stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
-                subset_path = stage_output.stage_path / subset
-                
-                progress_bar.set_postfix({
-                    "config": self.irpd_config.id,
-                    "case": self.case,
-                    "llm": llm_str,
-                    "replicate": f"{n}/{self.total_replications}",
-                    "stage": stage_name,
-                    "prompt": f"{idx}/{len(agg_prompts)}"
-                })
-                
-                output = llm_instance.request(prompt, schema)
-                irpd_output = requestout_to_irpdout(
-                    stage_name, subset, subset_path, output)
-                
-                self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
+        )
+        for idx, (prompt_id, prompt) in enumerate(agg_prompts, start=1):
+            id_list = prompt_id.split("-")
+            n = int(id_list[0])
+            subset = id_list[1]
+            
+            stage_output = self.output_manger.retrieve(llm_str, n, stage_name)
+            subset_path = stage_output.stage_path / subset
+            
+            progress_bar.set_postfix({
+                "config": self.irpd_config.id,
+                "case": self.case,
+                "llm": llm_str,
+                "replicate": f"{n}/{self.total_replications}",
+                "stage": stage_name,
+                "subset": subset,
+                "prompt": f"{idx}/{len(agg_prompts)}"
+            })
+            
+            output = llm_instance.request(prompt, schema)
+            irpd_output = requestout_to_irpdout(
+                stage_name, subset, subset_path, output)
+            
+            progress_bar.update(1)
+            self.output_manger.store_output(llm_str, n, stage_name, irpd_output)
+        progress_bar.close()
         log.info(f"All completions processed for stage '{stage_name}'.")
         return True
     
