@@ -18,7 +18,7 @@ from helpers.utils import dynamic_import
 # Specifying the arguments for test models.
 # Also makes it easier when creating an instance w/ autofill.
 CASES = Literal["uni", "switch", "uniresp", "first", "uni_switch"]
-RAS = Literal["ra1", "ra2", "both", "exp"]
+RAS = Literal["ra1", "ra2", "both", "llm"]
 TREATMENTS = Literal["imperfect", "perfect", "merged"]
 STAGES = Literal["0", "1", "1r", "1c", "2", "3"]
 LLMS = Literal[
