@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import logging
 from pathlib import Path
 
 from logger import LoggerManager
@@ -8,14 +7,10 @@ from helpers.utils import is_tail_running
 from core.irpd_models import IRPDTestClass
 
 
-log = logging.getLogger("app")
-
-
 
 if __name__ == "__main__":
     log_manager = LoggerManager()
     log_manager.clear_logs()
-    log_manager.setup_logger()
 
     # Optional -- Opens a new terminal/shell w/ live logs
     repo_path = Path(__file__).parents[1]

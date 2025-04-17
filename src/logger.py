@@ -11,28 +11,45 @@ from pathlib import Path
 from helpers.utils import load_config
 
 
+LOGGER_CONFIGS = load_config("logger.json")
+
+
 
 class LoggerManager:
     """
     LoggerManager model.
     
-    Contains methods to clear and setup logger based on logger settings.
+    Contains methods to clear logger based on logger settings.
     
     Note: Log files are stored in './logs/'.
     """
-    def __init__(
-        self,
-        config_file: str = "logger.json",
-        logger_name: str = "app",
-        debug: bool = True
-    ):
+    def __init__(self, debug: bool = True):
         self.logs_path = Path("src").resolve().parents[1] / "logs"
         self.logs_path.mkdir(exist_ok=True)
-        self.config_file = config_file
-        self.debug = debug
         self.log_files: Dict[str, Path] = {}
-        self.logger_name = logger_name
+        
+        # Loading logger configs.
+        logger_name = LOGGER_CONFIGS["name"]
+        logging.config.dictConfig(LOGGER_CONFIGS["config"])
+        log_file_name = LOGGER_CONFIGS["log_file_names"]["main"]
+        log_file_path = self.logs_path / log_file_name
+        self.log_files[logger_name] = log_file_path
+        
+        # Log.
         self.log = logging.getLogger(logger_name)
+        
+        # Setting up debug file if specified.
+        if debug:
+            debug_file_path = self.logs_path / "debug.log"
+            rotating_handler = RotatingFileHandler(
+                debug_file_path, maxBytes=5 * 1024 * 1024, backupCount=5
+            )
+            rotating_handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter(
+                '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+            )
+            rotating_handler.setFormatter(formatter)
+            self.log.addHandler(rotating_handler)
 
     def clear_logs(self):
         """
@@ -46,30 +63,4 @@ class LoggerManager:
             except Exception as e:
                 self.log.error(f"Error truncating log file '{log_file}': {e}")
                 raise
-        return None
-
-    def setup_logger(self):
-        """
-        Sets up logger according to logger configs.
-        """
-        config = load_config(self.config_file)
-        logging.config.dictConfig(config)
-
-        log_file_path = self.logs_path / f"{self.logger_name}.log"
-        self.log_files[self.logger_name] = log_file_path
-
-        # Ensure debug file is created with a rotating handler
-        if self.debug:
-            debug_file_path = self.logs_path / "debug.log"
-            rotating_handler = RotatingFileHandler(
-                debug_file_path, maxBytes=5 * 1024 * 1024, backupCount=5
-            )
-            rotating_handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter(
-                '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
-            )
-            rotating_handler.setFormatter(formatter)
-            self.log.addHandler(rotating_handler)
-
-        self.log.info(f"{self.logger_name.capitalize()} logger initialized.")
         return None

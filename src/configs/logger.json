@@ -1,35 +1,42 @@
 {
-    "version": 1,
-    "disable_existing_loggers": false,
-    "formatters": {
-        "detailed": {
-            "format": "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-        }
+    "name": "app",
+    "log_file_names": {
+        "main": "app.log",
+        "debug": "debug.log"
     },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "level": "INFO",
-            "formatter": "detailed",
-            "stream": "ext://sys.stdout"
+    "config": {
+        "version": 1,
+        "disable_existing_loggers": false,
+        "formatters": {
+            "detailed": {
+                "format": "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+            }
         },
-        "app_file": {
-            "class": "logging.FileHandler",
-            "filename": "../logs/app.log",
-            "level": "INFO",
-            "formatter": "detailed",
-            "encoding": "utf-8"
-        }
-    },
-    "loggers": {
-        "app": {
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "detailed",
+                "stream": "ext://sys.stdout"
+            },
+            "app_file": {
+                "class": "logging.FileHandler",
+                "filename": "../logs/app.log",
+                "level": "INFO",
+                "formatter": "detailed",
+                "encoding": "utf-8"
+            }
+        },
+        "loggers": {
+            "app": {
+                "level": "DEBUG",
+                "handlers": ["console", "app_file"],
+                "propagate": false
+            }
+        },
+        "root": {
             "level": "DEBUG",
-            "handlers": ["console", "app_file"],
-            "propagate": false
+            "handlers": ["console", "app_file"]
         }
-    },
-    "root": {
-        "level": "DEBUG",
-        "handlers": ["console", "app_file"]
     }
 }
