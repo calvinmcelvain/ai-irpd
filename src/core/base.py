@@ -30,22 +30,24 @@ class IRPDBase(ABC):
     
     def __init__(
         self, 
-        cases: Union[List[str], str] = None,
-        ras: Union[List[str], str] = None,
-        treatments: Union[List[str], str] = None,
-        stages: Union[List[str], str] = None,
-        N: int = None,
-        context: Tuple[int, int] = None,
-        llms: Union[List[str], str] = None,
-        llm_configs: Union[List[str], str] = None,
-        max_instances: Optional[int] = None,
-        max_summaries: Optional[int] = None,
-        output_path: Optional[Union[str, Path]] = None,
-        prompts_path: Optional[Union[str, Path]] = None,
-        data_path: Optional[Union[str, Path]] = None,
-        test_paths: Optional[Union[List[Union[str, Path]], Union[str, Path]]] = None,
-        batch: bool = False
+        cases: Union[List[str], str],
+        ras: Union[List[str], str],
+        treatments: Union[List[str], str],
+        stages: Union[List[str], str],
+        N: int,
+        context: Optional[Tuple[int, int]],
+        llms: Union[List[str], str],
+        llm_configs: Union[List[str], str],
+        max_instances: Optional[int],
+        max_summaries: Optional[int],
+        output_path: Optional[Union[str, Path]],
+        prompts_path: Optional[Union[str, Path]],
+        data_path: Optional[Union[str, Path]],
+        test_paths: Optional[Union[List[Union[str, Path]], Union[str, Path]]],
+        batch: bool,
+        test_type: str
     ):
+        self.test_type = test_type
         self.cases = to_list(cases)
         self.ras = to_list(ras)
         self.treatments = to_list(treatments)

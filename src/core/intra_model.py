@@ -24,15 +24,17 @@ class IntraModel(IRPDBase):
         treatments: Union[List[str], str],
         stages: Union[List[str], str],
         N: int,
-        context: Optional[Tuple[int, int]] = None,
-        llms: Optional[Union[List[str], str]] = None,
-        llm_configs: Optional[Union[List[str], str]] = None,
-        max_instances: Optional[int] = None,
-        output_path: Optional[Union[str, Path]] = None,
-        prompts_path: Optional[Union[str, Path]] = None,
-        data_path: Optional[Union[str, Path]] = None,
-        test_paths: Optional[List[str]] = None,
-        batch: bool = False
+        context: Optional[Tuple[int, int]],
+        llms: Union[List[str], str],
+        llm_configs: Union[List[str], str],
+        max_instances: Optional[int],
+        max_summaries: Optional[int],
+        output_path: Optional[Union[str, Path]],
+        prompts_path: Optional[Union[str, Path]],
+        data_path: Optional[Union[str, Path]],
+        test_paths: Optional[Union[List[Union[str, Path]], Union[str, Path]]],
+        batch: bool,
+        test_type: str
     ):
         super().__init__(
             cases,
@@ -44,15 +46,14 @@ class IntraModel(IRPDBase):
             llms,
             llm_configs,
             max_instances,
+            max_summaries,
             output_path,
             prompts_path,
             data_path,
             test_paths,
-            batch
+            batch,
+            test_type
         )
-        self.test_type = "cross_model"
-        self._validate_stage_index()
-        
         # For intra-model tests, the number of tests is the total combinations
         # of LLMs, LLM configs, cases, RAs, and treatments.
         self._prod = list(product(
