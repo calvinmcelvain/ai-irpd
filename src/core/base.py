@@ -103,7 +103,7 @@ class IRPDBase(ABC):
                     f"`stages` start after stage '1' in config [{config.id}]."
                     f" Stages {PARAMETERS["stages"][1:start_idx]} appended."
                 )
-                config.stages = PARAMETERS["stages"][1:]
+                config.stages = PARAMETERS["stages"][1:start_idx + 1]
             if config.ra == "llm" and "0" not in config.stages:
                 log.debug(
                     f"`stages` did not include stage '0' in config [{config.id}]."
