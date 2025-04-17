@@ -86,29 +86,6 @@ class IRPDBase(ABC):
             order = {key: index for index, key in enumerate(valid_params)}
             setattr(self, param, sorted(self_param, key=order.get))
         return None
-    
-    def _validate_stage_index(self) -> None:
-        """
-        Validates the stage index and context values, ensuring prior stages 
-        are included if necessary and defaults are set appropriately.
-        """
-        start_idx = PARAMETERS["stages"].index(self.stages[0])
-        replication_types = CONFIGS["test_types"]["replication"]
-        if "llm" in self.ras:
-            if "0" not in self.stages:
-                log.warning("Stage 0 required for `llm` in `ras`. Adding '0'.")
-                self.stages = PARAMETERS["stages"][:start_idx]
-            if start_idx > 0 and self.test_type not in replication_types:
-                log.warning("Adding prior stages.")
-                self.stages = PARAMETERS["stages"][:start_idx]
-            self.context = self.context or (5, 5)
-            assert self.context[0] >= 1 and self.context[1] >= 1, (
-                "`context` values must be > 0"
-            )
-        elif start_idx > 1 and self.test_type not in replication_types:
-            log.warning("Adding prior stages.")
-            self.stages = PARAMETERS["stages"][1:start_idx]
-        return None
                     
     def _validate_test_paths(self) -> List[Path]:
         """
@@ -150,26 +127,6 @@ class IRPDBase(ABC):
             return {k: self.configs[k] for k in config_ids if k in self.configs}
         else:
             return self.configs
-
-    def add_configs(self, configs: Union[IRPDConfig, List[IRPDConfig]]) -> None:
-        """
-        Method to add IRPD configs to configs attrb.
-        """
-        configs = to_list(configs)
-        for config in configs:
-            if not isinstance(config, IRPDConfig):
-                log.error(
-                    f"Test config {config} was not a IRPDConfig instance."
-                    " Did not add."
-                )
-                continue
-            if config.test_type not in self._test_type:
-                log.error(
-                    f"Test config {config.test_id} was not correct test type."
-                    " Did not add."
-                )
-                continue
-            self.configs[config.id] = config
 
     @abstractmethod
     def _generate_test_paths(self) -> None:
