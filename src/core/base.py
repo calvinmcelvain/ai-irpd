@@ -10,7 +10,7 @@ from typing import List, Optional, Union, Dict, Tuple
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from helpers.utils import get_env_var, to_list, load_config
+from helpers.utils import get_env_var, to_list, load_config, contains_subpath
 from core.test_runner import TestRunner
 from core.output_manager import OutputManager
 from _types.irpd_config import IRPDConfig
@@ -122,9 +122,12 @@ class IRPDBase(ABC):
         """
         Ensures all test paths are Path objects and ensures that the number of
         test paths specified are the same length as the calculated number of
-        tests.
+        tests. Also ensures paths are apart of the base path.
         """
-        test_paths = [Path(path) for path in self.test_paths]
+        test_paths = [
+            Path(path) for path in self.test_paths
+            if contains_subpath(Path(path), self.base_path)
+        ]
         if not len(self.test_paths) == len(self._prod):
             log.error(
                 "`test_paths` must be the same length as the number of test configs."
