@@ -14,6 +14,10 @@ from helpers.utils import load_config
 LOGGER_CONFIGS = load_config("logger.json")
 
 
+# Setting levels of nuciance loggers.
+logging.getLogger("httpx").setLevel(logging.ERROR)
+
+
 
 class LoggerManager:
     """
