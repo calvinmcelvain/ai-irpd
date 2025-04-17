@@ -1,4 +1,9 @@
 {
+    "stage_classes": {
+        "summarization": ["0"],
+        "categorizatioon": ["1", "1r", "1c"],
+        "classiffication": ["2", "3"]
+    },
     "output_file_names": {
         "meta": "_test_meta.json",
         "summaries": {
