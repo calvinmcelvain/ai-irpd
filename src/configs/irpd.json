@@ -13,5 +13,11 @@
             "2": "_stage_2_final.csv",
             "3": "_stage_3_final.csv"
         }
+    },
+    "parameters": {
+        "stages": ["0", "1", "1r", "1c", "2", "3"],
+        "ras": ["llm", "ra1", "ra2"],
+        "treatmets": ["imperfect", "perfect", "merged"],
+        "cases": ["uni", "uniresp", "switch", "first", "uni_switch"]
     }
 }
