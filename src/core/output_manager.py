@@ -6,7 +6,7 @@ Contains the functional OutputManager model.
 import logging
 from pathlib import Path
 from datetime import datetime
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from typing import List, Union, Optional, overload
 
 from helpers.utils import check_directories, load_json_n_validate
@@ -85,6 +85,10 @@ class OutputManager(FoundationalModel):
         """
         log.info("Checking test directories for existing outputs.")
         for test_output in self.outputs:
+            # Validating config if test already exists.
+            if test_output.meta_path.exists():
+                self._validate_config(test_output.meta.test_info)
+            
             for stage_output in test_output.stage_outputs.values():
                 if not stage_output.stage_path.exists():
                     log.debug(
@@ -169,7 +173,23 @@ class OutputManager(FoundationalModel):
 
                 log.info(f"Batch - {batch_id}, is {batch_out}.")
         log.info("Batch check completed.")
-        return None 
+        return None
+    
+    def _validate_config(self, config: IRPDConfig) -> bool:
+        """
+        Checks if the case, ra, treatment, llms, and llm_config from the 
+        IRPDConfig in meta is the same as the current IRPDConfig. This is 
+        primarily for test_path validation. If a test_path is specified to 
+        complete an incomplete path, the configs for that test should be the 
+        same.
+        """
+        check_fields = {"case", "ra", "treatment", "llms", "llm_config"}
+        for field in fields(config):
+            if field.name not in check_fields:
+                continue
+            if getattr(config, field.name) != getattr(self.irpd_config, field.name):
+                return False
+        return True
     
     def check_output_completion(
         self, output: Union[StageOutput, TestOutput]
