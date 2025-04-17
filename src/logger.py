@@ -23,13 +23,16 @@ class LoggerManager:
     def __init__(
         self,
         config_file: str = "logger.json",
-        debug_file: bool = True
+        logger_name: str = "app",
+        debug: bool = True
     ):
         self.logs_path = Path("src").resolve().parents[1] / "logs"
         self.logs_path.mkdir(exist_ok=True)
         self.config_file = config_file
-        self.debug_file = debug_file
+        self.debug = debug
         self.log_files: Dict[str, Path] = {}
+        self.logger_name = logger_name
+        self.log = logging.getLogger(logger_name)
 
     def clear_logs(self):
         """
@@ -39,22 +42,24 @@ class LoggerManager:
             try:
                 with log_file.open("w"):
                     pass
-                logging.info(f"Truncated log file: {log_file}")
+                self.log.info(f"Truncated log file: {log_file}")
             except Exception as e:
-                logging.error(f"Error truncating log file '{log_file}': {e}")
+                self.log.error(f"Error truncating log file '{log_file}': {e}")
                 raise
         return None
 
-    def setup_logger(self, logger_name: str = "app"):
+    def setup_logger(self):
+        """
+        Sets up logger according to logger configs.
+        """
         config = load_config(self.config_file)
         logging.config.dictConfig(config)
 
-        log = logging.getLogger(logger_name)
-        log_file_path = self.logs_path / f"{logger_name}.log"
-        self.log_files[logger_name] = log_file_path
+        log_file_path = self.logs_path / f"{self.logger_name}.log"
+        self.log_files[self.logger_name] = log_file_path
 
         # Ensure debug file is created with a rotating handler
-        if self.debug_file:
+        if self.debug:
             debug_file_path = self.logs_path / "debug.log"
             rotating_handler = RotatingFileHandler(
                 debug_file_path, maxBytes=5 * 1024 * 1024, backupCount=5
@@ -64,7 +69,7 @@ class LoggerManager:
                 '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
             )
             rotating_handler.setFormatter(formatter)
-            log.addHandler(rotating_handler)
+            self.log.addHandler(rotating_handler)
 
-        log.info(f"{logger_name.capitalize()} logger initialized.")
+        self.log.info(f"{self.logger_name.capitalize()} logger initialized.")
         return None
