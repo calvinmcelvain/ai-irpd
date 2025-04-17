@@ -4,6 +4,17 @@
         "categorizatioon": ["1", "1r", "1c"],
         "classiffication": ["2", "3"]
     },
+    "test_types": {
+        "base": ["test", "subtest"],
+        "replication": ["cross_model", "intra_model"],
+        "robustness": ["sample_splitting"]
+    },
+    "parameters": {
+        "stages": ["0", "1", "1r", "1c", "2", "3"],
+        "ras": ["llm", "ra1", "ra2", "both"],
+        "treatments": ["imperfect", "perfect", "merged"],
+        "cases": ["uni", "uniresp", "switch", "first", "uni_switch"]
+    },
     "output_file_names": {
         "meta": "_test_meta.json",
         "summaries": {
@@ -17,17 +28,6 @@
         "classifications": {
             "2": "_stage_2_final.csv",
             "3": "_stage_3_final.csv"
-        }
-    },
-    "parameters": {
-        "stages": ["0", "1", "1r", "1c", "2", "3"],
-        "ras": ["llm", "ra1", "ra2", "both"],
-        "treatments": ["imperfect", "perfect", "merged"],
-        "cases": ["uni", "uniresp", "switch", "first", "uni_switch"],
-        "test_types": {
-            "base": ["test", "subtest"],
-            "replication": ["cross_model", "intra_model"],
-            "robustness": ["sample_splitting"]
         }
     }
 }

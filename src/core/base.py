@@ -16,7 +16,8 @@ from core.test_runner import TestRunner
 from core.output_manager import OutputManager
 
 
-PARAMETERS: Dict = load_config("irpd.json")["parameters"]
+CONFIGS: Dict = load_config("irpd.json")
+PARAMETERS: Dict = CONFIGS["parameters"]
 
 
 log = logging.getLogger("app")
@@ -86,7 +87,7 @@ class IRPDBase(ABC):
         are included if necessary and defaults are set appropriately.
         """
         start_idx = PARAMETERS["stages"].index(self.stages[0])
-        replication_types = PARAMETERS["test_types"]["replication"]
+        replication_types = CONFIGS["test_types"]["replication"]
         if "llm" in self.ras:
             if "0" not in self.stages:
                 log.warning("Stage 0 required for `llm` in `ras`. Adding '0'.")
