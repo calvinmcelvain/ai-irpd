@@ -30,37 +30,32 @@ class LoggerManager:
         self.config_file = config_file
         self.debug_file = debug_file
         self.log_files: Dict[str, Path] = {}
-    
-    def _sequential_debug_file(self):
-        """
-        Generate a sequential debug file name to avoid overwriting.
-        """
-        index = 1
-        while True:
-            debug_file_path = self.logs_path / f"debug_{index}.log"
-            if not debug_file_path.exists():
-                return debug_file_path
-            index += 1
 
     def clear_logs(self):
         """
-        Clears all logs from logs directory.
+        Clears all logs by truncating the log files.
         """
         for log_file in self.logs_path.glob("*.log"):
-            log_file.unlink(missing_ok=True)
+            try:
+                with log_file.open("w"):
+                    pass
+                logging.info(f"Truncated log file: {log_file}")
+            except Exception as e:
+                logging.error(f"Error truncating log file '{log_file}': {e}")
+                raise
         return None
 
     def setup_logger(self, logger_name: str = "app"):
         config = load_config(self.config_file)
         logging.config.dictConfig(config)
 
-        logger = logging.getLogger(logger_name)
+        log = logging.getLogger(logger_name)
         log_file_path = self.logs_path / f"{logger_name}.log"
         self.log_files[logger_name] = log_file_path
 
         # Ensure debug file is created with a rotating handler
         if self.debug_file:
-            debug_file_path = self._sequential_debug_file()
+            debug_file_path = self.logs_path / "debug.log"
             rotating_handler = RotatingFileHandler(
                 debug_file_path, maxBytes=5 * 1024 * 1024, backupCount=5
             )
@@ -69,7 +64,7 @@ class LoggerManager:
                 '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
             )
             rotating_handler.setFormatter(formatter)
-            logger.addHandler(rotating_handler)
+            log.addHandler(rotating_handler)
 
-        logger.info(f"{logger_name.capitalize()} logger initialized.")
+        log.info(f"{logger_name.capitalize()} logger initialized.")
         return None
