@@ -286,6 +286,17 @@ def check_directories(
         return False
 
 
+def contains_subpath(path: Path, subpath: Path) -> bool:
+    """
+    Checks wether or not a path is apart of a subpath/directory.
+    """
+    path_parts = path.parts
+    sub_parts = subpath.parts
+    n = len(sub_parts)
+    return any(
+        path_parts[i:i+n] == sub_parts for i in range(len(path_parts) - n + 1))
+
+
 def find_named_parent(path: Path, target: str) -> Path:
     """
     Finds the nearest parent directory with the given name.
