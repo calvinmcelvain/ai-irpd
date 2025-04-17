@@ -24,7 +24,7 @@
         "ras": ["llm", "ra1", "ra2", "both"],
         "treatments": ["imperfect", "perfect", "merged"],
         "cases": ["uni", "uniresp", "switch", "first", "uni_switch"],
-        "test_type": {
+        "test_types": {
             "base": ["test", "subtest"],
             "replication": ["cross_model", "intra_model"],
             "robustness": ["sample_splitting"]
