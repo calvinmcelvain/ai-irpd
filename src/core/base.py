@@ -115,7 +115,7 @@ class IRPDBase(ABC):
         )
         return max(map(int, matches), default=0)
     
-    def _get_test_configs(
+    def _get_configs(
         self, config_ids: Union[str, List[str]]
     ) -> Dict[str, IRPDConfig]:
         """
@@ -160,7 +160,7 @@ class IRPDBase(ABC):
             each chat completion request. If batch, this arg. is null. Defaults 
             to False.
         """
-        irpd_configs = self._get_test_configs(config_ids=config_ids)
+        irpd_configs = self._get_configs(config_ids=config_ids)
         
         for config_id, config in irpd_configs.items():
             test_runner = TestRunner(config, print_response)
