@@ -160,7 +160,7 @@ class IRPDBase(ABC):
             return self.configs
 
     @abstractmethod
-    def _generate_test_paths(self) -> None:
+    def _generate_test_paths(self) -> List[Path]:
         """
         Generates test paths for each IRPD config. Different for each test type.
         """
