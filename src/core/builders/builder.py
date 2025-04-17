@@ -2,7 +2,11 @@
 Contains the Builder Model.
 """
 import core.builders as builder
+from helpers.utils import load_config
 from _types.test_output import TestOutput
+
+
+CONFIGS = load_config("irpd.json")["stage_classes"]
 
 
 
@@ -17,7 +21,7 @@ class Builder:
 
         
     def build(self, stage_name: str) -> None:
-        if stage_name in {"1", "1r", "1c"}:
+        if stage_name in CONFIGS["categorization"]:
             builder.PDF(self.test_output).build(stage_name)
         else:
             builder.CSV(self.test_output).build(stage_name)
