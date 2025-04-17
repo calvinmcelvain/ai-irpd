@@ -22,7 +22,7 @@
     "parameters": {
         "stages": ["0", "1", "1r", "1c", "2", "3"],
         "ras": ["llm", "ra1", "ra2", "both"],
-        "treatmets": ["imperfect", "perfect", "merged"],
+        "treatments": ["imperfect", "perfect", "merged"],
         "cases": ["uni", "uniresp", "switch", "first", "uni_switch"],
         "test_types": {
             "base": ["test", "subtest"],
