@@ -68,6 +68,17 @@ class Data(FoundationalModel):
         window_numbers = df.loc[
             df["case"].isin(self.cases), "window_number"].dropna().tolist()
         
+        # Getting keep columns based on treatment
+        keep_columns = [
+            "window_number", "chat", "super_game", "stage_game", "payoff",
+            "cooperate", "other_cooperate", "team", "opponent", "sender",
+            "receiver", "instance_type"
+        ]
+        if self.treatment != "perfect":
+            keep_columns.extend([
+                "cooperate_signal", "other_cooperate_signal"
+            ])
+        
         raw_instances = []
         for window_number in window_numbers:
             start_idx = df[df["window_number"] == window_number].index[0]
@@ -117,10 +128,7 @@ class Data(FoundationalModel):
                     prev_stage = curr_stage
             
             subset_df = df.loc[back_idx:end_idx]
-            subset_df = subset_df[[
-                "window_number", "chat", "super_game", "stage_game", "payoff",
-                "team", "opponent", "sender", "receiver"
-            ]]
+            subset_df = subset_df[keep_columns]
             
             raw_instances.append(subset_df.to_dict("records"))
         return raw_instances
