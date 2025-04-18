@@ -34,8 +34,6 @@ class SummaryCSV(BaseBuilder):
         csv_path = self.sub_path / self.file_names["summaries"][stage_name]
         final_df.to_csv(csv_path, index=False)
         log.info(f"Stage {stage_name} CSV saved to: {csv_path}")
-        
-        
     
     def _process_stage_outputs(self, stage_name: str) -> pd.DataFrame:
         """
