@@ -185,6 +185,18 @@ class Data(FoundationalModel):
             ]
             df = df[~df["window_number"].isin(window_nums)]
         
+        # Stage 3 adds another variable for the classifications in stage 2.
+        if stage_name == "3":
+            stage_2_outputs = test_output.stage_outputs["2"].outputs["full"]
+            for output in stage_2_outputs:
+                assigned_cats = [
+                    cat.category_name
+                    for cat in output.parsed.assigned_categories
+                ]
+                df_index = df[df["window_number"] == output.parsed.window_number].index
+                
+                df.loc[df_index, "assigned_categories"] = str(assigned_cats)
+        
         return df
     
     
