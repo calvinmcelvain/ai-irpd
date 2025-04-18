@@ -1,5 +1,5 @@
 """
-Contains the PDF model
+Contains the CategoryPDF model
 """
 import logging
 

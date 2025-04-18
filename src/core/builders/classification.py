@@ -1,5 +1,5 @@
 """
-Contains the CSV model
+Contains the ClassificationCSV model
 """
 import logging
 import pandas as pd
