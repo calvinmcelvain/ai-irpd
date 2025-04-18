@@ -16,6 +16,7 @@ from _types.irpd_config import IRPDConfig
 class PromptComposerContainer:
     module: str
     test_class: str
+    stage_name: str
     
     @cached_property
     def impl(self):
@@ -24,16 +25,16 @@ class PromptComposerContainer:
 
 
 class PromptComposer(PromptComposerContainer, Enum):
-    stage_0 = ("core.prompt_composers.stage_0", "Stage0PromptComposer")
-    stage_1 = ("core.prompt_composers.stage_1", "Stage1PromptComposer")
-    stage_1r = ("core.prompt_composers.stage_1r", "Stage1rPromptComposer")
-    stage_1c = ("core.prompt_composers.stage_1c", "Stage1cPromptComposer")
-    stage_2 = ("core.prompt_composers.stage_2", "Stage2PromptComposer")
-    stage_3 = ("core.prompt_composers.stage_3", "Stage3PromptComposer")
+    stage_0 = ("core.prompt_composers.stage_0", "Stage0PromptComposer", "0")
+    stage_1 = ("core.prompt_composers.stage_1", "Stage1PromptComposer", "1")
+    stage_1r = ("core.prompt_composers.stage_1r", "Stage1rPromptComposer", "1r")
+    stage_1c = ("core.prompt_composers.stage_1c", "Stage1cPromptComposer", "1c")
+    stage_2 = ("core.prompt_composers.stage_2", "Stage2PromptComposer", "2")
+    stage_3 = ("core.prompt_composers.stage_3", "Stage3PromptComposer", "3")
     
     def get_prompt_composer(self, irpd_config: IRPDConfig):
         """
         Gets the prompt composer instance.
         """
-        return self.impl(irpd_config=irpd_config)
+        return self.impl(irpd_config=irpd_config, stage_name=self.stage_name)
     
