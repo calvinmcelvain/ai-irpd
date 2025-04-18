@@ -82,15 +82,14 @@ class ClassificationCSV(BaseBuilder):
 
         for output in outputs:
             output_parsed = output.parsed
-            response = {"window_number": output_parsed.window_number}
+            response = {
+                "window_number": output_parsed.window_number,
+                "reasoning": output_parsed.reasoning
+            }
             
-            if stage_name == "0":
-                response.update({"summary": output_parsed.summary})
-            else:
-                response.update({"reasoning": output_parsed.reasoning})
-                # Binary classification for stage 2 and rank for stage 3.
-                for category in self.output_attrb(output_parsed):
-                    response[category.category_name] = getattr(category, "rank", 1)
+            # Binary classification for stage 2 and rank for stage 3.
+            for category in self.output_attrb(output_parsed):
+                response[category.category_name] = getattr(category, "rank", 1)
 
             output_list.append(response)
 
