@@ -34,17 +34,15 @@ class SummaryCSV(BaseBuilder):
         csv_path = self.sub_path / self.file_names["summaries"][stage_name]
         final_df.to_csv(csv_path, index=False)
         log.info(f"Stage {stage_name} CSV saved to: {csv_path}")
-        
-        
     
     def _process_stage_outputs(self, stage_name: str) -> pd.DataFrame:
         """
         Processes stage 0 outputs and creates a DataFrame.
         """
-        outputs = self.stage_outputs[stage_name].outputs
+        outputs = self.stage_outputs[stage_name].outputs["full"]
         output_list = []
 
-        for _, output in outputs.values():
+        for output in outputs:
             output_parsed = output.parsed
             response = {
                 "window_number": output_parsed.window_number,
@@ -60,7 +58,7 @@ class SummaryCSV(BaseBuilder):
         """
         og_df = pd.read_csv(self.data_path / CONFIGS["file_paths"]["llm"])
         og_df = og_df["window_number"].dropna()
-        og_df = og_df[og_df["case"].isin()]
+        og_df = og_df[og_df["case"].isin(self.cases)]
         
         merged_df = pd.merge(og_df, summary_df, on="window_number", how="left")
         

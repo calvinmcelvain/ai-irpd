@@ -12,7 +12,7 @@ from typing import List, Union, Optional, overload
 from helpers.utils import check_directories, load_json_n_validate
 from core.functions import complete_irpdout
 from core.foundation import FoundationalModel
-from core.prompt_composer import PromptComposer
+from core.prompt_composers.prompt_composer import PromptComposer
 from core.output_writer import OutputWriter
 from _types.batch_output import BatchOut
 from _types.irpd_config import IRPDConfig
@@ -33,8 +33,16 @@ class OutputManager(FoundationalModel):
     def __init__(self, irpd_config: IRPDConfig):
         super().__init__(irpd_config)
         
-        self.prompt_composer = PromptComposer(irpd_config)
         self.output_writer = OutputWriter(irpd_config)
+        
+        self.prompt_composer = PromptComposer
+        
+        self.expected_outputs = {
+            stage: getattr(
+                PromptComposer, f"stage_{stage}"
+            ).get_prompt_composer(irpd_config).expected_outputs()
+            for stage in self.stages
+        }
         
         # Initializing output objects.
         self.outputs = self._initialize_outputs()
@@ -192,7 +200,7 @@ class OutputManager(FoundationalModel):
         """
         if isinstance(output, StageOutput):
             stage_name = output.stage_name
-            expected_outputs = self.prompt_composer.expected_outputs[stage_name]
+            expected_outputs = self.expected_outputs[stage_name]
             total_outputs = sum(
                 len(subset_outputs) for subset_outputs in output.outputs.values())
             output.complete = total_outputs == expected_outputs

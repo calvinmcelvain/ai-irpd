@@ -73,20 +73,32 @@ class Data(FoundationalModel):
             (self.treatment == "merged") | (df["treatment"] == self.treatment)
         )]
         
-        # Adjusting for max summaries.
-        if self.max_summaries: df = df[:self.max_summaries]
-        
         return df
     
-    def get_list_of_raw_instances(self, subset: str) -> List[List[Dict]]:
+    def _len_windows(self) -> int:
         """
-        Returns a list of instances, given the context.
+        Returns the number of window numbers adjusted for max summaries and cases.
+        Used for expected outputs method in Stage0PromptComposer.
         """
-        df = self.raw_data[self.raw_data["subset"] == subset]
+        df = self.raw_data
         
         # Getting all windows.
         window_numbers = df.loc[
             df["case"].isin(self.cases), "window_number"].dropna().tolist()
+        window_numbers = window_numbers[:self.max_summaries]
+        
+        return len(window_numbers)
+    
+    def get_list_of_raw_instances(self, case: str) -> List[List[Dict]]:
+        """
+        Returns a list of instances, given the context.
+        """
+        df = self.raw_data
+        
+        # Getting all windows.
+        window_numbers = df.loc[
+            df["case"] == case, "window_number"].dropna().tolist()
+        window_numbers = window_numbers[:self.max_summaries]
         
         # Getting keep columns based on treatment
         keep_columns = [
@@ -185,6 +197,18 @@ class Data(FoundationalModel):
                 for output in outputs
             ]
             df = df[~df["window_number"].isin(window_nums)]
+        
+        # Stage 3 adds another variable for the classifications in stage 2.
+        if stage_name == "3":
+            stage_2_outputs = test_output.stage_outputs["2"].outputs["full"]
+            for output in stage_2_outputs:
+                assigned_cats = [
+                    cat.category_name
+                    for cat in output.parsed.assigned_categories
+                ]
+                df_index = df[df["window_number"] == output.parsed.window_number].index
+                
+                df.loc[df_index, "assigned_categories"] = str(assigned_cats)
         
         return df
     
