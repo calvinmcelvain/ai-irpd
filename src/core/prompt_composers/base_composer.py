@@ -122,9 +122,16 @@ class BaseComposer(FoundationalModel):
         return section
     
     @abstractmethod
-    def _construct_system_prompt(self) -> str | List[Dict] | List[List[Dict]]:
+    def _construct_system_prompt(self) -> str:
         """
         Constructs the system prompt.
+        """
+        pass
+    
+    @abstractmethod
+    def _construct_user_prompt(self) -> str | List[Dict] | List[List[Dict]]:
+        """
+        Constructs the user prompt(s).
         """
         pass
     
