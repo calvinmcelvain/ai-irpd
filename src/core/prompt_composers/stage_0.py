@@ -38,7 +38,7 @@ class Stage0PromptComposer(BaseComposer):
     def _constraints(self):
         return super()._constraints()
     
-    def _data_definitions(self):
+    def _data_definitions(self, case: str):
         section = super()._data_definitions()
         
         section_path = self.sections_path / "data_definitions"
@@ -50,8 +50,7 @@ class Stage0PromptComposer(BaseComposer):
         # Instance type definition.
         instance_type_path = stage_path / "instance_type"
         section += file_to_string(instance_type_path / "initial.md")
-        for case in self.cases:
-            section += file_to_string(instance_type_path / f"{case}.md")
+        section += file_to_string(instance_type_path / f"{case}.md")
             
         # Window number definition.
         section += file_to_string(stage_path / "window_number.md")
@@ -63,7 +62,7 @@ class Stage0PromptComposer(BaseComposer):
         b = self._experimental_context()
         c = self._task(case)
         d = self._constraints()
-        e = self._data_definitions()
+        e = self._data_definitions(case)
         prompt = a + b + c + d + e
         return prompt
     
@@ -88,7 +87,7 @@ class Stage0PromptComposer(BaseComposer):
                 prompts.extend([
                     (
                         self._prompt_id("full", n, user),
-                        Prompts(system=system_prompt, user=user)
+                        Prompts(system=str(system_prompt), user=str(user))
                     )
                     for user in user_prompt
                 ])
