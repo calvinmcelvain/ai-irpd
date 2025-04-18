@@ -32,7 +32,7 @@ class Data(FoundationalModel):
         Pre-filters RA data for the IRPDConfig.
         """
         # importing RA data
-        df = pd.read_csv(self.data_path / "ra_summaries.csv")
+        df = pd.read_csv(self.data_path / CONFIGS["file_paths"]["ra"])
         
         # Filter for cases and treatment.
         df = df[
@@ -54,7 +54,7 @@ class Data(FoundationalModel):
         Pre-filters Raw data for IRPDConfig.
         """
         # importing raw data.
-        df = pd.read_csv(self.data_path / "exp.csv", index_col=0)
+        df = pd.read_csv(self.data_path / CONFIGS["file_paths"]["llm"], index_col=0)
         
         # Filter for treatment.
         df = df[(
