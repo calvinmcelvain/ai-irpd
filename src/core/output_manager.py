@@ -35,6 +35,8 @@ class OutputManager(FoundationalModel):
         
         self.output_writer = OutputWriter(irpd_config)
         
+        self.prompt_composer = PromptComposer
+        
         self.expected_outputs = {
             stage: getattr(
                 PromptComposer, stage
