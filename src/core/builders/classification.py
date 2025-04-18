@@ -5,7 +5,11 @@ import logging
 import pandas as pd
 from typing import List
 
+from helpers.utils import load_config
 from core.builders.base_builder import BaseBuilder
+
+
+CONFIGS = load_config("irpd.json")
 
 
 log = logging.getLogger("app")
@@ -26,46 +30,48 @@ class ClassificationCSV(BaseBuilder):
         """
         # Get summary data files for each case.
         if self.ra == "llm":
-            og_dfs = self._load_raw_data()
+            og_df = self._load_original_raw_data()
         else:
-            og_dfs = self._load_original_data()
+            og_dfs = self._load_original_ra_data()
 
         # Build df from outputs.
         output_df = self._process_stage_outputs(stage_name)
 
         # Merge responses with original summary files.
-        if stage_name == "0":
-            final_df = pd.merge(og_dfs, output_df, on="window_number")
-            csv_path = self.sub_path / self.file_names["summaries"][stage_name]
+        if self.ra == "llm":
+            final_df = pd.merge(og_df, output_df, on="window_number", how="left")
         else:
-            final_df = self._merge_with_original_data(og_dfs, output_df)
-            csv_path = self.sub_path / self.file_names["classifications"][stage_name]
+            final_df = self._merge_with_original_ra_data(og_dfs, output_df)
+        
         # Save the final DataFrame to a CSV file
         csv_path = self.sub_path / self.file_names["classifications"][stage_name]
         final_df.to_csv(csv_path, index=False)
 
-    def _load_original_data(self) -> List[pd.DataFrame]:
+    def _load_original_ra_data(self) -> List[pd.DataFrame]:
         """
-        Loads original summary data files for each case.
+        Loads original summary RA data files for each case.
         """
         og_df_names = [
-            f"{case}_{self.treatment}_{self.ra}.csv" for case in self.cases
+            f"{case}_{self.treatment}_{self.ra}.csv"
+            for case in self.cases
         ]
         if self.max_instances: 
             return [
-                pd.read_csv(self.raw_data_path / name)[:self.max_instances]
+                pd.read_csv(self.data_path / "raw" / name)[:self.max_instances]
                 for name in og_df_names
             ]
         return [pd.read_csv(self.raw_data_path / name) for name in og_df_names]
     
-    def _load_raw_data(self) -> List[pd.DataFrame]:
+    def _load_original_raw_data(self) -> List[pd.DataFrame]:
         """
-        Loads original raw data files.
+        Loads original raw data file for each case.
         """
-        og_df = pd.read_csv("exp.csv")
-        if self.max_summaries: 
-            return og_df[:self.max_summaries]
-        return og_df
+        og_df_name = self.sub_path / CONFIGS["file_paths"]["llm"]
+        df = pd.read_csv(self.data_path / og_df_name)
+        df = df["window_number"].dropna()
+        if self.max_instances: 
+            return df[:self.max_instances]
+        return df
 
     def _process_stage_outputs(self, stage_name: str) -> pd.DataFrame:
         """
@@ -90,11 +96,11 @@ class ClassificationCSV(BaseBuilder):
 
         return pd.DataFrame.from_records(output_list).fillna(0)
 
-    def _merge_with_original_data(
+    def _merge_with_original_ra_data(
         self, og_dfs: List[pd.DataFrame], output_df: pd.DataFrame
     ) -> pd.DataFrame:
         """
-        Merges processed outputs with original summary data.
+        Merges processed outputs with original RA summary data.
         """
         final_dfs = []
 
@@ -104,10 +110,4 @@ class ClassificationCSV(BaseBuilder):
             final_dfs.append(merged_df)
 
         return pd.concat(final_dfs, ignore_index=True, sort=False)
-    
-    def _merge_with_raw_data(
-        self, og_df: pd.DataFrame, output_df: pd.DataFrame
-    ):
-        final_df = pd.merge(og_df, output_df, on="window_number", how="left")
-        keep_columns = [""]
 

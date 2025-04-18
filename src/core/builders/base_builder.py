@@ -30,7 +30,7 @@ class BaseBuilder(ABC):
         self.cases = self.irpd_config.cases
         self.treatment = self.irpd_config.treatment
         self.ra = self.irpd_config.ra
-        self.raw_data_path = Path(self.irpd_config.data_path) / "raw"
+        self.data_path = Path(self.irpd_config.data_path)
         
         self.output_attrb = output_attrb
         self.file_names = load_config("irpd.json")["output_file_names"]
