@@ -72,13 +72,13 @@ def complete_irpdout(
     """
     prefix = f"{subset_path.name}_"
     system_path = f"{prefix}stg_{stage_name}_system_prompt.txt"
-    if stage_name in {"2", "3"}:
+    if stage_name in {"0", "2", "3"}:
         user_path = f"{prefix}{irpd_output.parsed.window_number}_user_prompt.txt"
         response_path = f"{prefix}{irpd_output.parsed.window_number}_response.txt"
     else:
         user_path = f"{prefix}stg_{stage_name}_user_prompt.txt"
         response_path = f"{prefix}stg_{stage_name}_response.txt"
-    irpd_output.system_path = subset_path / system_path
-    irpd_output.user_path = subset_path / user_path
-    irpd_output.response_path = subset_path / response_path
+    irpd_output.system_path = subset_path / "prompts" / system_path
+    irpd_output.user_path = subset_path / "prompts" / user_path
+    irpd_output.response_path = subset_path / "responses" / response_path
     return irpd_output

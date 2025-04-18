@@ -66,8 +66,8 @@ class FoundationalModel(ABC):
         """
         Generates subsets for a given stage.
         """
-        subsets = ["full"] if stage_name != "0" else []
-        if stage_name in {"0" "1", "1r"}:
+        subsets = ["full"]
+        if stage_name in {"1", "1r"}:
             prod = [
                 (case, instance_type)
                 for case in self.cases

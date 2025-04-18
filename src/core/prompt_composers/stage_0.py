@@ -51,9 +51,6 @@ class Stage0PromptComposer(BaseComposer):
         instance_type_path = stage_path / "instance_type"
         section += file_to_string(instance_type_path / "initial.md")
         section += file_to_string(instance_type_path / f"{case}.md")
-            
-        # Window number definition.
-        section += file_to_string(stage_path / "window_number.md")
         
         return section
     
