@@ -3,7 +3,7 @@ Contains the Data model.
 """
 import pandas as pd
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from helpers.utils import load_config
 from core.foundation import FoundationalModel
@@ -26,6 +26,18 @@ class Data(FoundationalModel):
         
         self.ra_data = self._pre_filter_ra()
         self.raw_data = self._pre_filter_raw()
+        
+    def _get_summary_data(self, sub_path: Optional[Path] = None) -> pd.DataFrame:
+        """
+        Returns the df for summary data, depending on the ra type.
+        """
+        if self.ra == "llm":
+            assert isinstance(sub_path, Path), (
+                f"`sub_path` must be a Path object. Got {sub_path}")
+            df = sub_path / CONFIGS["output_file_names"]["summaries"]["0"]
+        else:
+            df = self.ra_data
+        return df
     
     def _pre_filter_ra(self) -> pd.DataFrame:
         """
@@ -144,15 +156,11 @@ class Data(FoundationalModel):
         
     def filter_summary_data(self, subset: str, sub_path: Path = None) -> pd.DataFrame:
         """
-        Filter's the RA data for a given subset & drops unneeded columns.
+        Filter's the summary data for a given subset & drops unneeded columns.
         """
-        if self.ra == "llm":
-            df = sub_path / CONFIGS["output_file_names"]["summaries"]["0"]
-            
-        else:
-            df = self.ra_data
-            if subset != "full": df = df[(df["subset"] == subset)]
-            df = df.drop(columns=["case", "treatment", "subset"])
+        df = self._get_summary_data(sub_path)
+        if subset != "full": df = df[(df["subset"] == subset)]
+        df = df.drop(columns=["case", "treatment", "subset"])
         return df
     
     def adjust_for_completed_outputs(
@@ -164,7 +172,7 @@ class Data(FoundationalModel):
         Adjusts data for requests/outputs that have already been made. Used
         for iterative stages (stage 0, 2, & 3).
         """
-        df = self.ra_data
+        df = self._get_summary_data(test_output.sub_path)
         
         # Adjusting for max_instances
         if self.max_instances: df = df[:self.max_instances]
