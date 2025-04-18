@@ -49,7 +49,9 @@ class TestRunner(FoundationalModel):
             f"Starting batch run for stage '{stage_name}' with LLM '{llm_str}'.")
         
         # Getting prompts.
-        prompt_composer = getattr(self.prompt_composer, stage_name).get_prompt_composer(self.irpd_config)
+        prompt_composer = getattr(
+            self.prompt_composer,  f"stage_{stage_name}"
+        ).get_prompt_composer(self.irpd_config)
         agg_prompts = prompt_composer.get_prompts(test_outputs)
         
         # Composing a batch path in the test directory /_batches. Identified by 
@@ -135,7 +137,9 @@ class TestRunner(FoundationalModel):
             f"Starting completions for stage '{stage_name}' with LLM {llm_str}")
         
         # Getting prompts.
-        prompt_composer = getattr(self.prompt_composer, stage_name).get_prompt_composer(self.irpd_config)
+        prompt_composer = getattr(
+            self.prompt_composer,  f"stage_{stage_name}"
+        ).get_prompt_composer(self.irpd_config)
         agg_prompts = prompt_composer.get_prompts(test_outputs)
         
         # Requests made for each prompt (accounts for iterative stages).

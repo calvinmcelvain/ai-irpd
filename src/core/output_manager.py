@@ -39,7 +39,7 @@ class OutputManager(FoundationalModel):
         
         self.expected_outputs = {
             stage: getattr(
-                PromptComposer, stage
+                PromptComposer, f"stage_{stage}"
             ).get_prompt_composer(irpd_config).expected_outputs()
             for stage in self.stages
         }
