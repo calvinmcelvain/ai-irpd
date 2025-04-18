@@ -4,12 +4,9 @@ Contains the Stage1PromptComposer model.
 import logging
 from typing import List, Dict
 
-from helpers.utils import file_to_string, to_list, load_config
-from core.functions import categories_to_txt, output_attrb
+from helpers.utils import file_to_string
 from core.prompt_composers.base_composer import BaseComposer
-from core.data import Data
 from _types.prompts import Prompts
-from _types.irpd_config import IRPDConfig
 from _types.test_output import TestOutput
 
 
