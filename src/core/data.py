@@ -73,20 +73,19 @@ class Data(FoundationalModel):
             (self.treatment == "merged") | (df["treatment"] == self.treatment)
         )]
         
-        # Adjusting for max summaries.
-        if self.max_summaries: df = df[:self.max_summaries]
+        df = df[df["window_number"].dropna()][:self.max_summaries]
         
         return df
     
-    def get_list_of_raw_instances(self, subset: str) -> List[List[Dict]]:
+    def get_list_of_raw_instances(self, case: str) -> List[List[Dict]]:
         """
         Returns a list of instances, given the context.
         """
-        df = self.raw_data[self.raw_data["subset"] == subset]
+        df = self.raw_data
         
         # Getting all windows.
         window_numbers = df.loc[
-            df["case"].isin(self.cases), "window_number"].dropna().tolist()
+            df["case"] == case, "window_number"].dropna().tolist()
         
         # Getting keep columns based on treatment
         keep_columns = [

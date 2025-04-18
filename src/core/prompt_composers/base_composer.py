@@ -49,13 +49,12 @@ class BaseComposer(FoundationalModel):
             log.warning(f"{name} was empty.")
         return section + "\n"
     
-    @staticmethod
-    def _prompt_id(stage_name: str, subset: str, n: int, user: dict) -> str:
+    def _prompt_id(self, subset: str, n: int, user: dict) -> str:
         """
         Generates the prompt ID.
         """
         prompt_id = f"{n}-{subset}"
-        if stage_name in CONFIGS["stage_class"]["classification"]:
+        if self.stage_name in CONFIGS["stage_class"]["classification"]:
             prompt_id += f"-{user["window_number"]}"
         return prompt_id
     
