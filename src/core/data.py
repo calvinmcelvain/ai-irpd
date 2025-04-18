@@ -78,11 +78,11 @@ class Data(FoundationalModel):
         
         return df
     
-    def get_list_of_raw_instances(self) -> List[List[Dict]]:
+    def get_list_of_raw_instances(self, subset: str) -> List[List[Dict]]:
         """
         Returns a list of instances, given the context.
         """
-        df = self.raw_data
+        df = self.raw_data[self.raw_data["subset"] == subset]
         
         # Getting all windows.
         window_numbers = df.loc[

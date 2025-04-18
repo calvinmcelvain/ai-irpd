@@ -41,10 +41,10 @@ class SummaryCSV(BaseBuilder):
         """
         Processes stage 0 outputs and creates a DataFrame.
         """
-        outputs = self.stage_outputs[stage_name].outputs["full"]
+        outputs = self.stage_outputs[stage_name].outputs
         output_list = []
 
-        for output in outputs:
+        for _, output in outputs.values():
             output_parsed = output.parsed
             response = {
                 "window_number": output_parsed.window_number,

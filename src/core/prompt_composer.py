@@ -56,7 +56,10 @@ class PromptComposer(FoundationalModel):
         """
         Returns the 'Task Overview' section of system prompt.
         """
-        section_path = self.sections_path / "task_overview" / f"stage_{stage_name}.md"
+        if stage_name != "0":
+            section_path = self.sections_path / "task_overview" / f"stage_{stage_name}.md"
+        else:
+            section_path = self.sections_path / "test_overview" / "stage_0" / f"{self.case}.md"
         return self._get_section(section_path, "Task Overview")
 
     def _experimental_context(self):
@@ -171,11 +174,12 @@ class PromptComposer(FoundationalModel):
         """
         # Stage 0 prompts are individual instance windows w/r to the context.
         if stage_name == "0":
-            prompt = self.data.get_list_of_raw_instances()
+            prompt = self.data.get_list_of_raw_instances(subset)
         
         # Stage 1 is all summary data (in records form).
         if stage_name == "1":
-            prompt = [self.data.filter_ra_data(subset).to_dict("records")]
+            sub_path = test_output.sub_path if "0" in self.stages else None
+            prompt = [self.data.filter_summary_data(subset, sub_path).to_dict("records")]
         
         # Stage 1r user prompt is the categories created in stage 1.
         if stage_name == "1r":
@@ -217,6 +221,8 @@ class PromptComposer(FoundationalModel):
         """
         if stage_name in CONFIGS["stage_class"]["categorization"]:
             return len(self.subsets[stage_name])
+        elif stage_name in CONFIGS["stage_class"]["summarization"]:
+            return len(self.data.get_list_of_raw_instances())
         return len(self.data.ra_data[:self.max_instances].to_dict("records"))
     
     def get_prompts(
