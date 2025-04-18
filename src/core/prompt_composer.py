@@ -56,10 +56,7 @@ class PromptComposer(FoundationalModel):
         """
         Returns the 'Task Overview' section of system prompt.
         """
-        if stage_name != "0":
-            section_path = self.sections_path / "task_overview" / f"stage_{stage_name}.md"
-        else:
-            section_path = self.sections_path / "test_overview" / "stage_0" / f"{self.case}.md"
+        section_path = self.sections_path / "task_overview" / f"stage_{stage_name}.md"
         return self._get_section(section_path, "Task Overview")
 
     def _experimental_context(self):
@@ -76,13 +73,16 @@ class PromptComposer(FoundationalModel):
         section_path = self.sections_path / "summary_context" / f"{self.case}_{self.ra}.md"
         return self._get_section(section_path, "Summary Context")
     
-    def _task(self, stage_name: str):
+    def _task(self, stage_name: str, case: str):
         """
         Returns the stasge task section(s) of the system prompt.
         
         Essentially just the instructions for the stage.
         """
-        section_path = self.sections_path / "task" / f"stage_{stage_name}.md"
+        if stage_name != "0":
+            section_path = self.sections_path / "task" / f"stage_{stage_name}.md"
+        else:
+            section_path = self.sections_path / "task" / f"stage_{stage_name}" / f"{case}.md"
         return self._get_section(section_path, "Task")
     
     def _constraints(self, stage_name: str):
