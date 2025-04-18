@@ -46,6 +46,7 @@ class ClassificationCSV(BaseBuilder):
         # Save the final DataFrame to a CSV file
         csv_path = self.sub_path / self.file_names["classifications"][stage_name]
         final_df.to_csv(csv_path, index=False)
+        log.info(f"Stage {stage_name} CSV saved to: {csv_path}")
 
     def _load_original_ra_data(self) -> List[pd.DataFrame]:
         """
@@ -64,11 +65,10 @@ class ClassificationCSV(BaseBuilder):
     
     def _load_original_raw_data(self) -> List[pd.DataFrame]:
         """
-        Loads original raw data file for each case.
+        Loads LLM summary data file for each case.
         """
-        og_df_name = self.sub_path / CONFIGS["file_paths"]["llm"]
-        df = pd.read_csv(self.data_path / og_df_name)
-        df = df["window_number"].dropna()
+        og_df_name = self.sub_path / self.file_names["summaries"]["0"]
+        df = pd.read_csv(og_df_name)
         if self.max_instances: 
             return df[:self.max_instances]
         return df

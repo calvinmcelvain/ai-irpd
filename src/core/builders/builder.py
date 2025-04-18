@@ -23,6 +23,8 @@ class Builder:
     def build(self, stage_name: str) -> None:
         if stage_name in CONFIGS["stage_class"]["categorization"]:
             builder.CategoryPDF(self.test_output).build(stage_name)
+        if stage_name in CONFIGS["stage_class"]["summarization"]:
+            builder.SummaryCSV(self.test_output).build(stage_name)
         else:
             builder.ClassificationCSV(self.test_output).build(stage_name)
         return None
