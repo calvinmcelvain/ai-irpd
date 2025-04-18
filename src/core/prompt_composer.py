@@ -32,7 +32,7 @@ class PromptComposer(FoundationalModel):
         self.data = Data(irpd_config)
         
         # Categories are fixed for stages 2 & 3 if a 'replication' test type.
-        self.fixed = self.irpd_config.test_type in {"cross_model", "intra_model"}
+        self.fixed = self.test_type in CONFIGS["test_types"]["class"]["replication"]
 
         self.sections_path = self.prompts_path / "sections"
         self.fixed_path = self.prompts_path / "fixed"
