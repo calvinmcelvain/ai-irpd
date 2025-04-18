@@ -12,9 +12,9 @@ log = logging.getLogger("app")
 
 
 
-class PDF(BaseBuilder):
+class CategoryPDF(BaseBuilder):
     """
-    PDF model.
+    CategoryPDF model.
     
     Builds category PDFs from outputs.
     """

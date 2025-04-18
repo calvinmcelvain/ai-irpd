@@ -12,15 +12,15 @@ log = logging.getLogger("app")
 
 
 
-class CSV(BaseBuilder):
+class ClassificationCSV(BaseBuilder):
     """
-    CSV model.
+    ClassificationCSV model.
     
-    Builds category CSVs from outputs.
+    Builds classification CSVs from outputs.
     """
     def build(self, stage_name: str) -> None:
         """
-        Builds the final form classification CSV files for Stage 0, 2 & 3.
+        Builds the final form classification CSV files for Stage 2 & 3.
         
         Saves to subpath directory.
         """

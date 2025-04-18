@@ -1,2 +1,2 @@
-from core.builders.csv import CSV
-from core.builders.pdf import PDF
+from core.builders.classification import ClassificationCSV
+from core.builders.categories import CategoryPDF
