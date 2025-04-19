@@ -7,8 +7,7 @@ from pathlib import Path
 
 from helpers.utils import create_directory, dynamic_import, load_config
 from core.functions import instance_types
-from core.llms.clients.base_llm import BaseLLM
-from core.llms.llm_models import LLMModel
+from core.llms.llm import LLM
 from _types.irpd_config import IRPDConfig
 
 
@@ -76,9 +75,10 @@ class FoundationalModel(ABC):
             subsets += [f"{c}_{i}" for c, i in prod]
         return subsets
     
-    def _generate_llm_instance(self, llm_str: str) -> BaseLLM:
+    def _generate_llm_instance(self, llm_str: str):
             """
             Returns the LLM model instance from the /llms package.
             """
-            return getattr(LLMModel, llm_str).get_llm_instance(
+            llm_class: LLM = getattr(LLM, llm_str)
+            return llm_class.get_instance(
                 self.llm_config, self.print_response)
