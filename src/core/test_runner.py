@@ -33,7 +33,6 @@ class TestRunner(FoundationalModel):
         super().__init__(irpd_config, print_response)
         
         self.output_manger = OutputManager(irpd_config)
-        self.prompt_composers = self.output_manger.prompt_composers
     
     def _run_batch(
         self,
@@ -85,7 +84,7 @@ class TestRunner(FoundationalModel):
             # Storing batch ID in meta
             test_outputs[0].meta.stages[stage_name].batch_id = batch_id
             test_outputs[0].meta.stages[stage_name].batch_id = batches_path
-            self.output_manger.output_writer.write_meta(test_outputs[0])
+            test_outputs[0].write_meta()
         
         # Retrieving batch
         retries = 0

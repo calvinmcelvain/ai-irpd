@@ -6,6 +6,7 @@ from typing import List
 from pathlib import Path
 
 from helpers.utils import create_directory, dynamic_import, load_config
+from core.prompt_composers.prompt_composer import PromptComposer
 from core.functions import instance_types
 from core.llms.llm import LLM
 from _types.irpd_config import IRPDConfig
@@ -32,6 +33,11 @@ class FoundationalModel(ABC):
         self.treatment = irpd_config.treatment
         self.llm_config = irpd_config.llm_config
         self.total_replications = irpd_config.total_replications
+        
+        self.prompt_composers = {
+            stage: PromptComposer.get_prompt_composer(irpd_config, stage)
+            for stage in self.stages
+        }
         
         self.schemas = {
             stage: dynamic_import("_types.stage_schemas", f"Stage{stage}Schema")

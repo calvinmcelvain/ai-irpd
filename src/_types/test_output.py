@@ -2,7 +2,7 @@ from typing import Dict
 from pathlib import Path
 from dataclasses import dataclass
 
-from helpers.utils import load_json_n_validate
+from helpers.utils import load_json_n_validate, write_json
 from _types.irpd_meta import IRPDMeta
 from _types.stage_output import StageOutput
 
@@ -23,3 +23,6 @@ class TestOutput:
         if self.meta_path.exists():
             self.meta = load_json_n_validate(self.meta_path, IRPDMeta)
     
+    def write_meta(self) -> None:
+        write_json(self.meta_path, self.meta.model_dump())
+        return None

@@ -13,7 +13,7 @@ from helpers.utils import check_directories, load_json_n_validate
 from core.functions import complete_irpdout
 from core.foundation import FoundationalModel
 from core.prompt_composers.prompt_composer import PromptComposer
-from core.output_writer import OutputWriter
+from core.builders.builder import Builder
 from _types.batch_output import BatchOut
 from _types.irpd_config import IRPDConfig
 from _types.stage_output import StageOutput
@@ -32,13 +32,6 @@ class OutputManager(FoundationalModel):
     """
     def __init__(self, irpd_config: IRPDConfig):
         super().__init__(irpd_config)
-        
-        self.output_writer = OutputWriter(irpd_config)
-        
-        self.prompt_composers = {
-            stage: PromptComposer.get_prompt_composer(irpd_config, stage)
-            for stage in self.stages
-        }
         
         # Initializing output objects.
         self.outputs = self._initialize_outputs()
@@ -292,7 +285,7 @@ class OutputManager(FoundationalModel):
         stage_output.outputs[subset].append(irpd_output)
         self.check_output_completion(stage_output)
         
-        self.output_writer.write_output(test_output, stage_name, subset)
+        self.write_output(test_output, stage_name, subset)
         
         return None
     
@@ -326,9 +319,26 @@ class OutputManager(FoundationalModel):
                             test_output, stage_name, subset, irpd_output)
                         irpd_output_list.append(irpd_output)
             self.check_output_completion(stage_output)
-            self.output_writer.write_output(test_output, stage_name)
+            self.write_output(test_output, stage_name, subset)
         log.info(
             f"Batch outputs stored successfully for LLM {llm_str},"
             f" stage {stage_name}."
         )
+        return None
+
+    def write_output(
+        self, test_output: TestOutput, stage_name: str, subset: str
+    ) -> None:
+        """
+        Writes the raw prompts, responses, & meta. Also writes the final form 
+        outputs if stage complete.
+        """
+        test_output.write_meta()
+        
+        stage_output = test_output.stage_outputs[stage_name]
+        
+        for output in stage_output.outputs[subset]: output.write()
+        
+        if stage_output.complete: Builder.build(test_output, stage_name)
+        
         return None
