@@ -4,7 +4,7 @@ for LLM client SDKs.
 """
 
 from pydantic import BaseModel
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -15,7 +15,7 @@ from _types.irpd_output import IRPDOutput
 from helpers.utils import validate_json_string, load_config
 
 
-LLM_CONFIGS = load_config("llm.json")
+CONFIGS = load_config("llm.json")
 
 
 
@@ -45,7 +45,8 @@ class BaseLLM(ABC):
         self.api_key = api_key
         self.model = model
         
-        base_configs = LLMConfig(**LLM_CONFIGS[config])
+        configs: Dict[str, Any] = CONFIGS["config"][config]
+        base_configs = LLMConfig(**configs)
         self.configs = self._translate_config(base_configs)
         
         self.print_response = print_response
