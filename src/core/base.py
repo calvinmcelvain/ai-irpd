@@ -6,7 +6,7 @@ methods.
 """
 import re
 import logging
-from typing import List, Optional, Union, Dict, Tuple
+from typing import List, Optional, Union, Dict, Tuple, Any
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -16,8 +16,7 @@ from core.output_manager import OutputManager
 from _types.irpd_config import IRPDConfig
 
 
-CONFIGS: Dict = load_config("irpd.json")
-PARAMETERS: Dict = CONFIGS["parameters"]
+CONFIGS: Dict[str, Any] = load_config("irpd.json")
 
 
 log = logging.getLogger("app")
@@ -82,7 +81,8 @@ class IRPDBase(ABC):
         """
         Validates test parameters from `irpd.json` configs file & reindexes them.
         """
-        for param, valid_params in PARAMETERS.items():
+        parameters: Dict[str, List[str]] = CONFIGS["parameters"]
+        for param, valid_params in parameters.items():
             self_param = getattr(self, param)
             if not set(self_param).issubset(valid_params):
                 raise ValueError(f"`{param}` must be from {valid_params}.")
@@ -95,15 +95,16 @@ class IRPDBase(ABC):
         Validates IRPDConfig by appending missing stages from non-replication
         type tests.
         """
-        start_idx = PARAMETERS["stages"].index(config.stages[0])
+        parameters: Dict[str, List[str]] = CONFIGS["parameters"]
+        start_idx = parameters["stages"].index(config.stages[0])
         replication_type = CONFIGS["test_types"]["class"]["replication"]
         if self.test_type not in replication_type:
             if start_idx > 1:
                 log.debug(
                     f"`stages` start after stage '1' in config [{config.id}]."
-                    f" Stages {PARAMETERS["stages"][1:start_idx]} appended."
+                    f" Stages {parameters["stages"][1:start_idx]} appended."
                 )
-                config.stages = PARAMETERS["stages"][1:start_idx + 1]
+                config.stages = parameters["stages"][1:start_idx + 1]
             if config.ra == "llm" and "0" not in config.stages:
                 log.debug(
                     f"`stages` did not include stage '0' in config [{config.id}]."
