@@ -4,15 +4,14 @@ IRPD aggregated module.
 Aggregates the IRPD test models: Test, Subtest, IntraModel, CrossModel,
 and SampleSplitting.
 """
-import logging
 from pathlib import Path
-from typing import List, Union, Literal, Optional, Tuple, Dict, Any
+from typing import List, Union, Literal, Optional, Tuple, Dict, Any, TypeVar, Type
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
 from helpers.utils import dynamic_import, load_config
-
+from core.base import IRPDBase
 
 
 # Specifying the arguments for test models.
@@ -31,9 +30,7 @@ LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
 CONFIGS: Dict[str, Any] = load_config("irpd.json")
-
-
-log = logging.getLogger("app")
+T = TypeVar("T", bound=IRPDBase)
 
 
 
@@ -44,8 +41,9 @@ class TestClassContainer:
     test_name: str
     
     @cached_property
-    def impl(self):
-        return dynamic_import(self.module, self.test_class)
+    def impl(self) -> Type[T]:
+        model_class: Type[T] = dynamic_import(self.module, self.test_class)
+        return model_class
     
 
 class IRPD(TestClassContainer, Enum):
