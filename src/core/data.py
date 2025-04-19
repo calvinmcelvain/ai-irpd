@@ -34,7 +34,7 @@ class Data(FoundationalModel):
         if self.ra == "llm":
             assert isinstance(sub_path, Path), (
                 f"`sub_path` must be a Path object. Got {sub_path}")
-            df = sub_path / CONFIGS["output_file_names"]["summaries"]["0"]
+            df = sub_path / CONFIGS["files"]["output"]["summaries"]["0"]
         else:
             df = self.ra_data
         return df
@@ -44,7 +44,7 @@ class Data(FoundationalModel):
         Pre-filters RA data for the IRPDConfig.
         """
         # importing RA data
-        df = pd.read_csv(self.data_path / CONFIGS["file_paths"]["ra"])
+        df = pd.read_csv(self.data_path / CONFIGS["files"]["data"]["ra"])
         
         # Filter for cases and treatment.
         df = df[
@@ -66,7 +66,7 @@ class Data(FoundationalModel):
         Pre-filters Raw data for IRPDConfig.
         """
         # importing raw data.
-        df = pd.read_csv(self.data_path / CONFIGS["file_paths"]["llm"], index_col=0)
+        df = pd.read_csv(self.data_path / CONFIGS["files"]["data"], index_col=0)
         
         # Filter for treatment.
         df = df[(
