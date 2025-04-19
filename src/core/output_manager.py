@@ -35,12 +35,8 @@ class OutputManager(FoundationalModel):
         
         self.output_writer = OutputWriter(irpd_config)
         
-        self.prompt_composer = PromptComposer
-        
-        self.expected_outputs = {
-            stage: getattr(
-                PromptComposer, f"stage_{stage}"
-            ).get_prompt_composer(irpd_config).expected_outputs()
+        self.prompt_composers = {
+            stage: PromptComposer.get_prompt_composer(irpd_config, stage)
             for stage in self.stages
         }
         
@@ -200,7 +196,7 @@ class OutputManager(FoundationalModel):
         """
         if isinstance(output, StageOutput):
             stage_name = output.stage_name
-            expected_outputs = self.expected_outputs[stage_name]
+            expected_outputs = self.prompt_composers[stage_name].expected_outputs()
             total_outputs = sum(
                 len(subset_outputs) for subset_outputs in output.outputs.values())
             output.complete = total_outputs == expected_outputs

@@ -37,7 +37,7 @@ class OutputWriter(FoundationalModel):
 
         for output in stage_output.outputs[subset]: output.write()
         
-        if stage_output.complete: Builder(test_output).build(stage_name)
+        if stage_output.complete: Builder.build(test_output, stage_name)
         
         return None
         
