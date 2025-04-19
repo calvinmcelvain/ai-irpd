@@ -30,7 +30,7 @@ LLMS = Literal[
 LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
-CONFIGS: Dict[Any] = load_config("irpd.json")
+CONFIGS: Dict[str, Any] = load_config("irpd.json")
 
 
 log = logging.getLogger("app")
