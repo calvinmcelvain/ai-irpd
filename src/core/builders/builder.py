@@ -1,30 +1,46 @@
 """
 Contains the Builder Model.
 """
-import core.builders as builder
-from helpers.utils import load_config
+from dataclasses import dataclass
+from typing import TypeVar, Type
+from functools import cached_property
+from enum import Enum
+
+from helpers.utils import load_config, dynamic_import
+from core.builders.base_builder import BaseBuilder
 from _types.test_output import TestOutput
 
 
 CONFIGS = load_config("irpd.json")
 
 
+T = TypeVar("T", bound=BaseBuilder)
 
-class Builder:
-    """
-    Builder model.
+
+@dataclass(frozen=True)
+class BuilderClassContainer:
+    module: str
+    test_class: str
+    stage_name: str
     
-    Aggregates builders and builds output based on stage name.
-    """
-    def __init__(self, test_output: TestOutput):
-        self.test_output = test_output
+    @cached_property
+    def impl(self) -> Type[T]:
+        model_class: Type[T] = dynamic_import(self.module, self.test_class)
+        return model_class
 
-        
-    def build(self, stage_name: str) -> None:
-        if stage_name in CONFIGS["stage_class"]["categorization"]:
-            builder.CategoryPDF(self.test_output).build(stage_name)
-        if stage_name in CONFIGS["stage_class"]["summarization"]:
-            builder.SummaryCSV(self.test_output).build(stage_name)
-        else:
-            builder.ClassificationCSV(self.test_output).build(stage_name)
-        return None
+
+
+class Builder(Enum):
+    STAGE_0 = ("core.builders.summarization", "SummaryCSV", "0")
+    STAGE_1 = ("core.builders.categorization", "CategoryPDF", "1")
+    STAGE_1r = ("core.builders.categorization", "CategoryPDF", "1r")
+    STAGE_1c = ("core.builders.categorization", "CategoryPDF", "1r")
+    STAGE_2 = ("core.builders.classification", "ClassificationCSV", "2")
+    STAGE_3 = ("core.builders.classification", "ClassificationCSV", "3")
+    
+    def build(self, test_output: TestOutput):
+        """
+        Gets the prompt composer instance.
+        """
+        return self.impl(test_output).build(self.stage_name)
+
