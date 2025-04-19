@@ -38,9 +38,11 @@ class Builder(Enum):
     STAGE_2 = ("core.builders.classification", "ClassificationCSV", "2")
     STAGE_3 = ("core.builders.classification", "ClassificationCSV", "3")
     
-    def build(self, test_output: TestOutput):
+    @staticmethod
+    def build(test_output: TestOutput, stage_name: str):
         """
-        Gets the prompt composer instance.
+        Builds the final form output based on stage name.
         """
-        return self.impl(test_output).build(self.stage_name)
+        builder: BuilderClassContainer = getattr(Builder, f"STAGE_{stage_name}")
+        return builder.impl(test_output).build(stage_name)
 

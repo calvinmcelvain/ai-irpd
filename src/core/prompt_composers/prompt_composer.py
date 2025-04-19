@@ -37,10 +37,13 @@ class PromptComposer(PromptComposerContainer, Enum):
     STAGE_1c = ("core.prompt_composers.stage_1c", "Stage1cPromptComposer", "1c")
     STAGE_2 = ("core.prompt_composers.stage_2", "Stage2PromptComposer", "2")
     STAGE_3 = ("core.prompt_composers.stage_3", "Stage3PromptComposer", "3")
-    
-    def get_prompt_composer(self, irpd_config: IRPDConfig):
+
+    @staticmethod
+    def get_prompt_composer(irpd_config: IRPDConfig, stage_name: str):
         """
         Gets the prompt composer instance.
         """
-        return self.impl(irpd_config=irpd_config, stage_name=self.stage_name)
+        prompt_composer: PromptComposerContainer = getattr(PromptComposer, f"STAGE_{stage_name}")
+        return prompt_composer.impl(
+            irpd_config=irpd_config, stage_name=stage_name)
     
