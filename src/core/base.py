@@ -81,7 +81,8 @@ class IRPDBase(ABC):
         """
         Validates test parameters from `irpd.json` configs file & reindexes them.
         """
-        parameters: Dict[str, List[str]] = CONFIGS["parameters"]
+        parameters: Dict[str, List[str]] = CONFIGS["validation"]["parameters"]
+        
         for param, valid_params in parameters.items():
             self_param = getattr(self, param)
             if not set(self_param).issubset(valid_params):
@@ -95,16 +96,17 @@ class IRPDBase(ABC):
         Validates IRPDConfig by appending missing stages from non-replication
         type tests.
         """
-        parameters: Dict[str, List[str]] = CONFIGS["parameters"]
-        start_idx = parameters["stages"].index(config.stages[0])
-        replication_type = CONFIGS["test_types"]["class"]["replication"]
+        stages: List[str] = CONFIGS["validation"]["parameters"]["stages"]
+        replication_type: List[str] = CONFIGS["class"]["test_type"]["replication"]
+        
+        start_idx = stages.index(config.stages[0])
         if self.test_type not in replication_type:
             if start_idx > 1:
                 log.debug(
                     f"`stages` start after stage '1' in config [{config.id}]."
-                    f" Stages {parameters["stages"][1:start_idx]} appended."
+                    f" Stages {stages[1:start_idx]} appended."
                 )
-                config.stages = parameters["stages"][1:start_idx + 1]
+                config.stages = stages[1:start_idx + 1]
             if config.ra == "llm" and "0" not in config.stages:
                 log.debug(
                     f"`stages` did not include stage '0' in config [{config.id}]."
