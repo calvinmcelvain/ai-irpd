@@ -18,17 +18,17 @@ T = TypeVar("T", bound=BaseLLM)
 
 
 @dataclass(frozen=True)
-class LLMModelClassContainer:
+class LLMClientClassContainer:
     module: str
-    model_class: str
+    client_class: str
 
     @cached_property
     def impl(self) -> Type[T]:
-        model_class: Type[T] = dynamic_import(self.module, self.model_class)
+        model_class: Type[T] = dynamic_import(self.module, self.client_class)
         return model_class
 
 
-class LLMModelClass(LLMModelClassContainer, Enum):
+class LLMCLlientClass(LLMClientClassContainer, Enum):
     GPT = ("core.llms.gpt", "GPT")
     CLAUDE = ("core.llms.claude", "Claude")
     GEMINI = ("core.llms.gemini", "Gemini")
@@ -46,110 +46,110 @@ class OtherArgs:
 
 
 @dataclass(frozen=True)
-class LLMModelContainer:
-    key: str
+class LLMContainer:
+    llm_str: str
     model_name: str
     api_key: str
-    model_class: LLMModelClass
+    model_class: LLMCLlientClass
     other_args: OtherArgs = field(default=OtherArgs())
 
 
-class LLMModel(LLMModelContainer, Enum):
+class LLM(LLMContainer, Enum):
     GPT_4O_0806 = (
         "GPT_4O_0806",
         "gpt-4o-2024-08-06",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT
+        LLMCLlientClass.GPT
     )
     GPT_4O_1120 = (
         "GPT_4O_1120",
         "gpt-4o-2024-11-20",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT
+        LLMCLlientClass.GPT
     )
     GPT_4O_MINI_0718 = (
         "GPT_4O_MINI_0718",
         "gpt-4o-mini-2024-07-18",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT,
+        LLMCLlientClass.GPT,
         OtherArgs(json_tool=True)
     )
     GPT_O1_1217 = (
         "GPT_O1_1217",
         "o1-2024-12-17",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT
+        LLMCLlientClass.GPT
     )
     GPT_O1_MINI_0912 = (
         "GPT_O1_MINI_0912",
         "o1-mini-2024-09-12",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT,
+        LLMCLlientClass.GPT,
         OtherArgs(json_tool=True)
     )
     GPT_O3_MINI_0131 = (
         "GPT_O3_MINI_0131",
         "o3-mini-2025-01-31",
         "OPENAI_API_KEY",
-        LLMModelClass.GPT
+        LLMCLlientClass.GPT
     )
     GROK_2_1212 = (
         "GROK_2_1212",
         "grok-2-1212",
         "XAI_API_KEY",
-        LLMModelClass.GROK,
+        LLMCLlientClass.GROK,
         OtherArgs(base_url="https://api.x.ai/v1")
     )
     CLAUDE_3_5_SONNET = (
         "CLAUDE_3_5_SONNET",
         "claude-3.5-sonnet-20241022",
         "ANTHROPIC_API_KEY",
-        LLMModelClass.CLAUDE,
+        LLMCLlientClass.CLAUDE,
         OtherArgs(json_tool=True)
     )
     CLAUDE_3_7_SONNET = (
         "CLAUDE_3_7_SONNET",
         "claude-3-7-sonnet-20250219",
         "ANTHROPIC_API_KEY",
-        LLMModelClass.CLAUDE,
+        LLMCLlientClass.CLAUDE,
         OtherArgs(json_tool=True)
     )
     GEMINI_2_FLASH = (
         "GEMINI_2_FLASH",
         "gemini-2.0-flash-001",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI,
+        LLMCLlientClass.GEMINI,
         OtherArgs(batches=False)
     )
     GEMINI_2_FLASH_LITE = (
         "GEMINI_2_FLASH_LITE",
         "gemini-2.0-flash-lite-001",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI,
+        LLMCLlientClass.GEMINI,
         OtherArgs(batches=False)
     )
     GEMINI_1_5_PRO = (
         "GEMINI_1_5_PRO",
         "gemini-1.5-pro-002",
         "GOOGLE_API_KEY",
-        LLMModelClass.GEMINI,
+        LLMCLlientClass.GEMINI,
         OtherArgs(batches=False)
     )
     NOVA_PRO_V1 = (
         "NOVA_PRO_V1",
         "amazon.nova-pro-v1:0",
         "BEDROCK_API_KEY",
-        LLMModelClass.NOVA,
+        LLMCLlientClass.NOVA,
         OtherArgs(json_tool=True, region="us-east-1", batches=False)
     )
     MISTRAL_LARGE_2411 = (
         "MISTRAL_LARGE_2411",
         "mistral-large-2411",
         "MISTRAL_API_KEY",
-        LLMModelClass.MISTRAL
+        LLMCLlientClass.MISTRAL
     )
     
-    def get_llm_instance(
+    def get_instance(
         self,
         config: Literal["base", "res1", "res2", "res3"] = "base",
         print_response: bool = False
@@ -164,8 +164,7 @@ class LLMModel(LLMModelContainer, Enum):
             print_response (bool, optional): If True, prints response of all
             LLM requests. Defaults to False.
         """
-        model_class = self.model_class.impl
-        return model_class(
+        return self.model_class.impl(
             api_key=get_env_var(self.api_key),
             model=self.model_name,
             config=config,
