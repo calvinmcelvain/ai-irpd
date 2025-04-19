@@ -1,29 +1,34 @@
 {
-    "stage_class": {
-        "summarization": ["0"],
-        "categorization": ["1", "1r", "1c"],
-        "classification": ["2", "3"]
-    },
-    "test_types": {
-        "class": {
+    "class": {
+        "stage": {
+            "summarization": ["0"],
+            "categorization": ["1", "1r", "1c"],
+            "classification": ["2", "3"]
+        },
+        "test_type": {
             "base": ["test", "subtest"],
             "replication": ["cross_model", "intra_model"],
             "robustness": ["sample_splitting"]
-        },
-        "directories": {
-            "test": "base_tests",
-            "subtest": "subtests",
-            "cross_model": "cross_model",
-            "intra_model": "intra_model",
-            "sample_splitting": "sample_splitting"
         }
     },
-    "parameters": {
-        "stages": ["0", "1", "1r", "1c", "2", "3"],
-        "ras": ["llm", "ra1", "ra2", "both"],
-        "treatments": ["imperfect", "perfect", "merged"],
-        "cases": ["uni", "uniresp", "switch", "first", "uni_switch"]
+
+    "validation": {
+        "parameters": {
+            "stages": ["0", "1", "1r", "1c", "2", "3"],
+            "ras": ["llm", "ra1", "ra2", "both"],
+            "treatments": ["imperfect", "perfect", "merged"],
+            "cases": ["uni", "uniresp", "switch", "first", "uni_switch"]
+        }
     },
+
+    "directories": {
+        "test": "base_tests",
+        "subtest": "subtests",
+        "cross_model": "cross_model",
+        "intra_model": "intra_model",
+        "sample_splitting": "sample_splitting"
+    },
+
     "defaults": {
         "N": 1,
         "context": [5, 5],
@@ -37,23 +42,33 @@
         "test_paths": null,
         "batch": false
     },
-    "output_file_names": {
-        "meta": "_test_meta.json",
-        "summaries": {
-            "0": "_stage_0_summaries.csv"
+
+    "files": {
+        "test_directories": {
+            "test": "base_tests",
+            "subtest": "subtests",
+            "cross_model": "cross_model",
+            "intra_model": "intra_model",
+            "sample_splitting": "sample_splitting"
         },
-        "categories": {
-            "1": "_stage_1_categories.pdf",
-            "1r": "_stage_1r_categories.pdf",
-            "1c": "_stage_1c_categories.pdf"
+        "output": {
+            "meta": "_test_meta.json",
+            "summaries": {
+                "0": "_stage_0_summaries.csv"
+            },
+            "categories": {
+                "1": "_stage_1_categories.pdf",
+                "1r": "_stage_1r_categories.pdf",
+                "1c": "_stage_1c_categories.pdf"
+            },
+            "classifications": {
+                "2": "_stage_2_final.csv",
+                "3": "_stage_3_final.csv"
+            }
         },
-        "classifications": {
-            "2": "_stage_2_final.csv",
-            "3": "_stage_3_final.csv"
+        "data": {
+            "ra": "raw/ra_summaries.csv",
+            "llm": "raw/exp.csv"
         }
-    },
-    "file_paths": {
-        "ra": "raw/ra_summaries.csv",
-        "llm": "raw/exp.csv"
     }
 }
