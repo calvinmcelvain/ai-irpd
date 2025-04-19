@@ -6,7 +6,7 @@ and SampleSplitting.
 """
 import logging
 from pathlib import Path
-from typing import List, Union, Literal, Optional, Tuple
+from typing import List, Union, Literal, Optional, Tuple, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -30,7 +30,7 @@ LLMS = Literal[
 LLM_CONFIGS = Literal["base", "res1", "res2", "res3"]
 
 
-DEFAULTS = load_config("irpd.json")["defaults"]
+CONFIGS: Dict[Any] = load_config("irpd.json")
 
 
 log = logging.getLogger("app")
@@ -48,33 +48,33 @@ class TestClassContainer:
         return dynamic_import(self.module, self.test_class)
     
 
-class IRPDTestClass(TestClassContainer, Enum):
+class IRPD(TestClassContainer, Enum):
     TEST = ("core.test", "Test", "test")
     SUBTEST = ("core.subtest", "Subtest", "subtest")
     CROSS_MODEL = ("core.cross_model", "CrossModel", "cross_model")
     INTRA_MODEL = ("core.intra_model", "IntraModel", "intra_model")
     SAMPLE_SPLITTING = ("core.sample_splitting", "SampleSplitting", "sample_splitting")
     
-    def get_irpd_instance(
+    def get_instance(
         self,
         cases: Union[List[CASES], CASES],
         ras: Union[List[RAS], RAS],
         treatments: Union[List[TREATMENTS], TREATMENTS],
         stages: Union[List[STAGES], STAGES],
-        N: int = DEFAULTS["N"],
+        N: int = None,
         context: Optional[Tuple[int, int]] = None,
-        llms: Union[List[LLMS], LLMS] = DEFAULTS["llms"],
-        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = DEFAULTS["llm_configs"],
-        max_instances: Optional[int] = DEFAULTS["max_instances"],
-        max_summaries: Optional[int] = DEFAULTS["max_summaries"],
-        batch: bool = DEFAULTS["batch"],
-        test_paths: Union[List[Union[str, Path]], Union[str, Path]] = DEFAULTS["test_paths"],
-        output_path: Optional[Union[str, Path]] = DEFAULTS["output_path"],
-        prompts_path: Optional[Union[str, Path]] = DEFAULTS["prompts_path"],
-        data_path: Optional[Union[str, Path]] = DEFAULTS["data_path"],
+        llms: Union[List[LLMS], LLMS] = None,
+        llm_configs: Union[List[LLM_CONFIGS], LLM_CONFIGS] = None,
+        max_instances: Optional[int] = None,
+        max_summaries: Optional[int] = None,
+        batch: bool = None,
+        test_paths: Union[List[Union[str, Path]], Union[str, Path]] = None,
+        output_path: Optional[Union[str, Path]] = None,
+        prompts_path: Optional[Union[str, Path]] = None,
+        data_path: Optional[Union[str, Path]] = None,
     ):
         """
-        Creates and returns an IRPD test instance.
+        Creates and returns an IRPD test class instance.
 
         Args:
             cases (Union[List[CASES], CASES]): The cases that want to be run.
@@ -135,6 +135,19 @@ class IRPDTestClass(TestClassContainer, Enum):
             summary/raw experimental data is. Defaults to environmental 
             variable, `DATA_PATH`.
         """
+        # Unpack defaults
+        defaults: Dict[str, Any] = CONFIGS["defaults"]
+        N = N or defaults["N"]
+        llms = llms or defaults["llms"]
+        llm_configs = llm_configs or defaults["llm_configs"]
+        max_instances = max_instances or defaults["max_instances"]
+        max_summaries = max_summaries or defaults["max_summaries"]
+        batch = batch if batch is not None else defaults["batch"]
+        test_paths = test_paths or defaults["test_paths"]
+        output_path = output_path or defaults["output_path"]
+        prompts_path = prompts_path or defaults["prompts_path"]
+        data_path = data_path or defaults["data_path"]
+        
         return self.impl(
             test_type=self.test_name,
             cases=cases,
