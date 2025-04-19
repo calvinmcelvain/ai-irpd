@@ -3,7 +3,7 @@ Contains the OutputWriter model.
 """
 import logging
 
-from helpers.utils import write_file, write_json
+from helpers.utils import write_json
 from core.builders.builder import Builder
 from core.foundation import FoundationalModel
 from _types.irpd_config import IRPDConfig
